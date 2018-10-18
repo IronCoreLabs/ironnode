@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "sourceMap": true,
+        "noImplicitReturns": true,
+        "noUnusedParameters": true,
+        "noEmitOnError": true,
+        "noUnusedLocals": true,
+        "declaration": false,
+        "target": "ES6",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "pretty": true,
+        "removeComments": true
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules"]
+}
