@@ -228,7 +228,7 @@ export function generateDeviceAddSignature(jwtToken: string, userMasterKeyPair: 
     return Future.tryF(() => {
         const signatureMessage = Buffer.concat([
             Buffer.from(`${ts}`, "utf8"),
-            Recrypt.transformKeyToBytes(deviceTransform),
+            Recrypt.transformKeyToBytes256(deviceTransform),
             Buffer.from(jwtToken, "utf8"),
             userMasterKeyPair.publicKey.x,
             userMasterKeyPair.publicKey.y,
