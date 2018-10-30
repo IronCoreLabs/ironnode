@@ -1,3 +1,17 @@
+## 0.5.3
+
+### Breaking Changes
+
+None
+
+### Added
+
+None
+
+### Changed
+
+* Fixed exported TS types for `User` top level object.
+
 
 ## 0.5.2
 

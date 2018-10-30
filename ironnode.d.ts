@@ -140,8 +140,8 @@ export interface DeviceDetails {
     };
 }
 
-export interface User {
-    verify(jwt: string): Promise<ApiUserResponse | undefined>;
-    create(jwt: string, password: string): Promise<ApiUserResponse>;
-    generateDeviceKeys(jwt: string, password: string): Promise<DeviceDetails>;
+export namespace User {
+    export function verify(jwt: string): Promise<ApiUserResponse | undefined>;
+    export function create(jwt: string, password: string): Promise<ApiUserResponse>;
+    export function generateDeviceKeys(jwt: string, password: string): Promise<DeviceDetails>;
 }
