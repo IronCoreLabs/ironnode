@@ -10,10 +10,12 @@ import {Base64String, KeyPair} from "../commonTypes";
 import {DeviceDetails, ApiUserResponse} from "../../ironnode";
 import * as DocumentSDK from "./DocumentSDK";
 import * as GroupSDK from "./GroupSDK";
+import * as UserSDK from "./UserSDK";
 
 const SDK = {
     document: DocumentSDK,
     group: GroupSDK,
+    user: UserSDK,
 };
 
 /**

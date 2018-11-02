@@ -90,6 +90,10 @@ export interface GroupUserEditResponse {
     }>;
 }
 
+export interface UserPublicKeyGetResponse {
+    [key: string]: PublicKey<string> | null;
+}
+
 export interface Document {
     list(): Promise<DocumentListResponse>;
     getMetadata(documentID: string): Promise<DocumentMetaResponse>;
@@ -112,9 +116,15 @@ export interface Group {
     addMembers(groupID: string, userList: string[]): Promise<GroupUserEditResponse>;
     removeMembers(groupID: string, userList: string[]): Promise<GroupUserEditResponse>;
 }
+
+export interface User {
+    getPublicKey(users: string | string[]): Promise<UserPublicKeyGetResponse>;
+}
+
 export interface SDK {
     document: Document;
     group: Group;
+    user: User;
 }
 
 export class SDKError extends Error {

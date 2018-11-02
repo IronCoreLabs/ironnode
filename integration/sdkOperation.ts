@@ -4,6 +4,7 @@ import * as inquirer from "inquirer";
 import {initialize} from "../src/index";
 import * as Documents from "./Documents";
 import * as Groups from "./Groups";
+import * as Users from "./Users";
 import {SDK} from "../ironnode";
 
 const topLevelPrompt = {
@@ -28,6 +29,8 @@ const topLevelPrompt = {
         {name: "Group Remove Admins", value: "groupRemoveAdmins"},
         {name: "Group Add Members", value: "groupAddMembers"},
         {name: "Group Remove Members", value: "groupRemoveMembers"},
+        new inquirer.Separator(),
+        {name: "User Public Key Lookup", value: "userKeyLookup"},
         new inquirer.Separator(),
         {name: "Quit", value: "quit"},
         new inquirer.Separator(),
@@ -69,6 +72,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Groups.addMembers(IronNode);
         case "groupRemoveMembers":
             return Groups.removeMembers(IronNode);
+        case "userKeyLookup":
+            return Users.publicKeyLookup(IronNode);
         case "quit":
             return process.exit();
         default:
