@@ -9,7 +9,7 @@ import UserApi from "../api/UserApi";
  */
 export function getUserPublicKeys(userList: string[]): Future<SDKError, UserPublicKeyGetResponse> {
     return UserApi.callUserKeyListApi(userList).map((keyList) => {
-        //First conver the API returned public keys into a key/value format of userID/public key
+        //First convert the API public keys response into a key/value format of userID/public key
         const publicKeysById = keyList.result.reduce(
             (list, userKey) => {
                 list[userKey.id] = userKey.userMasterPublicKey;

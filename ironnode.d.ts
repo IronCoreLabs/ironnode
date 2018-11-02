@@ -91,7 +91,7 @@ export interface GroupUserEditResponse {
 }
 
 export interface UserPublicKeyGetResponse {
-    [key: string]: PublicKey<string> | null;
+    [userID: string]: PublicKey<string> | null;
 }
 
 export interface Document {
