@@ -271,13 +271,14 @@ function decryptFile(IronNode: SDK, documentID: string) {
             if (!fs.existsSync(inputFile)) {
                 throw new Error(`Could not find input file path: ${inputFile}`);
             }
-            return IronNode.document
-                .decryptStream(documentID, fs.createReadStream(inputFile), outputFile)
-                .then((encryptedDocument) => ({encryptedDocument, outputFile}));
+            return IronNode.document.decryptBytes(documentID, fs.readFileSync(inputFile)).then((decryptedDocument) => {
+                fs.writeFileSync(outputFile, decryptedDocument.data);
+                return {decryptedDocument, outputFile};
+            });
         })
-        .then(({encryptedDocument, outputFile}) => {
+        .then(({decryptedDocument, outputFile}) => {
             log({
-                ...encryptedDocument,
+                ...decryptedDocument,
                 "Decrypted file path (not included)": outputFile,
             });
         });
