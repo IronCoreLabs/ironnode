@@ -3,12 +3,12 @@ import DocumentApi, {DocumentAccessResponseType} from "../api/DocumentApi";
 import UserApi, {UserKeyListResponseType} from "../api/UserApi";
 import GroupApi, {GroupListResponseType} from "../api/GroupApi";
 import SDKError from "../lib/SDKError";
-import {Codec} from "../lib/Utils";
+import {Codec, generateDocumentHeaderBytes} from "../lib/Utils";
 import * as DocumentCrypto from "./DocumentCrypto";
 import {DocumentMetaResponse, DecryptedDocumentResponse, DocumentAccessResponse} from "../../ironnode";
-import {ErrorCodes, UserAndGroupTypes} from "../Constants";
+import {ErrorCodes, UserAndGroupTypes, VERSION_HEADER_LENGTH, HEADER_META_LENGTH_LENGTH} from "../Constants";
 import ApiState from "../lib/ApiState";
-import {UserOrGroup} from "../commonTypes";
+import {UserOrGroup, DocumentHeader} from "../commonTypes";
 
 /**
  * Get a list of user and group keys for the provided users and then also add in the current account to the list of user keys
@@ -153,6 +153,62 @@ export function getMetadata(documentID: string): Future<SDKError, DocumentMetaRe
 }
 
 /**
+ * Given an encrypted document, attempt to parse the encrypted document header and return the ID of the document. Will only return the document
+ * ID if present in the document header.
+ * @param encryptedDocument Encrypted document content to parse.
+ */
+export function getDocumentIDFromBytes(encryptedDocument: Buffer): Future<SDKError, string | null> {
+    if (encryptedDocument[0] === 1) {
+        return Future.of(null);
+    }
+    const headerLength = encryptedDocument.readUInt16BE(VERSION_HEADER_LENGTH);
+    const headerString = encryptedDocument
+        .slice(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH, VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH + headerLength)
+        .toString();
+    try {
+        const data: DocumentHeader = JSON.parse(headerString);
+        return Future.of(data._did_);
+    } catch (_) {
+        return Future.reject(new SDKError(new Error("Unable to parse document header. Header value is corrupted."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE));
+    }
+}
+
+/**
+ * Given an encrypted document stream, read the minimal number of bytes necessary to try and parse the document ID from the front of
+ * the encrypted document.
+ * @param inputStream Encrypted document input stream.
+ */
+export function getDocumentIDFromStream(inputStream: NodeJS.ReadableStream): Future<SDKError, string | null> {
+    return new Future((reject, resolve) => {
+        let hasRead = false; //This callback will get invoked multiple times since we do multiple read() calls. Ignore any past the first.
+        inputStream.on("readable", () => {
+            if (hasRead) {
+                return;
+            }
+            hasRead = true;
+            const versionAndHeaderSize = inputStream.read(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH) as Buffer;
+            if (!versionAndHeaderSize) {
+                return reject(new SDKError(new Error("Was not able to read from file."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE));
+            }
+            if (versionAndHeaderSize[0] === 1) {
+                return resolve(null);
+            }
+            const versionHeaderLength = versionAndHeaderSize.readUInt16BE(VERSION_HEADER_LENGTH);
+            const headerBytes = inputStream.read(versionHeaderLength);
+            if (!headerBytes || headerBytes.length < versionHeaderLength) {
+                return reject(new SDKError(new Error("Was not able to read from file or file is corrupted."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE));
+            }
+            try {
+                const headerData: DocumentHeader = JSON.parse(headerBytes.toString());
+                resolve(headerData._did_);
+            } catch (_) {
+                reject(new SDKError(new Error("File header could not be parsed."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE));
+            }
+        });
+    });
+}
+
+/**
  * Create a new encrypted document. Use the provided ID and name to create it and encrypt it to the provided users and groups as well
  * as the currently authenticated account.
  */
@@ -160,7 +216,8 @@ export function encryptBytes(documentID: string, document: Buffer, documentName:
     return getKeyListsForUsersAndGroups(userGrants, groupGrants)
         .flatMap(({userKeys, groupKeys}) => {
             const [userPublicKeys, groupPublicKeys] = normalizeUserAndGroupPublicKeyList(userKeys, groupKeys);
-            return DocumentCrypto.encryptBytes(document, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey);
+            const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
+            return DocumentCrypto.encryptBytes(documentHeader, document, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey);
         })
         .flatMap(({userAccessKeys, groupAccessKeys, encryptedDocument}) => {
             return DocumentApi.callDocumentCreateApi(documentID, userAccessKeys, groupAccessKeys, documentName).map((createdDocument) => ({
@@ -189,7 +246,8 @@ export function encryptStream(
     return getKeyListsForUsersAndGroups(userGrants, groupGrants)
         .flatMap(({userKeys, groupKeys}) => {
             const [userPublicKeys, groupPublicKeys] = normalizeUserAndGroupPublicKeyList(userKeys, groupKeys);
-            return DocumentCrypto.encryptStream(inputStream, outputStream, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey);
+            const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
+            return DocumentCrypto.encryptStream(documentHeader, inputStream, outputStream, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey);
         })
         .flatMap(({userAccessKeys, groupAccessKeys}) => DocumentApi.callDocumentCreateApi(documentID, userAccessKeys, groupAccessKeys, documentName))
         .map((createdDocument) => ({
@@ -234,10 +292,13 @@ export function decryptStream(documentID: string, encryptedWriteStream: NodeJS.R
 export function updateDocumentBytes(documentID: string, newDocumentData: Buffer) {
     return DocumentApi.callDocumentMetadataGetApi(documentID)
         .flatMap((documentResponse) => {
-            return DocumentCrypto.reEncryptBytes(newDocumentData, documentResponse.encryptedSymmetricKey, ApiState.devicePrivateKey()).map((updatedDoc) => ({
-                updatedDoc,
-                documentResponse,
-            }));
+            const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
+            return DocumentCrypto.reEncryptBytes(documentHeader, newDocumentData, documentResponse.encryptedSymmetricKey, ApiState.devicePrivateKey()).map(
+                (updatedDoc) => ({
+                    updatedDoc,
+                    documentResponse,
+                })
+            );
         })
         .map(({updatedDoc, documentResponse}) => ({
             documentID: documentResponse.id,
@@ -252,7 +313,14 @@ export function updateDocumentBytes(documentID: string, newDocumentData: Buffer)
  */
 export function updateDocumentStream(documentID: string, inputStream: NodeJS.ReadableStream, outputStream: NodeJS.WritableStream) {
     return DocumentApi.callDocumentMetadataGetApi(documentID).flatMap((documentResponse) => {
-        return DocumentCrypto.reEncryptStream(inputStream, outputStream, documentResponse.encryptedSymmetricKey, ApiState.devicePrivateKey()).map(() => ({
+        const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
+        return DocumentCrypto.reEncryptStream(
+            documentHeader,
+            inputStream,
+            outputStream,
+            documentResponse.encryptedSymmetricKey,
+            ApiState.devicePrivateKey()
+        ).map(() => ({
             documentID: documentResponse.id,
             documentName: documentResponse.name,
         }));

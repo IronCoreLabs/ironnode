@@ -47,6 +47,10 @@ export interface EncryptedAccessKey {
     publicKey: PublicKey<string>;
     id: string;
 }
+export interface DocumentHeader {
+    _did_: string;
+    _sid_: number;
+}
 
 /*
  * API response types

@@ -301,6 +301,47 @@ export function get(IronNode: SDK) {
 }
 
 /**
+ * Parse the document header and return the ID of a document given either it's direct input, or a handle to the file via
+ * a stream.
+ */
+export function parseID(IronNode: SDK) {
+    return inquirer
+        .prompt<{docType: "direct" | "file"}>({
+            name: "docType",
+            type: "list",
+            message: "What type of document are we parsing?",
+            choices: [{name: "Direct Input", value: "direct"}, {name: "File", value: "file"}],
+        })
+        .then(({docType}) => {
+            if (docType === "file") {
+                return inquirer
+                    .prompt<{filePath: string}>({
+                        name: "filePath",
+                        type: "input",
+                        message: "Provide the path of the file to parse",
+                        transformer: normalizePath,
+                        filter: normalizePath,
+                        validate: (filePath: string) => (fs.existsSync(filePath) ? true : `Path to file doesn't exist: ${filePath}`),
+                    })
+                    .then(({filePath}) => {
+                        return IronNode.document.getDocumentIDFromStream(fs.createReadStream(filePath));
+                    })
+                    .then(log);
+            }
+            return inquirer
+                .prompt<{data: string}>({
+                    name: "data",
+                    type: "input",
+                    message: "Document data (base64 encoded):",
+                })
+                .then(({data}) => {
+                    return IronNode.document.getDocumentIDFromBytes(Buffer.from(data, "base64"));
+                })
+                .then(log);
+        });
+}
+
+/**
  * Encrypt a new document. Asks user for ID, name, and users/groups to share with.
  */
 export function encryptDocument(IronNode: SDK) {

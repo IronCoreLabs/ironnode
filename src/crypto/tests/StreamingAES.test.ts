@@ -10,9 +10,10 @@ describe("StreamingAES", () => {
                 const fixedIV = Buffer.from([50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160]);
                 (crypto as any).__setRandomData(fixedIV);
 
-                const se = new StreamingEncryption(Buffer.alloc(32));
+                const se = new StreamingEncryption(Buffer.from([0, 0, 0, 0]), Buffer.alloc(32));
                 expect(se.cipher).not.toBeUndefined();
                 expect(se.iv).toEqual(fixedIV);
+                expect(se.documentHeader).toEqual(Buffer.from([0, 0, 0, 0]));
 
                 const transformer = se.getTransform();
 
@@ -21,7 +22,7 @@ describe("StreamingAES", () => {
 
                 transformer.call(mockTransform, Buffer.from([5, 10, 15, 20, 25, 30]), "", callback);
 
-                expect(mockTransform.push).toHaveBeenCalledWith(Buffer.from([1]));
+                expect(mockTransform.push).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0])); //Pushes on doc header
                 expect(mockTransform.push).toHaveBeenCalledWith(fixedIV);
                 expect(mockTransform.push).toHaveBeenCalledWith(Buffer.from([176, 230, 241, 162, 169, 209]));
                 expect(callback).toHaveBeenCalledWith();
@@ -39,7 +40,7 @@ describe("StreamingAES", () => {
 
         describe("getFlush", () => {
             test("should get AES final and auth tag and add to result", () => {
-                const se = new StreamingEncryption(Buffer.alloc(32));
+                const se = new StreamingEncryption(Buffer.from([0, 0, 0, 0]), Buffer.alloc(32));
 
                 const mockFlush = {push: jest.fn()};
                 const callback = jest.fn();
@@ -59,7 +60,7 @@ describe("StreamingAES", () => {
 
         describe("getEncryptionStream", () => {
             test("returns expected Transform", () => {
-                const se = new StreamingEncryption(Buffer.alloc(32));
+                const se = new StreamingEncryption(Buffer.from([0, 0, 0, 0]), Buffer.alloc(32));
                 expect(se.getEncryptionStream()).toBeInstanceOf(Transform);
             });
         });

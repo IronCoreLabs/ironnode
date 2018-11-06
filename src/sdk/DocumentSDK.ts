@@ -1,3 +1,4 @@
+import * as crypto from "crypto";
 import {DocumentCreateOptions, EncryptedDocumentResponse, DocumentAccessList} from "../../ironnode";
 import * as DocumentOperations from "../operations/DocumentOperations";
 import * as Utils from "../lib/Utils";
@@ -8,11 +9,13 @@ import * as Utils from "../lib/Utils";
  * @return {DocumentCreateOptions}         Document create options object with properly filled out fields
  */
 function calculateDocumentCreateOptionsDefault(options?: DocumentCreateOptions) {
+    const randomDocID = crypto.randomBytes(16).toString("hex");
     if (!options) {
-        return {documentID: "", documentName: "", accessList: {users: [], groups: []}};
+        return {documentID: randomDocID, documentName: "", accessList: {users: [], groups: []}};
     }
     return {
-        documentID: options.documentID || "",
+        //Use the user provided ID or generate a random ID if not provided
+        documentID: options.documentID || randomDocID,
         documentName: options.documentName || "",
         accessList: {
             users: options.accessList && options.accessList.users ? options.accessList.users : [],
@@ -36,6 +39,25 @@ export function list() {
 export function getMetadata(documentID: string) {
     Utils.validateID(documentID);
     return DocumentOperations.getMetadata(documentID).toPromise();
+}
+
+/**
+ * Given an encrypted document, attempt to parse the encrypted document header and return the ID of the document. Will only return the document
+ * ID if present in the document header.
+ * @param encryptedDocument Encrypted document content to parse.
+ */
+export function getDocumentIDFromBytes(encryptedDocument: Buffer) {
+    Utils.validateEncryptedDocument(encryptedDocument);
+    return DocumentOperations.getDocumentIDFromBytes(encryptedDocument).toPromise();
+}
+
+/**
+ * Given an encrypted document stream, read the minimal number of bytes necessary to try and parse the document ID from the front of
+ * the encrypted document.
+ * @param inputStream Encrypted document input stream.
+ */
+export function getDocumentIDFromStream(inputStream: NodeJS.ReadableStream) {
+    return DocumentOperations.getDocumentIDFromStream(inputStream).toPromise();
 }
 
 /**

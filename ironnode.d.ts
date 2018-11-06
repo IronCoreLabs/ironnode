@@ -97,6 +97,8 @@ export interface UserPublicKeyGetResponse {
 export interface Document {
     list(): Promise<DocumentListResponse>;
     getMetadata(documentID: string): Promise<DocumentMetaResponse>;
+    getDocumentIDFromBytes(encryptedDocument: Buffer): Promise<string | null>;
+    getDocumentIDFromStream(encryptedDocument: NodeJS.ReadableStream): Promise<string | null>;
     decryptBytes(documentID: string, encryptedDocument: Buffer): Promise<DecryptedDocumentResponse>;
     encryptBytes(documentData: Buffer, options?: DocumentCreateOptions): Promise<EncryptedDocumentResponse>;
     encryptStream(inputStream: NodeJS.ReadableStream, outputStream: NodeJS.WritableStream, options?: DocumentCreateOptions): Promise<DocumentIDNameResponse>;

@@ -15,6 +15,7 @@ const topLevelPrompt = {
     choices: [
         {name: "Document List", value: "docList"},
         {name: "Document Get", value: "docGet"},
+        {name: "Document Parse ID", value: "docParse"},
         {name: "Document Decrypt", value: "docDecrypt"},
         {name: "Document Encrypt", value: "docEncrypt"},
         {name: "Update Document Data", value: "docUpdateData"},
@@ -46,6 +47,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Documents.list(IronNode);
         case "docGet":
             return Documents.get(IronNode);
+        case "docParse":
+            return Documents.parseID(IronNode);
         case "docEncrypt":
             return Documents.encryptDocument(IronNode);
         case "docDecrypt":

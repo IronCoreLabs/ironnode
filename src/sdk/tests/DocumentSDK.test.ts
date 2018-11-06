@@ -36,6 +36,35 @@ describe("DocumentSDK", () => {
         });
     });
 
+    describe("getDocumentIDFromBytes", () => {
+        test("fails when encrypted document isnt of the right format", () => {
+            expect(() => DocumentSDK.getDocumentIDFromBytes(Buffer.alloc(5))).toThrow();
+            expect(() => DocumentSDK.getDocumentIDFromBytes(Buffer.alloc(0))).toThrow();
+        });
+
+        test("calls parse ID and returns response", () => {
+            const spy = jest.spyOn(DocumentOperations, "getDocumentIDFromBytes");
+            spy.mockReturnValue(Future.of("docID"));
+            DocumentSDK.getDocumentIDFromBytes(Buffer.alloc(50))
+                .then((result) => {
+                    expect(result).toEqual("docID");
+                })
+                .catch((e) => fail(e.message));
+        });
+    });
+
+    describe("getDocumentIDFromStream", () => {
+        test("calls parse ID and returns response", () => {
+            const spy = jest.spyOn(DocumentOperations, "getDocumentIDFromStream");
+            spy.mockReturnValue(Future.of("docID"));
+            DocumentSDK.getDocumentIDFromStream("stream" as any)
+                .then((result) => {
+                    expect(result).toEqual("docID");
+                })
+                .catch((e) => fail(e.message));
+        });
+    });
+
     describe("decryptBytes", () => {
         test("throws errors if no document ID", () => {
             expect(() => DocumentSDK.decryptBytes("", "abc" as any)).toThrow();
@@ -104,7 +133,10 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptBytes(Buffer.alloc(32))
                 .then((result) => {
                     expect(result).toEqual("encryptBytes");
-                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith("", Buffer.alloc(32), "", [], []);
+                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith(jasmine.any(String), Buffer.alloc(32), "", [], []);
+                    const docID = (DocumentOperations.encryptBytes as jest.Mock).mock.calls[0][0];
+                    expect(docID).toHaveLength(32);
+                    expect(docID).toMatch(/[0-9a-fA-F]+/);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -128,7 +160,7 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptBytes(document, {documentName: "my doc name"})
                 .then((result: any) => {
                     expect(result).toEqual("encryptBytes");
-                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith("", document, "my doc name", [], []);
+                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith(jasmine.any(String), document, "my doc name", [], []);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -142,7 +174,13 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptBytes(document, {accessList: {users: userList, groups: groupList}})
                 .then((result: any) => {
                     expect(result).toEqual("encryptBytes");
-                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith("", document, "", ["user-31", "user-55"], ["group-1", "group-2", "group-3"]);
+                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith(
+                        jasmine.any(String),
+                        document,
+                        "",
+                        ["user-31", "user-55"],
+                        ["group-1", "group-2", "group-3"]
+                    );
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -163,7 +201,7 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any)
                 .then((result) => {
                     expect(result).toEqual("encryptStream");
-                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith("", "inputStream", "outputStream", "", [], []);
+                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith(jasmine.any(String), "inputStream", "outputStream", "", [], []);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -183,7 +221,7 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any, {documentName: "my doc name"})
                 .then((result: any) => {
                     expect(result).toEqual("encryptStream");
-                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith("", "inputStream", "outputStream", "my doc name", [], []);
+                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith(jasmine.any(String), "inputStream", "outputStream", "my doc name", [], []);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -197,7 +235,7 @@ describe("DocumentSDK", () => {
                 .then((result: any) => {
                     expect(result).toEqual("encryptStream");
                     expect(DocumentOperations.encryptStream).toHaveBeenCalledWith(
-                        "",
+                        jasmine.any(String),
                         "inputStream",
                         "outputStream",
                         "",

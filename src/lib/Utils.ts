@@ -1,6 +1,6 @@
 import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
-import {PublicKey, Base64String} from "../commonTypes";
-import {AES_IV_LENGTH, AES_GCM_TAG_LENGTH, DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER} from "../Constants";
+import {PublicKey, Base64String, DocumentHeader} from "../commonTypes";
+import {AES_IV_LENGTH, AES_GCM_TAG_LENGTH, DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER, HEADER_META_LENGTH_LENGTH} from "../Constants";
 import {DocumentAccessList} from "../../ironnode";
 
 export const Codec = {
@@ -149,6 +149,20 @@ export function dedupeAccessLists(accessList: DocumentAccessList) {
  * Return a single byte Buffer which represents the document encryption version details. This byte will
  * be prepended to the front of all encrypted documents.
  */
-export function generateHeaderVersionByte() {
-    return Buffer.from([DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER]);
+export function generateDocumentHeaderBytes(documentID: string, segmentID: number) {
+    const header = JSON.stringify({
+        _did_: documentID,
+        _sid_: segmentID,
+    } as DocumentHeader);
+    const headerDataView = new DataView(new ArrayBuffer(HEADER_META_LENGTH_LENGTH));
+    headerDataView.setUint16(0, header.length, false);
+
+    return Buffer.concat([
+        //First byte is the version of the document
+        Buffer.from([DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER]),
+        //Next two bytes are the length of the remaining JSON encoded header
+        Buffer.from(headerDataView.buffer),
+        //Last N bytes are JSON encoded as utf8 bytes
+        Buffer.from(header),
+    ]);
 }

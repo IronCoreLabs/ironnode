@@ -1,7 +1,6 @@
 import * as crypto from "crypto";
 import {Transform, TransformCallback} from "stream";
 import {AES_ALGORITHM, AES_IV_LENGTH, AES_BLOCK_SIZE, AES_GCM_TAG_LENGTH, VERSION_HEADER_LENGTH} from "../Constants";
-import {generateHeaderVersionByte} from "../lib/Utils";
 
 //tslint:disable:max-classes-per-file
 
@@ -9,8 +8,10 @@ export class StreamingEncryption {
     cipher: crypto.CipherGCM;
     iv: Buffer;
     hasPushedOnIV: boolean = false;
+    documentHeader: Buffer;
 
-    constructor(aesKey: Buffer) {
+    constructor(documentHeader: Buffer, aesKey: Buffer) {
+        this.documentHeader = documentHeader;
         this.iv = crypto.randomBytes(AES_IV_LENGTH);
         this.cipher = crypto.createCipheriv(AES_ALGORITHM, aesKey, this.iv);
     }
@@ -29,7 +30,7 @@ export class StreamingEncryption {
             if (!streamClass.hasPushedOnIV) {
                 streamClass.hasPushedOnIV = true;
                 //First push on our single byte version header
-                this.push(generateHeaderVersionByte());
+                this.push(streamClass.documentHeader);
                 this.push(streamClass.iv);
             }
             if (chunk.length) {
@@ -121,6 +122,7 @@ export class StreamingDecryption {
             if (!chunk.length) {
                 return callback();
             }
+            //TODO: THIS DOESN'T WORK WITH VERSION 2 DATA YET
             if (!streamClass.hasStrippedOffVersionHeader) {
                 chunk = chunk.slice(VERSION_HEADER_LENGTH);
                 streamClass.hasStrippedOffVersionHeader = true;

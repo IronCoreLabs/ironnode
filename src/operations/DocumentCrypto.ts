@@ -9,6 +9,7 @@ import {TransformedEncryptedMessage, UserOrGroupPublicKey, PrivateKey} from "../
  * Encrypts the given bytes and returns a package of the encrypted bytes and user/group transform keys.
  */
 export function encryptBytes(
+    documentHeader: Buffer,
     document: Buffer,
     userKeyList: UserOrGroupPublicKey[],
     groupKeyList: UserOrGroupPublicKey[],
@@ -19,7 +20,7 @@ export function encryptBytes(
             return Future.gather3(
                 Recrypt.encryptPlaintextToList(documentKeyPlaintext, userKeyList, privateSigningKey),
                 Recrypt.encryptPlaintextToList(documentKeyPlaintext, groupKeyList, privateSigningKey),
-                AES.encryptBytes(document, documentSymmetricKey)
+                AES.encryptBytes(documentHeader, document, documentSymmetricKey)
             );
         })
         .map(([encryptedUserKeys, encryptedGroupKeys, encryptedDocument]) => ({
@@ -35,6 +36,7 @@ export function encryptBytes(
  * the user or group transform keys if this document is being shared upon creation.
  */
 export function encryptStream(
+    documentHeader: Buffer,
     inputStream: NodeJS.ReadableStream,
     outputStream: NodeJS.WritableStream,
     userKeyList: UserOrGroupPublicKey[],
@@ -46,7 +48,7 @@ export function encryptStream(
             return Future.gather3(
                 Recrypt.encryptPlaintextToList(documentKeyPlaintext, userKeyList, privateSigningKey),
                 Recrypt.encryptPlaintextToList(documentKeyPlaintext, groupKeyList, privateSigningKey),
-                AES.encryptStream(inputStream, outputStream, documentSymmetricKey)
+                AES.encryptStream(documentHeader, inputStream, outputStream, documentSymmetricKey)
             );
         })
         .map(([encryptedUserKeys, encryptedGroupKeys]) => ({
@@ -83,9 +85,14 @@ export function decryptStream(
  * Encrypt a new document using the same symmetric key. Takes existing document data in order to decrypt the symmetric key, the generates a new document IV
  * and re-encrypts.
  */
-export function reEncryptBytes(newDocumentData: Buffer, existingDocumentSymmetricKey: TransformedEncryptedMessage, myPrivateKey: Buffer) {
+export function reEncryptBytes(
+    documentHeader: Buffer,
+    newDocumentData: Buffer,
+    existingDocumentSymmetricKey: TransformedEncryptedMessage,
+    myPrivateKey: Buffer
+) {
     return Recrypt.decryptPlaintext(existingDocumentSymmetricKey, myPrivateKey)
-        .flatMap(([_, documentSymmetricKey]) => AES.encryptBytes(newDocumentData, documentSymmetricKey))
+        .flatMap(([_, documentSymmetricKey]) => AES.encryptBytes(documentHeader, newDocumentData, documentSymmetricKey))
         .errorMap((error) => new SDKError(error, ErrorCodes.DOCUMENT_REENCRYPT_FAILURE));
 }
 
@@ -94,13 +101,14 @@ export function reEncryptBytes(newDocumentData: Buffer, existingDocumentSymmetri
  * and re-encrypts the stream to the provided writable out stream.
  */
 export function reEncryptStream(
+    documentHeader: Buffer,
     inputStream: NodeJS.ReadableStream,
     outputStream: NodeJS.WritableStream,
     existingDocumentSymmetricKey: TransformedEncryptedMessage,
     myPrivateKey: Buffer
 ) {
     return Recrypt.decryptPlaintext(existingDocumentSymmetricKey, myPrivateKey)
-        .flatMap(([_, documentSymmetricKey]) => AES.encryptStream(inputStream, outputStream, documentSymmetricKey))
+        .flatMap(([_, documentSymmetricKey]) => AES.encryptStream(documentHeader, inputStream, outputStream, documentSymmetricKey))
         .errorMap((error) => new SDKError(error, ErrorCodes.DOCUMENT_REENCRYPT_FAILURE));
 }
 
