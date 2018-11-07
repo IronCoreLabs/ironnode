@@ -1,3 +1,17 @@
+## 0.5.4
+
+### Breaking Changes
+
+None
+
+### Added
+
+* Added `SDK.document.getDocumentIDFromBytes()` and `SDK.document.getDocumentIDFromStream()` methods to allow document IDs to be extracted from their encrypted content. Starting with this version all newly encrypted documents will have their ID embedded into a header of the encrypted document. These two methods will only return a value when passed documents created from this version on. Older versions will just return `null`.
+
+### Changed
+
+None
+
 ## 0.5.3
 
 ### Breaking Changes

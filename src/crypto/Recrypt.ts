@@ -72,7 +72,7 @@ export function generateKeyPair(): Future<Error, KeyPair> {
 export function generateGroupKeyPair() {
     return Future.tryF(() => {
         const plaintext = RecryptApi.generatePlaintext();
-        const privateKey = RecryptApi.deriveSymmetricKey(plaintext);
+        const privateKey = RecryptApi.hash256(plaintext);
         return {
             privateKey,
             plaintext,
@@ -121,7 +121,7 @@ export function generateTransformKeyToList(
 export function generateDocumentKey() {
     return Future.tryF(() => {
         const plaintext = RecryptApi.generatePlaintext();
-        return [plaintext, RecryptApi.deriveSymmetricKey(plaintext)];
+        return [plaintext, RecryptApi.hash256(plaintext)];
     });
 }
 
@@ -212,7 +212,7 @@ export function encryptPlaintextToList(
 export function decryptPlaintext(encryptedPlaintext: TransformedEncryptedMessage, userPrivateKey: PrivateKey<Buffer>) {
     return Future.tryF(() => {
         const decryptedPlaintext = RecryptApi.decrypt(transformedPlaintextToEncryptedValue(encryptedPlaintext), userPrivateKey);
-        return [decryptedPlaintext, RecryptApi.deriveSymmetricKey(decryptedPlaintext)];
+        return [decryptedPlaintext, RecryptApi.hash256(decryptedPlaintext)];
     });
 }
 
