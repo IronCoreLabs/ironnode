@@ -101,12 +101,12 @@ describe("AES", () => {
             const data = Buffer.from([52, 98, 35, 13, 83, 95]);
             const key = Buffer.alloc(32);
 
-            AES.encryptBytes(data, key).engage(
+            AES.encryptBytes(Buffer.from([0, 0, 0, 0]), data, key).engage(
                 (e) => fail(e),
                 (result) => {
                     expect(result).toEqual(
                         Buffer.concat([
-                            Buffer.from([1]),
+                            Buffer.from([0, 0, 0, 0]),
                             fixedIV,
                             Buffer.from([129, 142, 221, 187, 227, 144]), //encrypted data
                             Buffer.from([27, 198, 73, 247, 15, 61, 187, 89, 121, 4, 215, 200, 177, 154, 244, 175]), //gcm tag
@@ -119,7 +119,7 @@ describe("AES", () => {
 
         test("fails with expected error code", (done) => {
             (crypto as any).__shouldThrow(true);
-            AES.encryptBytes(Buffer.alloc(10), Buffer.alloc(32)).engage(
+            AES.encryptBytes(Buffer.from([0, 0, 0, 0]), Buffer.alloc(10), Buffer.alloc(32)).engage(
                 (e) => {
                     expect(e.code).toEqual(Constants.ErrorCodes.DOCUMENT_ENCRYPT_FAILURE);
                     (crypto as any).__shouldThrow(false);
@@ -153,14 +153,14 @@ describe("AES", () => {
         });
 
         test("pipes data through encryption stream", (done) => {
-            AES.encryptStream(mockInputStream as any, mockOutputStream as any, Buffer.alloc(32)).engage(
+            AES.encryptStream(Buffer.from([0, 0, 0, 0]), mockInputStream as any, mockOutputStream as any, Buffer.alloc(32)).engage(
                 (e) => fail(e.message),
                 (result) => {
                     expect(result).toBeUndefined();
                     done();
                 }
             );
-            expect(StreamingEncryption).toHaveBeenCalledWith(Buffer.alloc(32));
+            expect(StreamingEncryption).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), Buffer.alloc(32));
             const streamingEncryptionInstance = (StreamingEncryption as any).mock.instances[0];
             const mockTransform = streamingEncryptionInstance.getEncryptionStream;
             expect(mockTransform).toHaveBeenCalledWith();
@@ -177,7 +177,7 @@ describe("AES", () => {
         });
 
         test("fails when input stream throws error", (done) => {
-            AES.encryptStream(mockInputStream as any, mockOutputStream as any, Buffer.alloc(32)).engage(
+            AES.encryptStream(Buffer.from([0, 0, 0, 0]), mockInputStream as any, mockOutputStream as any, Buffer.alloc(32)).engage(
                 (e) => {
                     expect(e.message).toEqual("mock input stream failure");
                     expect(e.code).toEqual(Constants.ErrorCodes.DOCUMENT_ENCRYPT_FAILURE);
@@ -192,7 +192,7 @@ describe("AES", () => {
         });
 
         test("fails when output stream throws error", (done) => {
-            AES.encryptStream(mockInputStream as any, mockOutputStream as any, Buffer.alloc(32)).engage(
+            AES.encryptStream(Buffer.from([0, 0, 0, 0]), mockInputStream as any, mockOutputStream as any, Buffer.alloc(32)).engage(
                 (e) => {
                     expect(e.message).toEqual("mock output stream failure");
                     expect(e.code).toEqual(Constants.ErrorCodes.DOCUMENT_ENCRYPT_FAILURE);
@@ -211,7 +211,7 @@ describe("AES", () => {
                 throw new Error("mock pipe failure");
             });
 
-            AES.encryptStream(mockInputStream as any, mockOutputStream as any, Buffer.alloc(32)).engage(
+            AES.encryptStream(Buffer.from([0, 0, 0, 0]), mockInputStream as any, mockOutputStream as any, Buffer.alloc(32)).engage(
                 (e) => {
                     expect(e.message).toEqual("mock pipe failure");
                     expect(e.code).toEqual(Constants.ErrorCodes.DOCUMENT_ENCRYPT_FAILURE);
@@ -224,6 +224,23 @@ describe("AES", () => {
 
     describe("decryptBytes", () => {
         test("decrypts provided bytes as expected", (done) => {
+            const encryptedDoc = Buffer.concat([
+                Buffer.from([2, 0, 3, 1, 2, 3]),
+                fixedIV,
+                Buffer.from([129, 142, 221, 187, 227, 144]),
+                Buffer.from([27, 198, 73, 247, 15, 61, 187, 89, 121, 4, 215, 200, 177, 154, 244, 175]),
+            ]);
+
+            AES.decryptBytes(encryptedDoc, Buffer.alloc(32)).engage(
+                (e) => fail(e),
+                (result) => {
+                    expect(result).toEqual(Buffer.from([52, 98, 35, 13, 83, 95]));
+                    done();
+                }
+            );
+        });
+
+        test("decrypts version 1 document bytes", (done) => {
             const encryptedDoc = Buffer.concat([
                 Buffer.from([1]),
                 fixedIV,
@@ -400,7 +417,7 @@ describe("AES", () => {
             const data = Buffer.from("my secret data");
             const key = Buffer.concat([Buffer.from([93, 34, 23, 52, 81, 103, 233, 200]), Buffer.alloc(24)]);
 
-            AES.encryptBytes(data, key)
+            AES.encryptBytes(Buffer.from([2, 0, 5, 1, 2, 3, 4, 5]), data, key)
                 .flatMap((encryptedDoc) => AES.decryptBytes(encryptedDoc, key))
                 .engage(
                     (e) => done.fail(e),

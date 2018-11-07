@@ -41,7 +41,7 @@ describe("DocumentCrypto", () => {
             const userPublicKeyList = [{id: "user-33", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
             const signingKeys = TestUtils.getSigningKeyPair();
 
-            DocumentCrypto.encryptBytes(docToEncrypt, userPublicKeyList, [], signingKeys.privateKey).engage(
+            DocumentCrypto.encryptBytes(Buffer.from([0, 0, 0, 0]), docToEncrypt, userPublicKeyList, [], signingKeys.privateKey).engage(
                 (e) => fail(e),
                 (decryptedData: any) => {
                     expect(decryptedData).toEqual({
@@ -53,7 +53,7 @@ describe("DocumentCrypto", () => {
                     expect(Recrypt.encryptPlaintextToList as jest.Mock).toHaveBeenCalledTimes(2);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, userPublicKeyList, signingKeys.privateKey);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, [], signingKeys.privateKey);
-                    expect(AES.encryptBytes).toHaveBeenCalledWith(docToEncrypt, generatedKey);
+                    expect(AES.encryptBytes).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), docToEncrypt, generatedKey);
                 }
             );
         });
@@ -92,7 +92,7 @@ describe("DocumentCrypto", () => {
             const groupPublicKeyList = [{id: "user-33", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
             const signingKeys = TestUtils.getSigningKeyPair();
 
-            DocumentCrypto.encryptBytes(docToEncrypt, [], groupPublicKeyList, signingKeys.privateKey).engage(
+            DocumentCrypto.encryptBytes(Buffer.from([0, 0, 0, 0]), docToEncrypt, [], groupPublicKeyList, signingKeys.privateKey).engage(
                 (e) => fail(e),
                 (decryptedData: any) => {
                     expect(decryptedData).toEqual({
@@ -104,7 +104,7 @@ describe("DocumentCrypto", () => {
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledTimes(2);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, groupPublicKeyList, signingKeys.privateKey);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, [], signingKeys.privateKey);
-                    expect(AES.encryptBytes).toHaveBeenCalledWith(docToEncrypt, generatedKey);
+                    expect(AES.encryptBytes).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), docToEncrypt, generatedKey);
                 }
             );
         });
@@ -146,7 +146,7 @@ describe("DocumentCrypto", () => {
             ];
             const signingKeys = TestUtils.getSigningKeyPair();
 
-            DocumentCrypto.encryptBytes(docToEncrypt, userPublicKeyList, groupPublicKeyList, signingKeys.privateKey).engage(
+            DocumentCrypto.encryptBytes(Buffer.from([0, 0, 0, 0]), docToEncrypt, userPublicKeyList, groupPublicKeyList, signingKeys.privateKey).engage(
                 (e) => fail(e),
                 (decryptedData: any) => {
                     expect(decryptedData).toEqual({
@@ -158,7 +158,7 @@ describe("DocumentCrypto", () => {
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledTimes(2);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, userPublicKeyList, signingKeys.privateKey);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, groupPublicKeyList, signingKeys.privateKey);
-                    expect(AES.encryptBytes).toHaveBeenCalledWith(docToEncrypt, generatedKey);
+                    expect(AES.encryptBytes).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), docToEncrypt, generatedKey);
                 }
             );
         });
@@ -167,7 +167,7 @@ describe("DocumentCrypto", () => {
             const recryptKeygen = jest.spyOn(Recrypt, "generateDocumentKey");
             recryptKeygen.mockReturnValue(Future.reject(new Error("generate doc key failure")));
 
-            DocumentCrypto.encryptBytes(Buffer.alloc(35), [], [], TestUtils.getSigningKeyPair().privateKey).engage(
+            DocumentCrypto.encryptBytes(Buffer.from([0, 0, 0, 0]), Buffer.alloc(35), [], [], TestUtils.getSigningKeyPair().privateKey).engage(
                 (error) => {
                     expect(error.message).toEqual("generate doc key failure");
                     expect(error.code).toEqual(ErrorCodes.DOCUMENT_ENCRYPT_FAILURE);
@@ -205,7 +205,14 @@ describe("DocumentCrypto", () => {
             const userPublicKeyList = [{id: "user-33", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
             const signingKeys = TestUtils.getSigningKeyPair();
 
-            DocumentCrypto.encryptStream("inputStream" as any, "outputStream" as any, userPublicKeyList, [], signingKeys.privateKey).engage(
+            DocumentCrypto.encryptStream(
+                Buffer.from([0, 0, 0, 0]),
+                "inputStream" as any,
+                "outputStream" as any,
+                userPublicKeyList,
+                [],
+                signingKeys.privateKey
+            ).engage(
                 (e) => fail(e),
                 (decryptedData: any) => {
                     expect(decryptedData).toEqual({
@@ -216,7 +223,7 @@ describe("DocumentCrypto", () => {
                     expect(Recrypt.encryptPlaintextToList as jest.Mock).toHaveBeenCalledTimes(2);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, userPublicKeyList, signingKeys.privateKey);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, [], signingKeys.privateKey);
-                    expect(AES.encryptStream).toHaveBeenCalledWith("inputStream", "outputStream", generatedKey);
+                    expect(AES.encryptStream).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), "inputStream", "outputStream", generatedKey);
                 }
             );
         });
@@ -247,7 +254,14 @@ describe("DocumentCrypto", () => {
             const groupPublicKeyList = [{id: "user-33", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
             const signingKeys = TestUtils.getSigningKeyPair();
 
-            DocumentCrypto.encryptStream("inputStream" as any, "outputStream" as any, [], groupPublicKeyList, signingKeys.privateKey).engage(
+            DocumentCrypto.encryptStream(
+                Buffer.from([0, 0, 0, 0]),
+                "inputStream" as any,
+                "outputStream" as any,
+                [],
+                groupPublicKeyList,
+                signingKeys.privateKey
+            ).engage(
                 (e) => fail(e),
                 (decryptedData: any) => {
                     expect(decryptedData).toEqual({
@@ -258,7 +272,7 @@ describe("DocumentCrypto", () => {
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledTimes(2);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, groupPublicKeyList, signingKeys.privateKey);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, [], signingKeys.privateKey);
-                    expect(AES.encryptStream).toHaveBeenCalledWith("inputStream", "outputStream", generatedKey);
+                    expect(AES.encryptStream).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), "inputStream", "outputStream", generatedKey);
                 }
             );
         });
@@ -292,7 +306,14 @@ describe("DocumentCrypto", () => {
             ];
             const signingKeys = TestUtils.getSigningKeyPair();
 
-            DocumentCrypto.encryptStream("inputStream" as any, "outputStream" as any, userPublicKeyList, groupPublicKeyList, signingKeys.privateKey).engage(
+            DocumentCrypto.encryptStream(
+                Buffer.from([0, 0, 0, 0]),
+                "inputStream" as any,
+                "outputStream" as any,
+                userPublicKeyList,
+                groupPublicKeyList,
+                signingKeys.privateKey
+            ).engage(
                 (e) => fail(e),
                 (decryptedData: any) => {
                     expect(decryptedData).toEqual({
@@ -303,7 +324,7 @@ describe("DocumentCrypto", () => {
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledTimes(2);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, userPublicKeyList, signingKeys.privateKey);
                     expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(generatedPlaintext, groupPublicKeyList, signingKeys.privateKey);
-                    expect(AES.encryptStream).toHaveBeenCalledWith("inputStream", "outputStream", generatedKey);
+                    expect(AES.encryptStream).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), "inputStream", "outputStream", generatedKey);
                 }
             );
         });
@@ -312,7 +333,14 @@ describe("DocumentCrypto", () => {
             const recryptKeygen = jest.spyOn(Recrypt, "generateDocumentKey");
             recryptKeygen.mockReturnValue(Future.reject(new Error("generate doc key failure")));
 
-            DocumentCrypto.encryptStream("inputStream" as any, "outputStream" as any, [], [], TestUtils.getSigningKeyPair().privateKey).engage(
+            DocumentCrypto.encryptStream(
+                Buffer.from([0, 0, 0, 0]),
+                "inputStream" as any,
+                "outputStream" as any,
+                [],
+                [],
+                TestUtils.getSigningKeyPair().privateKey
+            ).engage(
                 (error) => {
                     expect(error.message).toEqual("generate doc key failure");
                     expect(error.code).toEqual(ErrorCodes.DOCUMENT_ENCRYPT_FAILURE);
@@ -411,12 +439,12 @@ describe("DocumentCrypto", () => {
             const newData = Buffer.alloc(35);
             const privKey = Buffer.alloc(32);
 
-            DocumentCrypto.reEncryptBytes(newData, symKey, privKey).engage(
+            DocumentCrypto.reEncryptBytes(Buffer.from([0, 0, 0, 0]), newData, symKey, privKey).engage(
                 (e) => fail(e),
                 (decryptedData: any) => {
                     expect(decryptedData).toEqual(decryptResult);
                     expect(Recrypt.decryptPlaintext).toHaveBeenCalledWith(symKey, privKey);
-                    expect(AES.encryptBytes).toHaveBeenCalledWith(newData, decryptKey);
+                    expect(AES.encryptBytes).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), newData, decryptKey);
                 }
             );
         });
@@ -424,7 +452,7 @@ describe("DocumentCrypto", () => {
         test("maps failures to SDK error with specific error code", () => {
             const recryptDecrypt = jest.spyOn(Recrypt, "decryptPlaintext");
             recryptDecrypt.mockReturnValue(Future.reject(new Error("plaintext decrypt failure")));
-            DocumentCrypto.reEncryptBytes(Buffer.alloc(35), TestUtils.getTransformedSymmetricKey(), Buffer.alloc(32)).engage(
+            DocumentCrypto.reEncryptBytes(Buffer.from([0, 0, 0, 0]), Buffer.alloc(35), TestUtils.getTransformedSymmetricKey(), Buffer.alloc(32)).engage(
                 (error) => {
                     expect(error.message).toEqual("plaintext decrypt failure");
                     expect(error.code).toEqual(ErrorCodes.DOCUMENT_REENCRYPT_FAILURE);
@@ -447,12 +475,12 @@ describe("DocumentCrypto", () => {
             const symKey = TestUtils.getTransformedSymmetricKey();
             const privKey = Buffer.alloc(32);
 
-            DocumentCrypto.reEncryptStream("inputStream" as any, "outputStream" as any, symKey, privKey).engage(
+            DocumentCrypto.reEncryptStream(Buffer.from([0, 0, 0, 0]), "inputStream" as any, "outputStream" as any, symKey, privKey).engage(
                 (e) => fail(e),
                 (result: any) => {
                     expect(result).toBeUndefined();
                     expect(Recrypt.decryptPlaintext).toHaveBeenCalledWith(symKey, privKey);
-                    expect(AES.encryptStream).toHaveBeenCalledWith("inputStream", "outputStream", decryptKey);
+                    expect(AES.encryptStream).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]), "inputStream", "outputStream", decryptKey);
                 }
             );
         });
@@ -460,7 +488,13 @@ describe("DocumentCrypto", () => {
         test("maps failures to SDK error with specific error code", () => {
             const recryptDecrypt = jest.spyOn(Recrypt, "decryptPlaintext");
             recryptDecrypt.mockReturnValue(Future.reject(new Error("plaintext decrypt failure")));
-            DocumentCrypto.reEncryptStream("inputStream" as any, "outputStream" as any, TestUtils.getTransformedSymmetricKey(), Buffer.alloc(32)).engage(
+            DocumentCrypto.reEncryptStream(
+                Buffer.from([0, 0, 0, 0]),
+                "inputStream" as any,
+                "outputStream" as any,
+                TestUtils.getTransformedSymmetricKey(),
+                Buffer.alloc(32)
+            ).engage(
                 (error) => {
                     expect(error.message).toEqual("plaintext decrypt failure");
                     expect(error.code).toEqual(ErrorCodes.DOCUMENT_REENCRYPT_FAILURE);

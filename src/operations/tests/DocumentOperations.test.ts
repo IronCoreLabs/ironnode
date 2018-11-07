@@ -3,6 +3,8 @@ import * as DocumentOperations from "../DocumentOperations";
 import * as DocumentCrypto from "../DocumentCrypto";
 import * as TestUtils from "../../tests/TestUtils";
 import DocumentApi from "../../api/DocumentApi";
+import {generateDocumentHeaderBytes} from "../../lib/Utils";
+import {ErrorCodes, VERSION_HEADER_LENGTH, HEADER_META_LENGTH_LENGTH} from "../../Constants";
 import UserApi from "../../api/UserApi";
 import GroupApi from "../../api/GroupApi";
 import ApiState from "../../lib/ApiState";
@@ -51,7 +53,7 @@ describe("DocumentOperations", () => {
         });
     });
 
-    describe("getDocumentMeta", () => {
+    describe("getMetadata", () => {
         test("returns document and maps results", (done) => {
             const docMeta = {
                 id: "my-doc",
@@ -76,6 +78,197 @@ describe("DocumentOperations", () => {
                     done();
                 }
             );
+        });
+    });
+
+    describe("getDocumentIDFromBytes", () => {
+        test("should return null if document is version 1", () => {
+            const doc = Buffer.from([1, 35, 235, 52]);
+            DocumentOperations.getDocumentIDFromBytes(doc).engage(
+                (e) => fail(e),
+                (result) => {
+                    expect(result).toBeNull();
+                }
+            );
+        });
+
+        test("should reject if leading byte is not one of the supported versions", () => {
+            const doc = Buffer.from([8, 35, 13, 53]);
+            DocumentOperations.getDocumentIDFromBytes(doc).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                },
+                () => fail("Should not succeed when version isn't a supported value.")
+            );
+        });
+
+        test("should parse document ID and return it for version 2", () => {
+            const doc = Buffer.concat([Buffer.from([2, 0, 16]), Buffer.from(JSON.stringify({_did_: "3333"}))]);
+            DocumentOperations.getDocumentIDFromBytes(doc).engage(
+                (e) => fail(e),
+                (result) => {
+                    expect(result).toEqual("3333");
+                }
+            );
+        });
+
+        test("should reject when JSON data is mangled", () => {
+            const doc = Buffer.concat([Buffer.from([2, 0, 10]), Buffer.from(JSON.stringify({_did_: "3333"}))]);
+            DocumentOperations.getDocumentIDFromBytes(doc).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                },
+                (result) => {
+                    expect(result).toEqual("3333");
+                }
+            );
+        });
+    });
+
+    describe("getDocumentIDFromStream", () => {
+        test("rejects if it cannot read from stream", (done) => {
+            const mockStream = {
+                on: jest.fn(),
+                read: jest.fn().mockReturnValue(null),
+            };
+
+            DocumentOperations.getDocumentIDFromStream(mockStream as any).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                    done();
+                },
+                () => fail("should fail if no data can be read from stream")
+            );
+
+            const readableCallback = mockStream.on.mock.calls[0];
+            expect(readableCallback[0]).toEqual("readable");
+            readableCallback[1]();
+        });
+
+        test("should reject if leading byte is not one of the supported versions", (done) => {
+            const mockStream = {
+                on: jest.fn(),
+                read: jest.fn().mockReturnValue(Buffer.from([8])),
+            };
+
+            DocumentOperations.getDocumentIDFromStream(mockStream as any).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                    done();
+                },
+                () => fail("should fail if no data can be read from stream")
+            );
+
+            const readableCallback = mockStream.on.mock.calls[0];
+            expect(readableCallback[0]).toEqual("readable");
+            readableCallback[1]();
+        });
+
+        test("resolves with null when data version is 1", (done) => {
+            const mockStream = {
+                on: jest.fn(),
+                read: jest.fn().mockReturnValue(Buffer.from([1])),
+            };
+
+            DocumentOperations.getDocumentIDFromStream(mockStream as any).engage(
+                (e) => fail(e.message),
+                (result) => {
+                    expect(result).toBeNull();
+                    expect(mockStream.read).toHaveBeenCalledWith(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH);
+                    done();
+                }
+            );
+
+            const readableCallback = mockStream.on.mock.calls[0];
+            expect(readableCallback[0]).toEqual("readable");
+            readableCallback[1]();
+        });
+
+        test("rejects when read data isnt of the proper length", (done) => {
+            let readCalls = 0;
+            const mockStream = {
+                on: jest.fn(),
+                read: jest.fn().mockImplementation(() => {
+                    if (readCalls === 0) {
+                        readCalls = 1;
+                        return Buffer.from([2, 0, 20]);
+                    }
+                    return Buffer.from([10, 20, 30, 40]); //Smaller than the 20 we told it above
+                }),
+            };
+
+            DocumentOperations.getDocumentIDFromStream(mockStream as any).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                    expect(mockStream.read).toHaveBeenCalledTimes(2);
+                    done();
+                },
+                () => fail("should fail if header bytes cant be read from stream")
+            );
+
+            const readableCallback = mockStream.on.mock.calls[0];
+            expect(readableCallback[0]).toEqual("readable");
+            readableCallback[1]();
+        });
+
+        test("rejects when header JSON is mangled", (done) => {
+            let readCalls = 0;
+            const mockStream = {
+                on: jest.fn(),
+                read: jest.fn().mockImplementation(() => {
+                    if (readCalls === 0) {
+                        readCalls = 1;
+                        return Buffer.from([2, 0, 18]);
+                    }
+                    return Buffer.from(Buffer.from('{"_did_":"abcdeff"')); //Invalid JSON
+                }),
+            };
+
+            DocumentOperations.getDocumentIDFromStream(mockStream as any).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                    expect(mockStream.read).toHaveBeenCalledTimes(2);
+                    done();
+                },
+                () => fail("should fail if header bytes cant be read from stream")
+            );
+
+            const readableCallback = mockStream.on.mock.calls[0];
+            expect(readableCallback[0]).toEqual("readable");
+            readableCallback[1]();
+        });
+
+        test("returns document ID from stream", (done) => {
+            let readCalls = 0;
+            const mockStream = {
+                on: jest.fn(),
+                read: jest.fn().mockImplementation(() => {
+                    if (readCalls === 0) {
+                        readCalls = 1;
+                        return Buffer.from([2, 0, 18]);
+                    }
+                    return Buffer.from(Buffer.from('{"_did_":"abcdef"}'));
+                }),
+            };
+
+            DocumentOperations.getDocumentIDFromStream(mockStream as any).engage(
+                (e) => fail(e.message),
+                (documentID) => {
+                    expect(documentID).toEqual("abcdef");
+                    done();
+                }
+            );
+
+            const readableCallback = mockStream.on.mock.calls[0];
+            expect(readableCallback[0]).toEqual("readable");
+            readableCallback[1]();
+            readableCallback[1]();
         });
     });
 
@@ -104,7 +297,13 @@ describe("DocumentOperations", () => {
                         id: "10",
                         masterPublicKey: TestUtils.accountPublicBytesBase64,
                     };
-                    expect(DocumentCrypto.encryptBytes).toHaveBeenCalledWith(Buffer.from([]), [currentUserRecord], [], ApiState.signingKeys().privateKey);
+                    expect(DocumentCrypto.encryptBytes).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("my doc ID", TestUtils.testSegmentID),
+                        Buffer.from([]),
+                        [currentUserRecord],
+                        [],
+                        ApiState.signingKeys().privateKey
+                    );
                     expect(DocumentApi.callDocumentCreateApi).toHaveBeenCalledWith("my doc ID", [{id: "10", key: encryptedSymKey}], [], "");
                 }
             );
@@ -179,6 +378,7 @@ describe("DocumentOperations", () => {
                     const groupKeyList = [{id: "group-20", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
 
                     expect(DocumentCrypto.encryptBytes).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("doc key", TestUtils.testSegmentID),
                         Buffer.from([88, 73, 92]),
                         userKeyList,
                         groupKeyList,
@@ -239,6 +439,7 @@ describe("DocumentOperations", () => {
                         masterPublicKey: TestUtils.accountPublicBytesBase64,
                     };
                     expect(DocumentCrypto.encryptStream).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("my doc ID", TestUtils.testSegmentID),
                         "inputStream",
                         "outputStream",
                         [currentUserRecord],
@@ -315,6 +516,7 @@ describe("DocumentOperations", () => {
                     const groupKeyList = [{id: "group-20", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
 
                     expect(DocumentCrypto.encryptStream).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("doc key", TestUtils.testSegmentID),
                         "inputStream",
                         "outputStream",
                         userKeyList,
@@ -353,8 +555,19 @@ describe("DocumentOperations", () => {
     });
 
     describe("decryptBytes", () => {
+        test("fails if provided document isn't a supported version", () => {
+            const doc = Buffer.from([8, 35, 235]);
+            DocumentOperations.decryptBytes("docID", doc).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                },
+                () => fail("Should not attempt to decrypt when version isn't valid")
+            );
+        });
+
         test("returns doc in raw bytes", () => {
-            const eDoc = Buffer.alloc(22);
+            const eDoc = Buffer.from([2, 22, 35]);
             const decryptedBytes = Buffer.from([36, 89, 72]);
 
             const metaGet = jest.spyOn(DocumentApi, "callDocumentMetadataGetApi");
@@ -415,6 +628,7 @@ describe("DocumentOperations", () => {
                     expect(document).toEqual(Buffer.alloc(33));
 
                     expect(DocumentCrypto.reEncryptBytes).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("doc id2", TestUtils.testSegmentID),
                         Buffer.from([88, 73, 92]),
                         TestUtils.getTransformedSymmetricKey(),
                         TestUtils.devicePrivateBytes
@@ -439,6 +653,7 @@ describe("DocumentOperations", () => {
                     expect(documentName).toEqual("my doc");
 
                     expect(DocumentCrypto.reEncryptStream).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("doc id2", TestUtils.testSegmentID),
                         "inputStream",
                         "outputStream",
                         TestUtils.getTransformedSymmetricKey(),

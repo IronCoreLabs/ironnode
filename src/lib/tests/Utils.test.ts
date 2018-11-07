@@ -225,11 +225,19 @@ describe("Utils", () => {
         });
     });
 
-    describe("generateHeaderVersionByte", () => {
-        test("returns single byte Buffer with expected version", () => {
-            const versionByte = Utils.generateHeaderVersionByte();
-            expect(versionByte).toHaveLength(1);
-            expect(versionByte[0]).toEqual(1);
+    describe("generateDocumentHeaderBytes", () => {
+        test("returns header with version byte and encoded metdata", () => {
+            const versionHeader = Utils.generateDocumentHeaderBytes("docID", 353);
+            expect(versionHeader).toBeInstanceOf(Buffer);
+            expect(versionHeader).toHaveLength(32);
+            expect(versionHeader[0]).toEqual(2); //Version byte
+            expect(versionHeader[1]).toEqual(0); //Two encoded JSON length bytes
+            expect(versionHeader[2]).toEqual(29);
+            const header = JSON.parse(versionHeader.slice(3).toString());
+            expect(header).toEqual({
+                _did_: "docID",
+                _sid_: 353,
+            });
         });
     });
 });

@@ -5,9 +5,17 @@ import {tmpdir} from "os";
 import Future from "futurejs";
 import {StreamingEncryption, StreamingDecryption} from "./StreamingAES";
 import * as Constants from "../Constants";
-const {AES_IV_LENGTH, AES_GCM_TAG_LENGTH, AES_ALGORITHM, VERSION_HEADER_LENGTH, AES_SYMMETRIC_KEY_LENGTH, PBKDF2_SALT_LENGTH, ErrorCodes} = Constants;
+const {
+    AES_IV_LENGTH,
+    AES_GCM_TAG_LENGTH,
+    AES_ALGORITHM,
+    VERSION_HEADER_LENGTH,
+    AES_SYMMETRIC_KEY_LENGTH,
+    PBKDF2_SALT_LENGTH,
+    HEADER_META_LENGTH_LENGTH,
+    ErrorCodes,
+} = Constants;
 import SDKError from "../lib/SDKError";
-import {generateHeaderVersionByte} from "../lib/Utils";
 
 /**
  * Compute an AES-256 symmetric key from the provided password and salt.
@@ -21,6 +29,18 @@ function generatePasswordDerivedKey(password: string, salt: Buffer) {
             resolve(derivedKey);
         });
     });
+}
+
+/**
+ * Remove the leading header from the provided encrypted document. Determines the header version and strips off everything
+ * up until the encrypted data IV bytes start. Returns any metadata that is present at the beginning of the document.
+ */
+function stripHeaderFromEncryptedDocument(document: Buffer) {
+    if (document[0] === 1) {
+        return document.slice(VERSION_HEADER_LENGTH);
+    }
+    //We already validate before this that the document is a valid version, so since we only have two versions, we can safely assume this is a v2 doc
+    return document.slice(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH + document.readUInt16BE(VERSION_HEADER_LENGTH));
 }
 
 /**
@@ -58,14 +78,15 @@ export function decryptUserMasterKey(password: string, encryptedUserMasterKey: B
 
 /**
  * Encrypt the provided document with the provided symmetric key. Will generate an IV and GCM tag and return as part of response.
+ * @param {Buffer} documentHeader       Document version and metadata header
  * @param {Buffer} document             Document to encrypt
  * @param {Buffer} documentSymmetricKey Symmetric key to use for encryption
  */
-export function encryptBytes(document: Buffer, documentSymmetricKey: Buffer): Future<SDKError, Buffer> {
+export function encryptBytes(documentHeader: Buffer, document: Buffer, documentSymmetricKey: Buffer): Future<SDKError, Buffer> {
     try {
         const iv = crypto.randomBytes(AES_IV_LENGTH);
         const cipher = crypto.createCipheriv(AES_ALGORITHM, documentSymmetricKey, iv);
-        return Future.of(Buffer.concat([generateHeaderVersionByte(), iv, cipher.update(document), cipher.final(), cipher.getAuthTag()]));
+        return Future.of(Buffer.concat([documentHeader, iv, cipher.update(document), cipher.final(), cipher.getAuthTag()]));
     } catch (e) {
         return Future.reject(new SDKError(e, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
     }
@@ -73,12 +94,13 @@ export function encryptBytes(document: Buffer, documentSymmetricKey: Buffer): Fu
 
 /**
  * Encrypt a stream given a readable input stream and a writable output stream and using the provided document symmetric key.
+ * @param {Buffer}         documentHeader       Document version and meta data
  * @param {ReadableStream} inputStream          Readable input stream (such as a file) to read from and encrypt contents
  * @param {WritableStream} outputStream         Writable output stream where encrypted results will be streamed
  * @param {Buffer}         documentSymmetricKey AES symmetric key to use for encryption
  */
-export function encryptStream(inputStream: NodeJS.ReadableStream, outputStream: NodeJS.WritableStream, documentSymmetricKey: Buffer) {
-    const encryptionStream = new StreamingEncryption(documentSymmetricKey);
+export function encryptStream(documentHeader: Buffer, inputStream: NodeJS.ReadableStream, outputStream: NodeJS.WritableStream, documentSymmetricKey: Buffer) {
+    const encryptionStream = new StreamingEncryption(documentHeader, documentSymmetricKey);
 
     return new Future<SDKError, undefined>((reject, resolve) => {
         const readOrWriteFailure = (e: Error) => reject(new SDKError(e, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
@@ -102,11 +124,12 @@ export function encryptStream(inputStream: NodeJS.ReadableStream, outputStream: 
  * @param {Buffer} documentSymmetricKey Symmetric key to use to decrypt
  */
 export function decryptBytes(cipherText: Buffer, documentSymmetricKey: Buffer): Future<SDKError, Buffer> {
+    const encryptedDocument = stripHeaderFromEncryptedDocument(cipherText);
     //The first byte of the document is the version byte. We don't need to use that yet so we just start stripping data
     //from the 2nd byte forward
-    const iv = cipherText.slice(VERSION_HEADER_LENGTH, AES_IV_LENGTH + VERSION_HEADER_LENGTH);
-    const content = cipherText.slice(AES_IV_LENGTH + VERSION_HEADER_LENGTH, cipherText.length - AES_GCM_TAG_LENGTH);
-    const gcmTag = cipherText.slice(cipherText.length - AES_GCM_TAG_LENGTH);
+    const iv = encryptedDocument.slice(0, AES_IV_LENGTH);
+    const content = encryptedDocument.slice(AES_IV_LENGTH, encryptedDocument.length - AES_GCM_TAG_LENGTH);
+    const gcmTag = encryptedDocument.slice(encryptedDocument.length - AES_GCM_TAG_LENGTH);
 
     try {
         const cipher = crypto.createDecipheriv(AES_ALGORITHM, documentSymmetricKey, iv);

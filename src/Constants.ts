@@ -4,13 +4,14 @@ export const AES_IV_LENGTH = 12;
 export const AES_GCM_TAG_LENGTH = 16;
 export const AES_BLOCK_SIZE = 16;
 export const VERSION_HEADER_LENGTH = 1;
+export const HEADER_META_LENGTH_LENGTH = 2;
 export const PBKDF2_SALT_LENGTH = 32;
 export const PBKDF2_ITERATIONS = () => 250000; //Set this as a function so that we can mock it during unit tests
 /**
  * Number which is prepended onto encrypted documents to denote which classification of encrypted data
  * the document represents. Used to have a place to denote header info, symmetric encryption details, etc
  */
-export const DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER = 1;
+export const DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER = 2;
 
 export const GroupPermissions = {
     ADMIN: "admin",
@@ -41,8 +42,8 @@ export const ErrorCodes = {
     DOCUMENT_ENCRYPT_FAILURE: 307,
     DOCUMENT_REENCRYPT_FAILURE: 308,
     DOCUMENT_GRANT_ACCESS_FAILURE: 309,
-    DOCUMENT_MAX_SIZE_EXCEEDED: 310,
     DOCUMENT_CREATE_WITH_ACCESS_FAILURE: 311,
+    DOCUMENT_HEADER_PARSE_FAILURE: 312,
     GROUP_LIST_REQUEST_FAILURE: 400,
     GROUP_GET_REQUEST_FAILURE: 401,
     GROUP_CREATE_REQUEST_FAILURE: 402,
