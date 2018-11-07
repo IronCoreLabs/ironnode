@@ -154,12 +154,18 @@ export function getMetadata(documentID: string): Future<SDKError, DocumentMetaRe
 
 /**
  * Given an encrypted document, attempt to parse the encrypted document header and return the ID of the document. Will only return the document
- * ID if present in the document header.
+ * ID if present in the document header. For version 1 docs, where we didn't have the ID in the header, this method will return null.
  * @param encryptedDocument Encrypted document content to parse.
  */
 export function getDocumentIDFromBytes(encryptedDocument: Buffer): Future<SDKError, string | null> {
     if (encryptedDocument[0] === 1) {
         return Future.of(null);
+    }
+    //Early bail if the bytes we got aren't one of our supported versions. This might mean what they're passing us isn't an IronCore encrypted file
+    if (encryptedDocument[0] !== 2) {
+        return Future.reject(
+            new SDKError(new Error("File is not a supported version and may not be an encrypted file."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE)
+        );
     }
     const headerLength = encryptedDocument.readUInt16BE(VERSION_HEADER_LENGTH);
     const headerString = encryptedDocument
@@ -175,7 +181,7 @@ export function getDocumentIDFromBytes(encryptedDocument: Buffer): Future<SDKErr
 
 /**
  * Given an encrypted document stream, read the minimal number of bytes necessary to try and parse the document ID from the front of
- * the encrypted document.
+ * the encrypted document. For version 1 docs, where we didn't have the ID in the header, this method will return null.
  * @param inputStream Encrypted document input stream.
  */
 export function getDocumentIDFromStream(inputStream: NodeJS.ReadableStream): Future<SDKError, string | null> {
@@ -186,14 +192,21 @@ export function getDocumentIDFromStream(inputStream: NodeJS.ReadableStream): Fut
                 return;
             }
             hasRead = true;
-            const versionAndHeaderSize = inputStream.read(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH) as Buffer;
-            if (!versionAndHeaderSize) {
+            const versionAndHeader = inputStream.read(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH) as Buffer;
+            if (!versionAndHeader) {
                 return reject(new SDKError(new Error("Was not able to read from file."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE));
             }
-            if (versionAndHeaderSize[0] === 1) {
+            //Version 1 document, we don't have the document ID as it's not encoded in the header
+            if (versionAndHeader[0] === 1) {
                 return resolve(null);
             }
-            const versionHeaderLength = versionAndHeaderSize.readUInt16BE(VERSION_HEADER_LENGTH);
+            //Check to see if the document is a version we don't support and reject if so
+            if (versionAndHeader[0] !== 2) {
+                return reject(
+                    new SDKError(new Error("File is not a supported version and may not be an encrypted file."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE)
+                );
+            }
+            const versionHeaderLength = versionAndHeader.readUInt16BE(VERSION_HEADER_LENGTH);
             const headerBytes = inputStream.read(versionHeaderLength);
             if (!headerBytes || headerBytes.length < versionHeaderLength) {
                 return reject(new SDKError(new Error("Was not able to read from file or file is corrupted."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE));
@@ -260,6 +273,13 @@ export function encryptStream(
  * Decrypt the provided encrypted document given it's ID and content as bytes.
  */
 export function decryptBytes(documentID: string, encryptedDocument: Buffer): Future<SDKError, DecryptedDocumentResponse> {
+    //Early verification to check that the bytes we got appear to be an IronCore encrypted document. We have two versions so reject early if the bytes provided
+    //don't match either of those two versions.
+    if (encryptedDocument[0] !== 1 && encryptedDocument[0] !== 2) {
+        return Future.reject(
+            new SDKError(new Error("Provided encrypted document doesn't appear to be valid. Invalid version."), ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE)
+        );
+    }
     return DocumentApi.callDocumentMetadataGetApi(documentID).flatMap((documentResponse) => {
         return DocumentCrypto.decryptBytes(encryptedDocument, documentResponse.encryptedSymmetricKey, ApiState.devicePrivateKey()).map((decryptedDocument) => ({
             documentID,

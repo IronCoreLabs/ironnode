@@ -92,6 +92,17 @@ describe("DocumentOperations", () => {
             );
         });
 
+        test("should reject if leading byte is not one of the supported versions", () => {
+            const doc = Buffer.from([8, 35, 13, 53]);
+            DocumentOperations.getDocumentIDFromBytes(doc).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                },
+                () => fail("Should not succeed when version isn't a supported value.")
+            );
+        });
+
         test("should parse document ID and return it for version 2", () => {
             const doc = Buffer.concat([Buffer.from([2, 0, 16]), Buffer.from(JSON.stringify({_did_: "3333"}))]);
             DocumentOperations.getDocumentIDFromBytes(doc).engage(
@@ -121,6 +132,26 @@ describe("DocumentOperations", () => {
             const mockStream = {
                 on: jest.fn(),
                 read: jest.fn().mockReturnValue(null),
+            };
+
+            DocumentOperations.getDocumentIDFromStream(mockStream as any).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                    done();
+                },
+                () => fail("should fail if no data can be read from stream")
+            );
+
+            const readableCallback = mockStream.on.mock.calls[0];
+            expect(readableCallback[0]).toEqual("readable");
+            readableCallback[1]();
+        });
+
+        test("should reject if leading byte is not one of the supported versions", (done) => {
+            const mockStream = {
+                on: jest.fn(),
+                read: jest.fn().mockReturnValue(Buffer.from([8])),
             };
 
             DocumentOperations.getDocumentIDFromStream(mockStream as any).engage(
@@ -524,8 +555,19 @@ describe("DocumentOperations", () => {
     });
 
     describe("decryptBytes", () => {
+        test("fails if provided document isn't a supported version", () => {
+            const doc = Buffer.from([8, 35, 235]);
+            DocumentOperations.decryptBytes("docID", doc).engage(
+                (e) => {
+                    expect(e.message).toBeString();
+                    expect(e.code).toEqual(ErrorCodes.DOCUMENT_HEADER_PARSE_FAILURE);
+                },
+                () => fail("Should not attempt to decrypt when version isn't valid")
+            );
+        });
+
         test("returns doc in raw bytes", () => {
-            const eDoc = Buffer.alloc(22);
+            const eDoc = Buffer.from([2, 22, 35]);
             const decryptedBytes = Buffer.from([36, 89, 72]);
 
             const metaGet = jest.spyOn(DocumentApi, "callDocumentMetadataGetApi");

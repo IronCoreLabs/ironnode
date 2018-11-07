@@ -39,6 +39,7 @@ function stripHeaderFromEncryptedDocument(document: Buffer) {
     if (document[0] === 1) {
         return document.slice(VERSION_HEADER_LENGTH);
     }
+    //We already validate before this that the document is a valid version, so since we only have two versions, we can safely assume this is a v2 doc
     return document.slice(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH + document.readUInt16BE(VERSION_HEADER_LENGTH));
 }
 

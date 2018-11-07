@@ -1,6 +1,6 @@
 import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
 import {PublicKey, Base64String, DocumentHeader} from "../commonTypes";
-import {AES_IV_LENGTH, AES_GCM_TAG_LENGTH, DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER, HEADER_META_LENGTH_LENGTH} from "../Constants";
+import {AES_IV_LENGTH, AES_GCM_TAG_LENGTH, DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER, HEADER_META_LENGTH_LENGTH, VERSION_HEADER_LENGTH} from "../Constants";
 import {DocumentAccessList} from "../../ironnode";
 
 export const Codec = {
@@ -104,7 +104,7 @@ export function validateEncryptedDocument(documentData: Buffer) {
         throw new Error(`Invalid encrypted document format provided. Expected a Buffer.`);
     }
     //The content length of the document should be at least 1 larger than the size of the AES IV + GCM tag
-    if (documentData.length < AES_IV_LENGTH + AES_GCM_TAG_LENGTH + 1) {
+    if (documentData.length < VERSION_HEADER_LENGTH + AES_IV_LENGTH + AES_GCM_TAG_LENGTH) {
         throw new Error(`Invalid encrypted document content. Length of content does not meet minimum requirements.`);
     }
 }
