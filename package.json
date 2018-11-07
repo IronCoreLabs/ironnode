@@ -1,6 +1,6 @@
 {
     "name": "@ironcorelabs/ironnode",
-    "version": "0.5.3",
+    "version": "0.5.4",
     "description": "IronCore Labs SDK for NodeJS Applications",
     "homepage": "https://docs.ironcorelabs.com",
     "main": "index.js",
@@ -26,7 +26,7 @@
         "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\""
     },
     "dependencies": {
-        "@ironcorelabs/recrypt-node-binding": "0.4.0",
+        "@ironcorelabs/recrypt-node-binding": "0.4.1",
         "futurejs": "2.0.0",
         "node-fetch": "2.2.0"
     },
