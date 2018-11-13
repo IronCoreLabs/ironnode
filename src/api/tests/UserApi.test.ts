@@ -126,7 +126,9 @@ describe("UserApi", () => {
                 })
             );
 
-            UserApi.callUserDeviceAdd("jwt", TestUtils.getEmptyPublicKey(), TestUtils.getTransformKey(), Buffer.from([99, 103, 113, 93]), 133353523).engage(
+            UserApi.callUserDeviceAdd("jwt", TestUtils.getEmptyPublicKey(), TestUtils.getTransformKey(), Buffer.from([99, 103, 113, 93]), 133353523, {
+                deviceName: "blah",
+            }).engage(
                 (e) => fail(e),
                 (result) => {
                     expect(result).toEqual({
@@ -136,6 +138,40 @@ describe("UserApi", () => {
                     const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
                     expect(request.headers.Authorization).toEqual("jwt jwt");
                     expect(request.method).toEqual("POST");
+                    expect(JSON.parse(request.body)).toEqual({
+                        timestamp: 133353523,
+                        userPublicKey: {x: "", y: ""},
+                        device: {
+                            transformKey: {
+                                ephemeralPublicKey: {x: "", y: ""},
+                                toPublicKey: {x: "", y: ""},
+                                encryptedTempKey: "",
+                                hashedTempKey: "",
+                                publicSigningKey: "",
+                                signature: "",
+                            },
+                            name: "blah",
+                        },
+                        signature: "Y2dxXQ==",
+                    });
+                    done();
+                }
+            );
+        });
+
+        test("shouldnt pass device name if not provided", (done) => {
+            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(
+                Future.of({
+                    devicePublicKey: {x: "", y: ""},
+                })
+            );
+
+            UserApi.callUserDeviceAdd("jwt", TestUtils.getEmptyPublicKey(), TestUtils.getTransformKey(), Buffer.from([99, 103, 113, 93]), 133353523, {
+                deviceName: "",
+            }).engage(
+                (e) => fail(e),
+                () => {
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
                     expect(JSON.parse(request.body)).toEqual({
                         timestamp: 133353523,
                         userPublicKey: {x: "", y: ""},

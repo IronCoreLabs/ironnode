@@ -26,7 +26,7 @@
         "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\""
     },
     "dependencies": {
-        "@ironcorelabs/recrypt-node-binding": "0.4.1",
+        "@ironcorelabs/recrypt-node-binding": "0.4.2",
         "futurejs": "2.0.0",
         "node-fetch": "2.2.0"
     },

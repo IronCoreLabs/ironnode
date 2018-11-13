@@ -18,10 +18,10 @@
     esutils "^2.0.2"
     js-tokens "^3.0.0"
 
-"@ironcorelabs/recrypt-node-binding@0.4.1":
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/@ironcorelabs/recrypt-node-binding/-/recrypt-node-binding-0.4.1.tgz#805b071a5fed1bbd6cf70721bb5b2efee616f890"
-  integrity sha512-dJOelhO9rRTz44TpdZNJO3eeXn02fnM+EeRz7A9EoD6LBDi9/w+YIV0LmeAsQzAqiTSZc/3/ZzO4kvpX055Jfw==
+"@ironcorelabs/recrypt-node-binding@0.4.2":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@ironcorelabs/recrypt-node-binding/-/recrypt-node-binding-0.4.2.tgz#2f2cbb0d4c3058d105a9124e1930349859d91cf3"
+  integrity sha512-MR08uyGiJqA8aGyQkVbd9jdhwUMq/+wpLGwVAzF12kB3WchDQvCyFHqILOkkIzhkPD+ltivD02EgAOr2J7i6fw==
   dependencies:
     node-pre-gyp "^0.11.0"
 
