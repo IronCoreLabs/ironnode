@@ -272,7 +272,7 @@ describe("DocumentOperations", () => {
         });
     });
 
-    fdescribe("encryptBytes", () => {
+    describe("encryptBytes", () => {
         test("encrypts document to current user and returns expected document package", () => {
             const encryptedSymKey = TestUtils.getEncryptedSymmetricKey();
 
