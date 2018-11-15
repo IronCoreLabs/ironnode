@@ -7,6 +7,7 @@ import SDKError from "../lib/SDKError";
 import {Codec, transformKeyToBase64} from "../lib/Utils";
 import {computeEd25519PublicKey} from "../crypto/Recrypt";
 import {PublicKey, PrivateKey, Base64String, MessageSignature} from "../commonTypes";
+import {DeviceCreateOptions} from "../../ironnode";
 
 export interface ApiServerUserResponse {
     id: string;
@@ -74,13 +75,21 @@ function userCreate(jwt: string, userPublicKey: PublicKey<Buffer>, encryptedUser
 
 /**
  * Add a new set of device/signing/transform keys to the user
- * @param {string}       jwtToken      Users JWT token
- * @param {PublicKey}    userPublicKey Users master public key
- * @param {TransformKey} transformKey  Device transform key
- * @param {Uint8Array}   signature     Signature for device add request
- * @param {number}       timestamp     Timestamp of signature generation
+ * @param {string}              jwtToken      Users JWT token
+ * @param {PublicKey}           userPublicKey Users master public key
+ * @param {TransformKey}        transformKey  Device transform key
+ * @param {Uint8Array}          signature     Signature for device add request
+ * @param {number}              timestamp     Timestamp of signature generation
+ * @param {DeviceCreateOptions} options       Device create options.
  */
-function userDeviceAdd(jwtToken: string, userPublicKey: PublicKey<Buffer>, transformKey: TransformKey, signature: Buffer, timestamp: number) {
+function userDeviceAdd(
+    jwtToken: string,
+    userPublicKey: PublicKey<Buffer>,
+    transformKey: TransformKey,
+    signature: Buffer,
+    timestamp: number,
+    options: DeviceCreateOptions
+) {
     return {
         url: `users/devices`,
         options: {
@@ -94,6 +103,7 @@ function userDeviceAdd(jwtToken: string, userPublicKey: PublicKey<Buffer>, trans
                 userPublicKey: Codec.PublicKey.toBase64(userPublicKey),
                 device: {
                     transformKey: transformKeyToBase64(transformKey),
+                    name: options.deviceName || undefined,
                 },
                 signature: Codec.Buffer.toBase64(signature),
             }),
@@ -160,8 +170,15 @@ export default {
      * @param {Buffer}       signature     Calculated signature to validate request
      * @param {number}       timestamp     Timestamp of signature generation
      */
-    callUserDeviceAdd(jwtToken: string, userPublicKey: PublicKey<Buffer>, transformKey: TransformKey, signature: Buffer, timestamp: number) {
-        const {url, options, errorCode} = userDeviceAdd(jwtToken, userPublicKey, transformKey, signature, timestamp);
+    callUserDeviceAdd(
+        jwtToken: string,
+        userPublicKey: PublicKey<Buffer>,
+        transformKey: TransformKey,
+        signature: Buffer,
+        timestamp: number,
+        createOptions: DeviceCreateOptions
+    ) {
+        const {url, options, errorCode} = userDeviceAdd(jwtToken, userPublicKey, transformKey, signature, timestamp, createOptions);
         return ApiRequest.fetchJSON<UserUpdateResponseType>(url, errorCode, options);
     },
 

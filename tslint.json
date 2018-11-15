@@ -30,9 +30,8 @@
         "arrow-return-shorthand": false,
         "no-namespace": [true, "allow-declarations"],
         "no-var-keyword": true,
-        "ban": true,
+        "ban": [true, "fdescribe"],
         "cyclomatic-complexity": [true, 10],
-        "prefer-const": true,
-        "no-var-keyword": true
+        "prefer-const": true
     }
 }

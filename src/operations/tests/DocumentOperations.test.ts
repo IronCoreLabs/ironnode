@@ -276,7 +276,9 @@ describe("DocumentOperations", () => {
         test("encrypts document to current user and returns expected document package", () => {
             const encryptedSymKey = TestUtils.getEncryptedSymmetricKey();
 
-            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptBytes");
+            const encryptBytes = jest.spyOn(DocumentCrypto, "encryptBytes");
+            encryptBytes.mockReturnValue(Future.of(Buffer.alloc(33)));
+            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
             encryptSpy.mockReturnValue(
                 Future.of({
                     userAccessKeys: [{id: "10", key: encryptedSymKey}],
@@ -292,17 +294,21 @@ describe("DocumentOperations", () => {
                 ({document, documentID, documentName}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toBeUndefined();
-                    expect(document).toEqual(Buffer.alloc(55));
+                    expect(document).toEqual(Buffer.alloc(33));
                     const currentUserRecord = {
                         id: "10",
                         masterPublicKey: TestUtils.accountPublicBytesBase64,
                     };
-                    expect(DocumentCrypto.encryptBytes).toHaveBeenCalledWith(
-                        generateDocumentHeaderBytes("my doc ID", TestUtils.testSegmentID),
-                        Buffer.from([]),
+                    expect(DocumentCrypto.encryptPlaintextToUsersAndGroups).toHaveBeenCalledWith(
+                        jasmine.any(Buffer),
                         [currentUserRecord],
                         [],
                         ApiState.signingKeys().privateKey
+                    );
+                    expect(DocumentCrypto.encryptBytes).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("my doc ID", TestUtils.testSegmentID),
+                        Buffer.from([]),
+                        jasmine.any(Buffer)
                     );
                     expect(DocumentApi.callDocumentCreateApi).toHaveBeenCalledWith("my doc ID", [{id: "10", key: encryptedSymKey}], [], "");
                 }
@@ -313,12 +319,14 @@ describe("DocumentOperations", () => {
             const docName = "my doc";
             const encryptedSymKey = TestUtils.getEncryptedSymmetricKey();
 
-            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptBytes");
+            const encryptBytes = jest.spyOn(DocumentCrypto, "encryptBytes");
+            encryptBytes.mockReturnValue(Future.of(Buffer.alloc(33)));
+            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
             encryptSpy.mockReturnValue(
                 Future.of({
                     userAccessKeys: [{id: "10", key: encryptedSymKey}],
                     groupAccessKeys: [],
-                    encryptedDocument: Buffer.alloc(55),
+                    encryptedDocument: Buffer.alloc(33),
                 })
             );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
@@ -329,7 +337,7 @@ describe("DocumentOperations", () => {
                 ({document, documentID, documentName}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toEqual(docName);
-                    expect(document).toEqual(Buffer.alloc(55));
+                    expect(document).toEqual(Buffer.alloc(33));
                 }
             );
         });
@@ -352,7 +360,10 @@ describe("DocumentOperations", () => {
                     result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
                 })
             );
-            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptBytes");
+
+            const encryptBytes = jest.spyOn(DocumentCrypto, "encryptBytes");
+            encryptBytes.mockReturnValue(Future.of(Buffer.alloc(33)));
+            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
             encryptSpy.mockReturnValue(
                 Future.of({
                     userAccessKeys: [{id: "10", key: encryptedSymKey}],
@@ -368,7 +379,7 @@ describe("DocumentOperations", () => {
                 ({documentID, documentName, document}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toBeUndefined();
-                    expect(document).toEqual(Buffer.alloc(55));
+                    expect(document).toEqual(Buffer.alloc(33));
 
                     const userKeyList = [
                         {id: "user-55", masterPublicKey: TestUtils.getEmptyPublicKeyString()},
@@ -380,6 +391,10 @@ describe("DocumentOperations", () => {
                     expect(DocumentCrypto.encryptBytes).toHaveBeenCalledWith(
                         generateDocumentHeaderBytes("doc key", TestUtils.testSegmentID),
                         Buffer.from([88, 73, 92]),
+                        jasmine.any(Buffer)
+                    );
+                    expect(DocumentCrypto.encryptPlaintextToUsersAndGroups).toHaveBeenCalledWith(
+                        jasmine.any(Buffer),
                         userKeyList,
                         groupKeyList,
                         ApiState.signingKeys().privateKey
@@ -419,7 +434,9 @@ describe("DocumentOperations", () => {
         test("encrypts document to current user and returns expected document package", () => {
             const encryptedSymKey = TestUtils.getEncryptedSymmetricKey();
 
-            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptStream");
+            const encryptStreamSpy = jest.spyOn(DocumentCrypto, "encryptStream");
+            encryptStreamSpy.mockReturnValue(Future.of(undefined));
+            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
             encryptSpy.mockReturnValue(
                 Future.of({
                     userAccessKeys: [{id: "10", key: encryptedSymKey}],
@@ -438,13 +455,17 @@ describe("DocumentOperations", () => {
                         id: "10",
                         masterPublicKey: TestUtils.accountPublicBytesBase64,
                     };
-                    expect(DocumentCrypto.encryptStream).toHaveBeenCalledWith(
-                        generateDocumentHeaderBytes("my doc ID", TestUtils.testSegmentID),
-                        "inputStream",
-                        "outputStream",
+                    expect(DocumentCrypto.encryptPlaintextToUsersAndGroups).toHaveBeenCalledWith(
+                        jasmine.any(Buffer),
                         [currentUserRecord],
                         [],
                         ApiState.signingKeys().privateKey
+                    );
+                    expect(DocumentCrypto.encryptStream).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("my doc ID", TestUtils.testSegmentID),
+                        jasmine.any(Buffer),
+                        "inputStream",
+                        "outputStream"
                     );
                     expect(DocumentApi.callDocumentCreateApi).toHaveBeenCalledWith("my doc ID", [{id: "10", key: encryptedSymKey}], [], "");
                 }
@@ -455,7 +476,9 @@ describe("DocumentOperations", () => {
             const docName = "my doc";
             const encryptedSymKey = TestUtils.getEncryptedSymmetricKey();
 
-            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptStream");
+            const encryptStreamSpy = jest.spyOn(DocumentCrypto, "encryptStream");
+            encryptStreamSpy.mockReturnValue(Future.of(undefined));
+            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
             encryptSpy.mockReturnValue(
                 Future.of({
                     userAccessKeys: [{id: "10", key: encryptedSymKey}],
@@ -492,7 +515,9 @@ describe("DocumentOperations", () => {
                     result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
                 })
             );
-            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptStream");
+            const encryptStreamSpy = jest.spyOn(DocumentCrypto, "encryptStream");
+            encryptStreamSpy.mockReturnValue(Future.of(undefined));
+            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
             encryptSpy.mockReturnValue(
                 Future.of({
                     userAccessKeys: [{id: "10", key: encryptedSymKey}],
@@ -515,13 +540,17 @@ describe("DocumentOperations", () => {
                     ];
                     const groupKeyList = [{id: "group-20", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
 
-                    expect(DocumentCrypto.encryptStream).toHaveBeenCalledWith(
-                        generateDocumentHeaderBytes("doc key", TestUtils.testSegmentID),
-                        "inputStream",
-                        "outputStream",
+                    expect(DocumentCrypto.encryptPlaintextToUsersAndGroups).toHaveBeenCalledWith(
+                        jasmine.any(Buffer),
                         userKeyList,
                         groupKeyList,
                         ApiState.signingKeys().privateKey
+                    );
+                    expect(DocumentCrypto.encryptStream).toHaveBeenCalledWith(
+                        generateDocumentHeaderBytes("doc key", TestUtils.testSegmentID),
+                        jasmine.any(Buffer),
+                        "inputStream",
+                        "outputStream"
                     );
                     expect(DocumentApi.callDocumentCreateApi).toHaveBeenCalledWith("doc key", [{id: "10", key: encryptedSymKey}], [], "");
                     done();
@@ -550,6 +579,47 @@ describe("DocumentOperations", () => {
                     done();
                 },
                 () => fail("Should not call create when any user or group could not be found")
+            );
+        });
+
+        test("doesnt run encrypt stream if document create call fails", (done) => {
+            const docSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
+            docSpy.mockReturnValue(Future.reject(new Error("forced request failure")));
+
+            const encryptedSymKey = TestUtils.getEncryptedSymmetricKey();
+
+            const userSpy = jest.spyOn(UserApi, "callUserKeyListApi");
+            userSpy.mockReturnValue(
+                Future.of({
+                    result: [
+                        {id: "user-55", userMasterPublicKey: TestUtils.getEmptyPublicKeyString()},
+                        {id: "user-33", userMasterPublicKey: TestUtils.getEmptyPublicKeyString()},
+                    ],
+                })
+            );
+            const groupSpy = jest.spyOn(GroupApi, "callGroupKeyListApi");
+            groupSpy.mockReturnValue(
+                Future.of({
+                    result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
+                })
+            );
+            const encryptStreamSpy = jest.spyOn(DocumentCrypto, "encryptStream");
+            encryptStreamSpy.mockReturnValue(Future.of(undefined));
+            const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
+            encryptSpy.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [{id: "10", key: encryptedSymKey}],
+                    groupAccessKeys: [],
+                })
+            );
+
+            DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", ["user-55", "user-33"], ["user-33"]).engage(
+                (e: any) => {
+                    expect(e.message).toEqual("forced request failure");
+                    expect(DocumentCrypto.encryptStream).not.toHaveBeenCalled();
+                    done();
+                },
+                () => fail("Should not succeed when API request fails.")
             );
         });
     });

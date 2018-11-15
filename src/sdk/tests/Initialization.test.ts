@@ -172,7 +172,7 @@ describe("Initialization", () => {
         test("rejects if user doesnt exist", () => {
             jest.spyOn(UserApi, "callUserVerifyApi").mockReturnValue(Future.of(undefined));
 
-            Initialization.generateDevice("jwt", "password").engage(
+            Initialization.generateDevice("jwt", "password", {deviceName: ""}).engage(
                 (e) => {
                     expect(e.code).toEqual(0);
                 },
@@ -193,7 +193,7 @@ describe("Initialization", () => {
                 })
             );
 
-            Initialization.generateDevice("jwt", "password").engage(
+            Initialization.generateDevice("jwt", "password", {deviceName: ""}).engage(
                 (e) => {
                     expect(e.code).toEqual(ErrorCodes.USER_DEVICE_KEY_GENERATION_FAILURE);
                     done();
@@ -220,7 +220,7 @@ describe("Initialization", () => {
                 })
             );
 
-            Initialization.generateDevice("jwt", "password").engage(
+            Initialization.generateDevice("jwt", "password", {deviceName: ""}).engage(
                 (e) => fail(e),
                 (result: any) => {
                     expect(result.accountID).toEqual("353");
@@ -241,7 +241,42 @@ describe("Initialization", () => {
                         {x: expect.any(Buffer), y: expect.any(Buffer)},
                         expect.any(Object),
                         expect.any(Buffer),
-                        expect.any(Number)
+                        expect.any(Number),
+                        {deviceName: ""}
+                    );
+                    done();
+                }
+            );
+        });
+
+        test("should accept user device name in options object", (done) => {
+            jest.spyOn(UserApi, "callUserVerifyApi").mockReturnValue(
+                Future.of({
+                    id: "353",
+                    segmentId: 3,
+                    status: 232,
+                    userMasterPublicKey: TestUtils.accountPublicBytesBase64,
+                    userPrivateKey: Buffer.alloc(96).toString("base64"),
+                })
+            );
+            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(Future.of(Buffer.alloc(32)));
+            const deviceAddSpy = jest.spyOn(UserApi, "callUserDeviceAdd");
+            deviceAddSpy.mockReturnValue(
+                Future.of({
+                    devicePublicKey: TestUtils.getEmptyPublicKey(),
+                })
+            );
+
+            Initialization.generateDevice("jwt", "password", {deviceName: "OSX"}).engage(
+                (e) => fail(e),
+                () => {
+                    expect(deviceAddSpy).toHaveBeenCalledWith(
+                        "jwt",
+                        {x: expect.any(Buffer), y: expect.any(Buffer)},
+                        expect.any(Object),
+                        expect.any(Buffer),
+                        expect.any(Number),
+                        {deviceName: "OSX"}
                     );
                     done();
                 }

@@ -223,20 +223,25 @@ export function getDocumentIDFromStream(inputStream: NodeJS.ReadableStream): Fut
 
 /**
  * Create a new encrypted document. Use the provided ID and name to create it and encrypt it to the provided users and groups as well
- * as the currently authenticated account.
+ * as the currently authenticated account. Attempts to encrypt the bytes before creating the document within ironcore-id.
  */
 export function encryptBytes(documentID: string, document: Buffer, documentName: string, userGrants: string[], groupGrants: string[]) {
-    return getKeyListsForUsersAndGroups(userGrants, groupGrants)
-        .flatMap(({userKeys, groupKeys}) => {
+    return Future.gather2(getKeyListsForUsersAndGroups(userGrants, groupGrants), DocumentCrypto.generateDocumentKeys())
+        .flatMap(([{userKeys, groupKeys}, {documentPlaintext, documentSymmetricKey}]) => {
             const [userPublicKeys, groupPublicKeys] = normalizeUserAndGroupPublicKeyList(userKeys, groupKeys);
             const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
-            return DocumentCrypto.encryptBytes(documentHeader, document, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey);
+            return Future.gather2(
+                DocumentCrypto.encryptPlaintextToUsersAndGroups(documentPlaintext, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey),
+                DocumentCrypto.encryptBytes(documentHeader, document, documentSymmetricKey)
+            );
         })
-        .flatMap(({userAccessKeys, groupAccessKeys, encryptedDocument}) => {
-            return DocumentApi.callDocumentCreateApi(documentID, userAccessKeys, groupAccessKeys, documentName).map((createdDocument) => ({
-                createdDocument,
-                encryptedDocument,
-            }));
+        .flatMap(([createPayload, encryptedDocument]) => {
+            return DocumentApi.callDocumentCreateApi(documentID, createPayload.userAccessKeys, createPayload.groupAccessKeys, documentName).map(
+                (createdDocument) => ({
+                    createdDocument,
+                    encryptedDocument,
+                })
+            );
         })
         .map(({createdDocument, encryptedDocument}) => ({
             documentID: createdDocument.id,
@@ -246,7 +251,9 @@ export function encryptBytes(documentID: string, document: Buffer, documentName:
 }
 
 /**
- * Encrypt a stream of data and write it out to the provided writable stream. Optionally will share the document with the provided users and groups.
+ * Encrypt a stream of data and write it out to the provided writable stream. Optionally will share the document with the provided users and groups. Creates
+ * the document within ironcore-id before it starts encrypting the stream so that we don't end up streaming out encrypted content that we won't ever be able
+ * to decrypt.
  */
 export function encryptStream(
     documentID: string,
@@ -256,17 +263,28 @@ export function encryptStream(
     userGrants: string[],
     groupGrants: string[]
 ) {
-    return getKeyListsForUsersAndGroups(userGrants, groupGrants)
-        .flatMap(({userKeys, groupKeys}) => {
+    return Future.gather2(getKeyListsForUsersAndGroups(userGrants, groupGrants), DocumentCrypto.generateDocumentKeys())
+        .flatMap(([{userKeys, groupKeys}, {documentPlaintext, documentSymmetricKey}]) => {
             const [userPublicKeys, groupPublicKeys] = normalizeUserAndGroupPublicKeyList(userKeys, groupKeys);
-            const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
-            return DocumentCrypto.encryptStream(documentHeader, inputStream, outputStream, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey);
+            return DocumentCrypto.encryptPlaintextToUsersAndGroups(documentPlaintext, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey).map(
+                (createPayload) => ({
+                    createPayload,
+                    documentSymmetricKey,
+                })
+            );
         })
-        .flatMap(({userAccessKeys, groupAccessKeys}) => DocumentApi.callDocumentCreateApi(documentID, userAccessKeys, groupAccessKeys, documentName))
-        .map((createdDocument) => ({
-            documentID: createdDocument.id,
-            documentName: createdDocument.name,
-        }));
+        .flatMap(({createPayload, documentSymmetricKey}) => {
+            return DocumentApi.callDocumentCreateApi(documentID, createPayload.userAccessKeys, createPayload.groupAccessKeys, documentName).map(
+                (createdDocument) => ({createdDocument, documentSymmetricKey})
+            );
+        })
+        .flatMap(({createdDocument, documentSymmetricKey}) => {
+            const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
+            return DocumentCrypto.encryptStream(documentHeader, documentSymmetricKey, inputStream, outputStream).map(() => ({
+                documentID: createdDocument.id,
+                documentName: createdDocument.name,
+            }));
+        });
 }
 
 /**

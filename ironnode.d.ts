@@ -10,6 +10,9 @@ export interface DocumentAccessList {
     groups?: Array<{id: string}>;
 }
 
+export interface DeviceCreateOptions {
+    deviceName: string;
+}
 export interface DocumentCreateOptions {
     documentID?: string;
     documentName?: string;
@@ -155,5 +158,5 @@ export interface DeviceDetails {
 export namespace User {
     export function verify(jwt: string): Promise<ApiUserResponse | undefined>;
     export function create(jwt: string, password: string): Promise<ApiUserResponse>;
-    export function generateDeviceKeys(jwt: string, password: string): Promise<DeviceDetails>;
+    export function generateDeviceKeys(jwt: string, password: string, options?: DeviceCreateOptions): Promise<DeviceDetails>;
 }

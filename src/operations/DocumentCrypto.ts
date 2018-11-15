@@ -6,56 +6,46 @@ import * as AES from "../crypto/AES";
 import {TransformedEncryptedMessage, UserOrGroupPublicKey, PrivateKey} from "../commonTypes";
 
 /**
- * Encrypts the given bytes and returns a package of the encrypted bytes and user/group transform keys.
+ * Generate a plaintext and an AES symmetric key that can be used to encrypt a new document.
  */
-export function encryptBytes(
-    documentHeader: Buffer,
-    document: Buffer,
-    userKeyList: UserOrGroupPublicKey[],
-    groupKeyList: UserOrGroupPublicKey[],
-    privateSigningKey: PrivateKey<Buffer>
-) {
-    return Recrypt.generateDocumentKey()
-        .flatMap(([documentKeyPlaintext, documentSymmetricKey]) => {
-            return Future.gather3(
-                Recrypt.encryptPlaintextToList(documentKeyPlaintext, userKeyList, privateSigningKey),
-                Recrypt.encryptPlaintextToList(documentKeyPlaintext, groupKeyList, privateSigningKey),
-                AES.encryptBytes(documentHeader, document, documentSymmetricKey)
-            );
-        })
-        .map(([encryptedUserKeys, encryptedGroupKeys, encryptedDocument]) => ({
-            userAccessKeys: encryptedUserKeys,
-            groupAccessKeys: encryptedGroupKeys,
-            encryptedDocument,
-        }))
-        .errorMap((error) => new SDKError(error, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
+export function generateDocumentKeys() {
+    return Recrypt.generateDocumentKey().map(([documentPlaintext, documentSymmetricKey]) => ({documentPlaintext, documentSymmetricKey}));
 }
 
 /**
- * Encrypt a stream from the provided input stream and write it encrypted content to the provided output stream. Returns
- * the user or group transform keys if this document is being shared upon creation.
+ * Encrypt the provided document plaintext to the provided list of users and groups. Returns the encrypted user and group keys.
  */
-export function encryptStream(
-    documentHeader: Buffer,
-    inputStream: NodeJS.ReadableStream,
-    outputStream: NodeJS.WritableStream,
+export function encryptPlaintextToUsersAndGroups(
+    documentPlaintext: Buffer,
     userKeyList: UserOrGroupPublicKey[],
     groupKeyList: UserOrGroupPublicKey[],
     privateSigningKey: PrivateKey<Buffer>
 ) {
-    return Recrypt.generateDocumentKey()
-        .flatMap(([documentKeyPlaintext, documentSymmetricKey]) => {
-            return Future.gather3(
-                Recrypt.encryptPlaintextToList(documentKeyPlaintext, userKeyList, privateSigningKey),
-                Recrypt.encryptPlaintextToList(documentKeyPlaintext, groupKeyList, privateSigningKey),
-                AES.encryptStream(documentHeader, inputStream, outputStream, documentSymmetricKey)
-            );
-        })
+    return Future.gather2(
+        Recrypt.encryptPlaintextToList(documentPlaintext, userKeyList, privateSigningKey),
+        Recrypt.encryptPlaintextToList(documentPlaintext, groupKeyList, privateSigningKey)
+    )
         .map(([encryptedUserKeys, encryptedGroupKeys]) => ({
             userAccessKeys: encryptedUserKeys,
             groupAccessKeys: encryptedGroupKeys,
         }))
         .errorMap((error) => new SDKError(error, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
+}
+
+/**
+ * Encrypts the given bytes given the symmetric key to use for encryption. Prepends the provided document header to the front of the encrypted document.
+ */
+export function encryptBytes(documentHeader: Buffer, document: Buffer, documentSymmetricKey: Buffer) {
+    return AES.encryptBytes(documentHeader, document, documentSymmetricKey).errorMap((error) => new SDKError(error, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
+}
+
+/**
+ * Encrypt a stream using the provided document symmetric key from the provided input stream and write it encrypted content to the provided output stream.
+ */
+export function encryptStream(documentHeader: Buffer, documentSymmetricKey: Buffer, inputStream: NodeJS.ReadableStream, outputStream: NodeJS.WritableStream) {
+    return AES.encryptStream(documentHeader, inputStream, outputStream, documentSymmetricKey).errorMap(
+        (error) => new SDKError(error, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE)
+    );
 }
 
 /**

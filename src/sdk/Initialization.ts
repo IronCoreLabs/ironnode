@@ -7,7 +7,7 @@ import {Codec} from "../lib/Utils";
 import {encryptUserMasterKey, decryptUserMasterKey} from "../crypto/AES";
 import * as Recrypt from "../crypto/Recrypt";
 import {Base64String, KeyPair} from "../commonTypes";
-import {DeviceDetails, ApiUserResponse} from "../../ironnode";
+import {DeviceDetails, ApiUserResponse, DeviceCreateOptions} from "../../ironnode";
 import * as DocumentSDK from "./DocumentSDK";
 import * as GroupSDK from "./GroupSDK";
 import * as UserSDK from "./UserSDK";
@@ -117,7 +117,7 @@ export function createUser(jwt: string, password: string) {
  * Generate a new pair device and signing key pair for the user provided within the signed JWT and the password to decrypt their master private key. Generates
  * a new keypair, generates and stores a transform key for that user, and returns both the device and signing key pairs back to the caller.
  */
-export function generateDevice(jwt: string, password: string): Future<SDKError, DeviceDetails> {
+export function generateDevice(jwt: string, password: string, options: DeviceCreateOptions): Future<SDKError, DeviceDetails> {
     return UserApi.callUserVerifyApi(jwt).flatMap((user) => {
         if (!user) {
             return Future.reject(new SDKError(new Error("No user exists for the provided ID."), 0));
@@ -126,20 +126,25 @@ export function generateDevice(jwt: string, password: string): Future<SDKError, 
         return decryptUserMasterKey(password, Codec.Buffer.fromBase64(user.userPrivateKey)).flatMap((privateKey) => {
             const userMasterKeyPair = {publicKey: Codec.PublicKey.fromBase64(user.userMasterPublicKey), privateKey};
             return generateDeviceAndTransformKeys(jwt, userMasterKeyPair).flatMap((deviceAdd) =>
-                UserApi.callUserDeviceAdd(jwt, userMasterKeyPair.publicKey, deviceAdd.transformKey, deviceAdd.signature.signature, deviceAdd.signature.ts).map(
-                    () => ({
-                        accountID: user.id,
-                        segmentID: user.segmentId,
-                        deviceKeys: {
-                            publicKey: Codec.PublicKey.toBase64(deviceAdd.deviceKeys.publicKey),
-                            privateKey: Codec.Buffer.toBase64(deviceAdd.deviceKeys.privateKey),
-                        },
-                        signingKeys: {
-                            publicKey: Codec.Buffer.toBase64(deviceAdd.signingKeys.publicKey),
-                            privateKey: Codec.Buffer.toBase64(deviceAdd.signingKeys.privateKey),
-                        },
-                    })
-                )
+                UserApi.callUserDeviceAdd(
+                    jwt,
+                    userMasterKeyPair.publicKey,
+                    deviceAdd.transformKey,
+                    deviceAdd.signature.signature,
+                    deviceAdd.signature.ts,
+                    options
+                ).map(() => ({
+                    accountID: user.id,
+                    segmentID: user.segmentId,
+                    deviceKeys: {
+                        publicKey: Codec.PublicKey.toBase64(deviceAdd.deviceKeys.publicKey),
+                        privateKey: Codec.Buffer.toBase64(deviceAdd.deviceKeys.privateKey),
+                    },
+                    signingKeys: {
+                        publicKey: Codec.Buffer.toBase64(deviceAdd.signingKeys.publicKey),
+                        privateKey: Codec.Buffer.toBase64(deviceAdd.signingKeys.privateKey),
+                    },
+                }))
             );
         });
     });

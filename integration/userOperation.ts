@@ -76,7 +76,7 @@ function createUser() {
  */
 function generateLocalDeviceKeys() {
     return inquirer
-        .prompt<{userID: string; password: string}>([
+        .prompt<{userID: string; password: string; deviceName: string}>([
             {
                 type: "input",
                 name: "userID",
@@ -87,9 +87,14 @@ function generateLocalDeviceKeys() {
                 name: "password",
                 message: "Input users private key escrow password: ",
             },
+            {
+                type: "input",
+                name: "deviceName",
+                message: "Provide a name for these device keys: ",
+            },
         ])
-        .then(({userID, password}) => {
-            return User.generateDeviceKeys(generateJWT(userID), password);
+        .then(({userID, password, deviceName}) => {
+            return User.generateDeviceKeys(generateJWT(userID), password, {deviceName});
         })
         .then((deviceDetails) => {
             fs.writeFileSync(path.join(__dirname, "./.device.json"), JSON.stringify(deviceDetails));

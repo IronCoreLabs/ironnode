@@ -1,5 +1,6 @@
 import * as Initialization from "./sdk/Initialization";
 import {Base64String} from "./commonTypes";
+import {DeviceCreateOptions} from "../ironnode";
 
 /**
  * Initialize the Node SDK by providing account information necessary to run operations from a server side context. Returns a Promise which
@@ -35,12 +36,14 @@ export const User = {
      * Generate a new pair of device keys for the user specified in the provided signed JWT. Takes the users password in order to decrypt their master
      * keys and generates a new device key pair as well as a transform key between their master key pair and their device key pair. Returns both the
      * device key pair and a signing key pair as base64 encoded strings as well as the users ID and the segment ID for the user. All of these fields can
-     * then be stored somewhere secure and passed in to run the `initialize` function in order for the current user to interact with the SDK.
-     * @param {string} jwt      Signed JWT for the user to sync
-     * @param {string} password Password to use to escrow the users private key
+     * then be stored somewhere secure and passed in to run the `initialize` function in order for the current user to interact with the SDK. Also allows
+     * the call to provide a readable "name" for this device.
+     * @param {string}              jwt      Signed JWT for the user to sync
+     * @param {string}              password Password to use to escrow the users private key
+     * @param {DeviceCreateOptions} options  Device create options.
      */
-    generateDeviceKeys(jwt: string, password: string) {
-        return Initialization.generateDevice(jwt, password).toPromise();
+    generateDeviceKeys(jwt: string, password: string, deviceOptions: DeviceCreateOptions = {deviceName: ""}) {
+        return Initialization.generateDevice(jwt, password, deviceOptions).toPromise();
     },
 };
 
