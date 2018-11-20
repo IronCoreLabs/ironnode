@@ -147,11 +147,11 @@ function userDeviceList(sign: MessageSignature, accountID: string) {
 }
 
 /**
- * Delete a device given it's ID
+ * Delete a users device keys
  */
-function userDeviceDelete(sign: MessageSignature, accountID: string, deviceID: number) {
+function userDeviceDelete(sign: MessageSignature, accountID: string, deviceID?: number) {
     return {
-        url: `users/${accountID}/devices/${deviceID}`,
+        url: `users/${accountID}/devices/${deviceID || "current"}`,
         options: {
             method: "DELETE",
             headers: {
@@ -238,7 +238,7 @@ export default {
     /**
      * Make request to delete a device given its ID. Only ever works when acting as the currently authenticated user of the SDK.
      */
-    callUserDeviceDeleteApi(deviceID: number) {
+    callUserDeviceDeleteApi(deviceID?: number) {
         const {accountID} = ApiState.accountAndSegmentIDs();
         const {url, options, errorCode} = userDeviceDelete(getSignatureHeader(), accountID, deviceID);
         return ApiRequest.fetchJSON<{id: number}>(url, errorCode, options);

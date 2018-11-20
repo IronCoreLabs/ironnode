@@ -35,8 +35,8 @@ export function getUserDevices() {
 }
 
 /**
- * Delete device keys from the users account given the ID.
+ * Delete device keys from the users account given the ID or omit to delete the device used to make the delete request.
  */
-export function deleteUserDevice(deviceID: number) {
+export function deleteUserDevice(deviceID?: number) {
     return UserApi.callUserDeviceDeleteApi(deviceID);
 }

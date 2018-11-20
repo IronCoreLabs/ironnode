@@ -134,7 +134,7 @@ export interface Group {
 export interface User {
     getPublicKey(users: string | string[]): Promise<UserPublicKeyGetResponse>;
     listDevices(): Promise<UserDeviceListResponse>;
-    deleteDevice(id: number): Promise<{id: number}>;
+    deleteDevice(id?: number): Promise<{id: number}>;
 }
 
 export interface SDK {

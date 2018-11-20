@@ -269,5 +269,23 @@ describe("UserApi", () => {
                 }
             );
         });
+
+        test("deletes the current device if no ID provided", (done) => {
+            const deviceDeleteResult = {id: 35352};
+            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(Future.of(deviceDeleteResult));
+
+            UserApi.callUserDeviceDeleteApi().engage(
+                (error) => done.fail(error),
+                (deletedDevice: any) => {
+                    expect(deletedDevice).toEqual(deviceDeleteResult);
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(
+                        `users/${TestUtils.testAccountID}/devices/current`,
+                        jasmine.any(Number),
+                        jasmine.any(Object)
+                    );
+                    done();
+                }
+            );
+        });
     });
 });
