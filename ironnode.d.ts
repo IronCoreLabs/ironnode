@@ -102,6 +102,7 @@ export interface UserDeviceListResponse {
         name: string;
         created: string;
         updated: string;
+        isCurrentDevice: boolean;
     }>;
 }
 
