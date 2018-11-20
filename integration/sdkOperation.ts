@@ -32,6 +32,8 @@ const topLevelPrompt = {
         {name: "Group Remove Members", value: "groupRemoveMembers"},
         new inquirer.Separator(),
         {name: "User Public Key Lookup", value: "userKeyLookup"},
+        {name: "User Device List", value: "userDeviceList"},
+        {name: "User Device Delete", value: "userDeviceDelete"},
         new inquirer.Separator(),
         {name: "Quit", value: "quit"},
         new inquirer.Separator(),
@@ -77,6 +79,10 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Groups.removeMembers(IronNode);
         case "userKeyLookup":
             return Users.publicKeyLookup(IronNode);
+        case "userDeviceList":
+            return Users.deviceList(IronNode);
+        case "userDeviceDelete":
+            return Users.deviceDelete(IronNode);
         case "quit":
             return process.exit();
         default:

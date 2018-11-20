@@ -26,3 +26,17 @@ export function getUserPublicKeys(userList: string[]): Future<SDKError, UserPubl
         }, publicKeysById);
     });
 }
+
+/**
+ * Get a list of all the users devices.
+ */
+export function getUserDevices() {
+    return UserApi.callUserDeviceListApi();
+}
+
+/**
+ * Delete device keys from the users account given the ID.
+ */
+export function deleteUserDevice(deviceID: number) {
+    return UserApi.callUserDeviceDeleteApi(deviceID);
+}

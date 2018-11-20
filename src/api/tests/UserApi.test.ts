@@ -227,4 +227,47 @@ describe("UserApi", () => {
             );
         });
     });
+
+    describe("callUserDeviceListApi", () => {
+        test("calls API and returns response", (done) => {
+            const deviceListResult = {
+                result: [{id: 35, name: "device1", created: 123, updated: 345}, {id: 83, name: "device2", created: 678, updated: 901}],
+            };
+            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(Future.of(deviceListResult));
+
+            UserApi.callUserDeviceListApi().engage(
+                (error) => done.fail(error),
+                (deviceList: any) => {
+                    expect(deviceList).toEqual(deviceListResult);
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(`users/${TestUtils.testAccountID}/devices`, jasmine.any(Number), jasmine.any(Object));
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+                    done();
+                }
+            );
+        });
+    });
+
+    describe("callUserDeviceDeleteApi", () => {
+        test("calls delete API and returns response", (done) => {
+            const deviceDeleteResult = {id: 35352};
+            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(Future.of(deviceDeleteResult));
+
+            UserApi.callUserDeviceDeleteApi(35352).engage(
+                (error) => done.fail(error),
+                (deletedDevice: any) => {
+                    expect(deletedDevice).toEqual(deviceDeleteResult);
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(
+                        `users/${TestUtils.testAccountID}/devices/35352`,
+                        jasmine.any(Number),
+                        jasmine.any(Object)
+                    );
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+                    expect(request.method).toEqual("DELETE");
+                    done();
+                }
+            );
+        });
+    });
 });
