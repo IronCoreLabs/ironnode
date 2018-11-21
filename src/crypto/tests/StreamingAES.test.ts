@@ -41,7 +41,7 @@ describe("StreamingAES", () => {
         describe("getFlush", () => {
             test("should get AES final and auth tag and add to result", () => {
                 const se = new StreamingEncryption(Buffer.from([0, 0, 0, 0]), Buffer.alloc(32));
-
+                se.hasPushedOnIV = true;
                 const mockFlush = {push: jest.fn()};
                 const callback = jest.fn();
 
@@ -53,6 +53,29 @@ describe("StreamingAES", () => {
                 const flush = se.getFlush();
 
                 flush.call(mockFlush, callback);
+                expect(mockFlush.push).toHaveBeenCalledWith(Buffer.from([10, 30, 40, 50, 60, 70]));
+                expect(callback).toHaveBeenCalledWith();
+            });
+
+            test("should push on header and IV if no data was yet processed", () => {
+                const se = new StreamingEncryption(Buffer.from([0, 0, 0, 0]), Buffer.alloc(32));
+                const mockFlush = {push: jest.fn()};
+                const callback = jest.fn();
+
+                const finalSpy = jest.spyOn(se.cipher, "final");
+                finalSpy.mockReturnValue(Buffer.from([10]));
+                const authTagSpy = jest.spyOn(se.cipher, "getAuthTag");
+                authTagSpy.mockReturnValue(Buffer.from([30, 40, 50, 60, 70]));
+
+                const flush = se.getFlush();
+
+                flush.call(mockFlush, callback);
+                expect(mockFlush.push.mock.calls.length).toEqual(3);
+                //Doc header
+                expect(mockFlush.push).toHaveBeenCalledWith(Buffer.from([0, 0, 0, 0]));
+                //IV
+                expect(mockFlush.push).toHaveBeenCalledWith(Buffer.from([50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160]));
+                //cipher.final() + GCM tag
                 expect(mockFlush.push).toHaveBeenCalledWith(Buffer.from([10, 30, 40, 50, 60, 70]));
                 expect(callback).toHaveBeenCalledWith();
             });

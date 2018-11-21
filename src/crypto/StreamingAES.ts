@@ -47,6 +47,11 @@ export class StreamingEncryption {
         //tslint:disable-next-line:no-this-assignment
         const streamClass = this;
         return function flush(this: NodeJS.ReadStream, callback: TransformCallback) {
+            //This will only happen if the user is somehow streaming in an empty file. A pretty dumb use case I'll grant you, but it's easy enough to support
+            if (!streamClass.hasPushedOnIV) {
+                this.push(streamClass.documentHeader);
+                this.push(streamClass.iv);
+            }
             this.push(Buffer.concat([streamClass.cipher.final(), streamClass.cipher.getAuthTag()]));
             callback();
         };

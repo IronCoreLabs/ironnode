@@ -96,6 +96,15 @@ export interface GroupUserEditResponse {
 export interface UserPublicKeyGetResponse {
     [userID: string]: PublicKey<string> | null;
 }
+export interface UserDeviceListResponse {
+    result: Array<{
+        id: number;
+        name: string;
+        created: string;
+        updated: string;
+        isCurrentDevice: boolean;
+    }>;
+}
 
 export interface Document {
     list(): Promise<DocumentListResponse>;
@@ -124,6 +133,8 @@ export interface Group {
 
 export interface User {
     getPublicKey(users: string | string[]): Promise<UserPublicKeyGetResponse>;
+    listDevices(): Promise<UserDeviceListResponse>;
+    deleteDevice(id?: number): Promise<{id: number}>;
 }
 
 export interface SDK {

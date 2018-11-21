@@ -79,4 +79,33 @@ describe("UserOperations", () => {
             );
         });
     });
+
+    describe("getUserDevices", () => {
+        test("calls user device list API", () => {
+            const deviceList = jest.spyOn(UserApi, "callUserDeviceListApi");
+            deviceList.mockReturnValue(Future.of({result: [{id: 353, name: "device1"}]}));
+
+            UserOperations.getUserDevices().engage(
+                (e) => fail(e),
+                (result: any) => {
+                    expect(result).toEqual({result: [{id: 353, name: "device1"}]});
+                }
+            );
+        });
+    });
+
+    describe("deleteUserDevice", () => {
+        test("calls user device delete API", () => {
+            const deviceDelete = jest.spyOn(UserApi, "callUserDeviceDeleteApi");
+            deviceDelete.mockReturnValue(Future.of({id: 352}));
+
+            UserOperations.deleteUserDevice(352).engage(
+                (e) => fail(e),
+                (result: any) => {
+                    expect(result).toEqual({id: 352});
+                    expect(UserApi.callUserDeviceDeleteApi).toHaveBeenCalledWith(352);
+                }
+            );
+        });
+    });
 });

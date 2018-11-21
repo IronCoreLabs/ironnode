@@ -33,4 +33,36 @@ describe("UserSDK", () => {
                 .catch((e) => fail(e));
         });
     });
+
+    describe("listDevices", () => {
+        test("calls user operations", () => {
+            const spy = jest.spyOn(UserOperations, "getUserDevices");
+            spy.mockReturnValue(Future.of("resp"));
+            UserSDK.listDevices()
+                .then((resp) => {
+                    expect(resp).toEqual("resp");
+                    expect(UserOperations.getUserDevices).toHaveBeenCalledWith();
+                })
+                .catch((e) => fail(e));
+        });
+    });
+
+    describe("deleteDevice", () => {
+        test("fails when device ID isnt provided or isnt a number", () => {
+            expect(() => (UserSDK as any).deleteDevice()).toThrow();
+            expect(() => (UserSDK as any).deleteDevice("35")).toThrow();
+            expect(() => (UserSDK as any).deleteDevice([])).toThrow();
+        });
+
+        test("calls user operations method with device ID", () => {
+            const spy = jest.spyOn(UserOperations, "deleteUserDevice");
+            spy.mockReturnValue(Future.of("resp"));
+            UserSDK.deleteDevice(34)
+                .then((resp) => {
+                    expect(resp).toEqual("resp");
+                    expect(UserOperations.deleteUserDevice).toHaveBeenCalledWith(34);
+                })
+                .catch((e) => fail(e));
+        });
+    });
 });

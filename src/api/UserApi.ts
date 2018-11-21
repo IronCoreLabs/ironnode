@@ -7,7 +7,7 @@ import SDKError from "../lib/SDKError";
 import {Codec, transformKeyToBase64} from "../lib/Utils";
 import {computeEd25519PublicKey} from "../crypto/Recrypt";
 import {PublicKey, PrivateKey, Base64String, MessageSignature} from "../commonTypes";
-import {DeviceCreateOptions} from "../../ironnode";
+import {DeviceCreateOptions, UserDeviceListResponse} from "../../ironnode";
 
 export interface ApiServerUserResponse {
     id: string;
@@ -130,6 +130,38 @@ function userKeyList(sign: MessageSignature, userList: string[]) {
     };
 }
 
+/**
+ * Request a users list of devices.
+ */
+function userDeviceList(sign: MessageSignature, accountID: string) {
+    return {
+        url: `users/${accountID}/devices`,
+        options: {
+            method: "GET",
+            headers: {
+                Authorization: ApiRequest.getAuthHeader(sign),
+            },
+        },
+        errorCode: ErrorCodes.USER_DEVICE_LIST_REQUEST_FAILURE,
+    };
+}
+
+/**
+ * Delete a users device keys
+ */
+function userDeviceDelete(sign: MessageSignature, accountID: string, deviceID?: number) {
+    return {
+        url: `users/${accountID}/devices/${deviceID || "current"}`,
+        options: {
+            method: "DELETE",
+            headers: {
+                Authorization: ApiRequest.getAuthHeader(sign),
+            },
+        },
+        errorCode: ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE,
+    };
+}
+
 export default {
     /**
      * One off API method to get the master public key for the user who the SDK is acting as.
@@ -192,5 +224,23 @@ export default {
         }
         const {url, options, errorCode} = userKeyList(getSignatureHeader(), userList);
         return ApiRequest.fetchJSON<UserKeyListResponseType>(url, errorCode, options);
+    },
+
+    /**
+     * Make request to get a list of a users devices. Only ever works when acting as the currently authenticated user of the SDK.
+     */
+    callUserDeviceListApi(): Future<SDKError, UserDeviceListResponse> {
+        const {accountID} = ApiState.accountAndSegmentIDs();
+        const {url, options, errorCode} = userDeviceList(getSignatureHeader(), accountID);
+        return ApiRequest.fetchJSON<UserDeviceListResponse>(url, errorCode, options);
+    },
+
+    /**
+     * Make request to delete a device given its ID. Only ever works when acting as the currently authenticated user of the SDK.
+     */
+    callUserDeviceDeleteApi(deviceID?: number) {
+        const {accountID} = ApiState.accountAndSegmentIDs();
+        const {url, options, errorCode} = userDeviceDelete(getSignatureHeader(), accountID, deviceID);
+        return ApiRequest.fetchJSON<{id: number}>(url, errorCode, options);
     },
 };
