@@ -8,10 +8,10 @@ describe("IronNode", () => {
             expect(() => IronNode.initialize("abc def", 3, "aaaa", "aaaa")).toThrow();
             expect(() => IronNode.initialize("abc[]", 3, "aaaa", "aaaa")).toThrow();
             expect(() => IronNode.initialize("abc,def", 3, "aaaa", "aaaa")).toThrow();
-            expect(() => IronNode.initialize("abc def", "3" as any, "aaaa", "aaaa")).toThrow();
-            expect(() => IronNode.initialize("abc def", "3" as any, "", "aaaa")).toThrow();
-            expect(() => IronNode.initialize("abc def", "3" as any, "aaaa", "")).toThrow();
-            expect(() => IronNode.initialize("abc def", "3" as any, "aaaa", 94 as any)).toThrow();
+            expect(() => IronNode.initialize("abcdef", "3" as any, "aaaa", "aaaa")).toThrow();
+            expect(() => IronNode.initialize("abcdef", 3, "", "aaaa")).toThrow();
+            expect(() => IronNode.initialize("abcdef", 3, "aaaa", "")).toThrow();
+            expect(() => IronNode.initialize("abcdef", 3, "aaaa", 94 as any)).toThrow();
         });
 
         test("should call into init when all parameters appear valid", () => {
@@ -20,6 +20,39 @@ describe("IronNode", () => {
             IronNode.initialize("abc", 3, "aaaa", "aaaa")
                 .then((res) => {
                     expect(res).toEqual("init");
+                })
+                .catch((e) => fail(e));
+        });
+    });
+
+    describe("User", () => {
+        describe("verify", () => {
+            const verifySpy = jest.spyOn(Initialization, "userVerify");
+            verifySpy.mockReturnValue(Future.of("verify"));
+            IronNode.User.verify("jwt")
+                .then((res) => {
+                    expect(res).toEqual("verify");
+                })
+                .catch((e) => fail(e));
+        });
+
+        describe("create", () => {
+            const createSpy = jest.spyOn(Initialization, "createUser");
+            createSpy.mockReturnValue(Future.of("create"));
+            IronNode.User.create("jwt", "password")
+                .then((res) => {
+                    expect(res).toEqual("create");
+                })
+                .catch((e) => fail(e));
+        });
+
+        describe("generateDeviceKeys", () => {
+            const genDeviceSpy = jest.spyOn(Initialization, "generateDevice");
+            genDeviceSpy.mockReturnValue(Future.of("genDevice"));
+            IronNode.User.generateDeviceKeys("jwt", "password")
+                .then((res) => {
+                    expect(res).toEqual("genDevice");
+                    expect(Initialization.generateDevice).toHaveBeenCalledWith("jwt", "password", {deviceName: ""});
                 })
                 .catch((e) => fail(e));
         });
