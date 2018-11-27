@@ -1,6 +1,13 @@
 import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
 import {PublicKey, Base64String, DocumentHeader} from "../commonTypes";
-import {AES_IV_LENGTH, AES_GCM_TAG_LENGTH, DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER, HEADER_META_LENGTH_LENGTH, VERSION_HEADER_LENGTH} from "../Constants";
+import {
+    AES_IV_LENGTH,
+    AES_GCM_TAG_LENGTH,
+    DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER,
+    HEADER_META_LENGTH_LENGTH,
+    VERSION_HEADER_LENGTH,
+    ALLOWED_ID_CHAR_REGEX,
+} from "../Constants";
 import {DocumentAccessList} from "../../ironnode";
 
 export const Codec = {
@@ -74,15 +81,8 @@ export function validateID(id: string) {
     if (typeof id !== "string" || !id.length) {
         throw new Error(`Invalid ID provided. Expected a non-zero length string but got ${id}`);
     }
-}
-
-/**
- * Validates an ID both by length as well as checking that id doesn't container the character we use for delimiters
- */
-export function validateIDWithSeperators(id: string) {
-    validateID(id);
-    if (id.indexOf(",") !== -1) {
-        throw new Error(`Invalid ID provided. IDs cannot contain any commas.`);
+    if (!ALLOWED_ID_CHAR_REGEX.test(id)) {
+        throw new Error(`Invalid ID provided. Provided value includes invalid characters: '${id}'.`);
     }
 }
 

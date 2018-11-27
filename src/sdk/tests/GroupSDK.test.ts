@@ -21,6 +21,7 @@ describe("GroupSDK", () => {
         test("fails when group ID is invalid", () => {
             expect(() => GroupSDK.get(8 as any)).toThrow();
             expect(() => GroupSDK.get("")).toThrow();
+            expect(() => GroupSDK.get("`ID")).toThrow();
         });
 
         test("sends payload to frame", (done) => {
@@ -41,6 +42,7 @@ describe("GroupSDK", () => {
             expect(() => GroupSDK.create({groupID: 8} as any)).toThrow();
             expect(() => GroupSDK.create({groupID: []} as any)).toThrow();
             expect(() => GroupSDK.create({groupID: ",asega"} as any)).toThrow();
+            expect(() => GroupSDK.create({groupID: "\\sega"} as any)).toThrow();
         });
 
         test("sends create message to frame with default options if nothing is passed in", (done) => {
@@ -108,6 +110,7 @@ describe("GroupSDK", () => {
         test("fails validation if groupID or admin list is invalid", () => {
             expect(() => GroupSDK.addAdmins("", [])).toThrow();
             expect(() => GroupSDK.addAdmins("35", [])).toThrow();
+            expect(() => GroupSDK.addAdmins("(ID)]", [])).toThrow();
         });
 
         test("sends add admins message to frame", (done) => {
@@ -139,6 +142,7 @@ describe("GroupSDK", () => {
         test("fails validation if groupID or member list is invalid", () => {
             expect(() => GroupSDK.removeAdmins("", [])).toThrow();
             expect(() => GroupSDK.removeAdmins("35", [])).toThrow();
+            expect(() => GroupSDK.removeAdmins("3,5", ["ID2"])).toThrow();
         });
 
         test("sends remove members message to frame", (done) => {
@@ -170,6 +174,7 @@ describe("GroupSDK", () => {
         test("fails validation if groupID or member list is invalid", () => {
             expect(() => GroupSDK.addMembers("", [])).toThrow();
             expect(() => GroupSDK.addMembers("35", [])).toThrow();
+            expect(() => GroupSDK.addMembers("|$#?", ["id2"])).toThrow();
         });
 
         test("sends add members message to frame", (done) => {
@@ -201,6 +206,7 @@ describe("GroupSDK", () => {
         test("fails validation if groupID or member list is invalid", () => {
             expect(() => GroupSDK.removeMembers("", [])).toThrow();
             expect(() => GroupSDK.removeMembers("35", [])).toThrow();
+            expect(() => GroupSDK.removeMembers("8r%", ["ID1"])).toThrow();
         });
 
         test("sends remove members message to frame", (done) => {
