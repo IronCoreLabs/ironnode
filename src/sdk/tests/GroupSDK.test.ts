@@ -106,6 +106,44 @@ describe("GroupSDK", () => {
         });
     });
 
+    describe("update", () => {
+        test("fails validation if groupID is invalid", () => {
+            expect(() => GroupSDK.update("^groupID", {groupName: "abc"})).toThrow();
+            expect(() => GroupSDK.update("", {groupName: "abc"})).toThrow();
+            expect(() => GroupSDK.update("[groupID]", {groupName: "abc"})).toThrow();
+        });
+
+        test("fails validation if no group name provided", () => {
+            expect(() => GroupSDK.update("groupID", {} as any)).toThrow();
+            expect(() => GroupSDK.update("groupID", {groupName: ""})).toThrow();
+            expect(() => GroupSDK.update("groupID", {groupName: undefined} as any)).toThrow();
+        });
+
+        test("calls group operations to update group with new name", () => {
+            const updateSpy = jest.spyOn(GroupOperations, "update");
+            updateSpy.mockReturnValue(Future.of("updated group"));
+
+            GroupSDK.update("groupID", {groupName: "new name"})
+                .then((group) => {
+                    expect(group).toEqual("updated group");
+                    expect(GroupOperations.update).toHaveBeenLastCalledWith("groupID", "new name");
+                })
+                .catch((e) => fail(e));
+        });
+
+        test("calls group operations to clear name via null", () => {
+            const updateSpy = jest.spyOn(GroupOperations, "update");
+            updateSpy.mockReturnValue(Future.of("cleared name"));
+
+            GroupSDK.update("groupID", {groupName: null})
+                .then((group) => {
+                    expect(group).toEqual("cleared name");
+                    expect(GroupOperations.update).toHaveBeenLastCalledWith("groupID", null);
+                })
+                .catch((e) => fail(e));
+        });
+    });
+
     describe("addAdmins", () => {
         test("fails validation if groupID or admin list is invalid", () => {
             expect(() => GroupSDK.addAdmins("", [])).toThrow();

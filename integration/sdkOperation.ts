@@ -26,6 +26,7 @@ const topLevelPrompt = {
         {name: "Group List", value: "groupList"},
         {name: "Group Get", value: "groupGet"},
         {name: "Group Create", value: "groupCreate"},
+        {name: "Group Update", value: "groupUpdate"},
         {name: "Group Add Admins", value: "groupAddAdmins"},
         {name: "Group Remove Admins", value: "groupRemoveAdmins"},
         {name: "Group Add Members", value: "groupAddMembers"},
@@ -69,6 +70,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Groups.get(IronNode);
         case "groupCreate":
             return Groups.create(IronNode);
+        case "groupUpdate":
+            return Groups.update(IronNode);
         case "groupAddAdmins":
             return Groups.addAdmins(IronNode);
         case "groupRemoveAdmins":

@@ -1,13 +1,15 @@
-import {ed25519Sign} from "../crypto/Recrypt";
 import Future from "futurejs";
 import fetch, {RequestInit, Response} from "node-fetch";
+import {ed25519Sign} from "../crypto/Recrypt";
 import SDKError from "../lib/SDKError";
 import {Codec} from "../lib/Utils";
+import {ErrorCodes} from "../Constants";
 import {MessageSignature, SigningKeyPair} from "../commonTypes";
 
 const SIGNATURE_VERSION = 1;
 //const IRONCORE_ID_API_BASE_URL = "https://api.ironcorelabs.com/api/1/";
 const IRONCORE_ID_API_BASE_URL = "http://localhost:9090/api/1/";
+const CLOUDFLARE_RATE_LIMIT_STATUS_CODE = 429; //support.cloudflare.com/hc/en-us/articles/115001635128-Configuring-Rate-Limiting-in-the-Cloudflare-Dashboard#basic
 
 type ApiErrorList = Array<{
     message: string;
@@ -44,6 +46,10 @@ export function fetchJSON<ResponseType>(url: string, failureErrorCode: number, o
                 return Future.tryP(() => response.json()).errorMap(
                     () => new SDKError(new Error("Failed to parse successful response JSON."), failureErrorCode)
                 );
+            }
+            if (response.status === CLOUDFLARE_RATE_LIMIT_STATUS_CODE) {
+                //Map a Cloudflare rate limit response code to a special error code
+                return Future.reject(new SDKError(new Error("Request was rate limited from too many requests."), ErrorCodes.REQUEST_RATE_LIMITED));
             }
             return parseErrorFromFailedResponse(response, failureErrorCode);
         });

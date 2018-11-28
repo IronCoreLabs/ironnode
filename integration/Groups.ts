@@ -102,6 +102,23 @@ export function create(IronNode: SDK) {
 }
 
 /**
+ * Update the name of an existing group to a new name or clear out the value.
+ */
+export function update(IronNode: SDK) {
+    return getFormattedGroupList(IronNode, true)
+        .then(({id}) => {
+            return inquirer
+                .prompt<{newName: string | null}>({
+                    name: "newName",
+                    type: "input",
+                    message: "New Name (leave blank to clear name field):",
+                })
+                .then(({newName}) => IronNode.group.update(id, {groupName: newName || null}));
+        })
+        .then(log);
+}
+
+/**
  * Add admins to a group that the user is an admin of.
  */
 export function addAdmins(IronNode: SDK) {

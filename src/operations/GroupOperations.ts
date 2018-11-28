@@ -15,10 +15,10 @@ export interface InteralGroupCreateOptions extends GroupCreateOptions {
 }
 
 /**
- * Type guard to determine if provided group contains the full response meaning the user is either an admin or member.
+ * Type guard to determine if provided group contains the full response of admin and member IDs.
  */
 function isFullGroupResponse(group: GroupApiBasicResponse | GroupApiFullDetailResponse): group is GroupApiFullDetailResponse {
-    return group.permissions.length > 0;
+    return Array.isArray((group as GroupApiFullDetailResponse).adminIds);
 }
 
 /**
@@ -49,15 +49,18 @@ function mapOperationToSuccessAndFailureList(
  * @param {GroupResponse} group Detailed internal group representation returned from create or get
  */
 function formatDetailedGroupResponse(group: GroupApiBasicResponse | GroupApiFullDetailResponse): GroupMetaResponse | GroupDetailResponse {
-    const groupBase = {groupID: group.id, groupName: group.name, isAdmin: false, isMember: false};
+    const groupBase = {
+        groupID: group.id,
+        groupName: group.name,
+        isAdmin: group.permissions.indexOf(GroupPermissions.ADMIN) !== -1,
+        isMember: group.permissions.indexOf(GroupPermissions.MEMBER) !== -1,
+    };
 
     if (isFullGroupResponse(group)) {
         return {
             ...groupBase,
             groupAdmins: group.adminIds,
             groupMembers: group.memberIds,
-            isAdmin: group.permissions.indexOf(GroupPermissions.ADMIN) !== -1,
-            isMember: group.permissions.indexOf(GroupPermissions.MEMBER) !== -1,
         };
     }
     return groupBase;
@@ -68,12 +71,7 @@ function formatDetailedGroupResponse(group: GroupApiBasicResponse | GroupApiFull
  */
 export function list(): Future<SDKError, GroupListResponse> {
     return GroupApi.callGroupListApi().map((groups) => ({
-        result: groups.result.map((group) => ({
-            groupID: group.id,
-            groupName: group.name,
-            isAdmin: group.permissions.indexOf(GroupPermissions.ADMIN) !== -1,
-            isMember: group.permissions.indexOf(GroupPermissions.MEMBER) !== -1,
-        })),
+        result: groups.result.map(formatDetailedGroupResponse),
     }));
 }
 
@@ -97,6 +95,15 @@ export function create(groupID: string, groupName: string, addAsMember: boolean)
             GroupApi.callGroupCreateApi(groupID, groupPublicKey, encryptedGroupKey, groupName, transformKey)
         )
         .map((createdGroup) => formatDetailedGroupResponse(createdGroup) as GroupDetailResponse);
+}
+
+/**
+ * Update group information. Currently only supports updating a groups name.
+ * @param {string}      groupID   ID of the group to update.
+ * @param {string|null} groupName New name for the group or null to clear a groups name.
+ */
+export function update(groupID: string, groupName: string | null) {
+    return GroupApi.callGroupUpdateApi(groupID, groupName).map(formatDetailedGroupResponse);
 }
 
 /**

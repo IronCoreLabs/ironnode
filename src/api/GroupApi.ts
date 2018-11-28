@@ -127,6 +127,26 @@ function groupCreate(sign: MessageSignature, groupID: string, createPayload: Gro
 }
 
 /**
+ * Update a group. Currently only supports updating the groups name to a new value or clearing it via null.
+ */
+function groupUpdate(sign: MessageSignature, groupID: string, groupName: string | null) {
+    return {
+        url: `groups/${encodeURIComponent(groupID)}`,
+        options: {
+            method: "PUT",
+            headers: {
+                Authorization: ApiRequest.getAuthHeader(sign),
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                name: groupName,
+            }),
+        },
+        errorCode: ErrorCodes.GROUP_UPDATE_REQUEST_FAILURE,
+    };
+}
+
+/**
  * Add the list of admins to the group by sending in their encrypted access keys
  * @param {MessageSignature}     sign        Signature for request validation
  * @param {string}               groupID     ID of the group to add admins
@@ -282,6 +302,14 @@ export default {
             transformKey,
         });
         return ApiRequest.fetchJSON<GroupCreateResponseType>(url, errorCode, options);
+    },
+
+    /**
+     * Update a groups name to a new value or clear it out with null
+     */
+    callGroupUpdateApi(groupID: string, groupName: string | null) {
+        const {url, options, errorCode} = groupUpdate(getSignatureHeader(), groupID, groupName);
+        return ApiRequest.fetchJSON<GroupApiBasicResponse>(url, errorCode, options);
     },
 
     /**

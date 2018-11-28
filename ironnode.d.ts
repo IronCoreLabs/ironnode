@@ -23,6 +23,9 @@ export interface GroupCreateOptions {
     groupName?: string;
     addAsMember?: boolean;
 }
+export interface GroupUpdateOptions {
+    groupName: string | null;
+}
 
 export type DocumentAssociation = "owner" | "fromUser" | "fromGroup";
 export interface DocumentVisibilityList {
@@ -125,6 +128,7 @@ export interface Group {
     list(): Promise<GroupListResponse>;
     get(groupID: string): Promise<GroupMetaResponse | GroupDetailResponse>;
     create(options?: GroupCreateOptions): Promise<GroupDetailResponse>;
+    update(groupID: string, options: GroupUpdateOptions): Promise<GroupMetaResponse>;
     addAdmins(groupID: string, adminList: string[]): Promise<GroupUserEditResponse>;
     removeAdmins(groupID: string, adminList: string[]): Promise<GroupUserEditResponse>;
     addMembers(groupID: string, userList: string[]): Promise<GroupUserEditResponse>;

@@ -244,6 +244,39 @@ describe("GroupApi", () => {
         });
     });
 
+    describe("callGroupUpdateApi", () => {
+        test("invokes API with expected arguments when providing a new name", () => {
+            GroupApi.callGroupUpdateApi("group-ID", "new group name").engage(
+                (e) => fail(e),
+                (group: any) => {
+                    expect(group).toEqual({foo: "bar"});
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("groups/group-ID", jasmine.any(Number), jasmine.any(Object));
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+
+                    expect(JSON.parse(request.body)).toEqual({
+                        name: "new group name",
+                    });
+                }
+            );
+        });
+
+        test("invokes API with expected parameters when clearing out group name", () => {
+            GroupApi.callGroupUpdateApi("group&ID", null).engage(
+                (e) => fail(e),
+                (group: any) => {
+                    expect(group).toEqual({foo: "bar"});
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("groups/group%26ID", jasmine.any(Number), jasmine.any(Object));
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+
+                    expect(JSON.parse(request.body)).toEqual({
+                        name: null,
+                    });
+                }
+            );
+        });
+    });
+
     describe("callAddAdminsApi", () => {
         test("invokes API with expected parameters", () => {
             const groupEncryptedPrivateKey = TestUtils.getEncryptedSymmetricKey();
