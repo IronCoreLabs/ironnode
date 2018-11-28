@@ -95,12 +95,17 @@ describe("Utils", () => {
     });
 
     describe("validateID", () => {
-        test("fails when ID is not a string with length", () => {
+        test("throws when ID is not a string with length", () => {
             expect(() => Utils.validateID(3 as any)).toThrow();
             expect(() => Utils.validateID(null as any)).toThrow();
             expect(() => Utils.validateID([] as any)).toThrow();
             expect(() => Utils.validateID(["id-12"] as any)).toThrow();
             expect(() => Utils.validateID("")).toThrow();
+        });
+
+        test("throws when ID is too long", () => {
+            const longID = "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdef";
+            expect(() => Utils.validateID(longID)).toThrow();
         });
 
         test("throws when provided ID contains invalid characters", () => {

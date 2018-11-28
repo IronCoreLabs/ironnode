@@ -16,7 +16,7 @@ export const DOCUMENT_ENCRYPTION_DETAILS_VERSION_NUMBER = 2;
 /**
  * Regex of allowed characters that users can provide as part of user, group, and document IDs.
  */
-export const ALLOWED_ID_CHAR_REGEX = /^[a-zA-Z0-9_.$#|@/:;=+'-]+$/;
+export const ALLOWED_ID_CHAR_REGEX = /^[a-zA-Z0-9_.$#|@/:;=+'-]{1,100}$/;
 
 export const GroupPermissions = {
     ADMIN: "admin",
