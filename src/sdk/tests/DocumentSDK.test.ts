@@ -21,15 +21,17 @@ describe("DocumentSDK", () => {
         test("throws error if document ID is invalid", () => {
             expect(() => DocumentSDK.getMetadata(null as any)).toThrow();
             expect(() => DocumentSDK.getMetadata("")).toThrow();
+            expect(() => DocumentSDK.getMetadata("id,id2")).toThrow();
+            expect(() => DocumentSDK.getMetadata("this id")).toThrow();
         });
 
         test("returns Promise invoking document metadata get", (done) => {
             const spy = jest.spyOn(DocumentOperations, "getMetadata");
             spy.mockReturnValue(Future.of("getmetadata"));
-            DocumentSDK.getMetadata("doc ID")
+            DocumentSDK.getMetadata("docID")
                 .then((result: any) => {
                     expect(result).toEqual("getmetadata");
-                    expect(DocumentOperations.getMetadata).toHaveBeenCalledWith("doc ID");
+                    expect(DocumentOperations.getMetadata).toHaveBeenCalledWith("docID");
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -66,8 +68,10 @@ describe("DocumentSDK", () => {
     });
 
     describe("decryptBytes", () => {
-        test("throws errors if no document ID", () => {
+        test("throws errors if no document ID or invalid document ID", () => {
             expect(() => DocumentSDK.decryptBytes("", "abc" as any)).toThrow();
+            expect(() => DocumentSDK.decryptBytes("<docID>", "abc" as any)).toThrow();
+            expect(() => DocumentSDK.decryptBytes("^docID", "abc" as any)).toThrow();
         });
 
         test("fails when encrypted document isnt of the right format", () => {
@@ -79,10 +83,10 @@ describe("DocumentSDK", () => {
         test("calls decrypt bytes api and returns response", (done) => {
             const spy = jest.spyOn(DocumentOperations, "decryptBytes");
             spy.mockReturnValue(Future.of("decryptBytes"));
-            DocumentSDK.decryptBytes("my doc", Buffer.alloc(35))
+            DocumentSDK.decryptBytes("mydoc", Buffer.alloc(35))
                 .then((result: any) => {
                     expect(result).toEqual("decryptBytes");
-                    expect(DocumentOperations.decryptBytes).toHaveBeenCalledWith("my doc", Buffer.alloc(35));
+                    expect(DocumentOperations.decryptBytes).toHaveBeenCalledWith("mydoc", Buffer.alloc(35));
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -127,6 +131,8 @@ describe("DocumentSDK", () => {
         test("throws errors if arguments are invalid", () => {
             expect(() => DocumentSDK.encryptBytes(Buffer.from([]))).toThrow();
             expect(() => DocumentSDK.encryptBytes(Buffer.from([12]), {documentID: 3} as any)).toThrow();
+            expect(() => DocumentSDK.encryptBytes(Buffer.from([12]), {documentID: "^id3,id2"})).toThrow();
+            expect(() => DocumentSDK.encryptBytes(Buffer.from([12]), {documentID: "~id2"})).toThrow();
         });
 
         test("passes bytes to api and returns response from document create", (done) => {
@@ -195,6 +201,8 @@ describe("DocumentSDK", () => {
 
         test("throws errors if arguments are invalid", () => {
             expect(() => DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any, {documentID: 3} as any)).toThrow();
+            expect(() => DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any, {documentID: "[ID3]"})).toThrow();
+            expect(() => DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any, {documentID: "!ID"})).toThrow();
         });
 
         test("passes stream to api and returns response from document create", (done) => {
@@ -251,7 +259,9 @@ describe("DocumentSDK", () => {
     describe("updateEncryptedBytes", () => {
         test("throws errors for invalid parameters", () => {
             expect(() => DocumentSDK.updateEncryptedBytes("", Buffer.from([]))).toThrow();
-            expect(() => DocumentSDK.updateEncryptedBytes("doc key", [] as any)).toThrow();
+            expect(() => DocumentSDK.updateEncryptedBytes("docid", [] as any)).toThrow();
+            expect(() => DocumentSDK.updateEncryptedBytes("doc id", [] as any)).toThrow();
+            expect(() => DocumentSDK.updateEncryptedBytes(" doc id ", [] as any)).toThrow();
         });
 
         test("calls updateEncryptedBytes API and returns expected result", (done) => {
@@ -259,10 +269,10 @@ describe("DocumentSDK", () => {
             const spy = jest.spyOn(DocumentOperations, "updateDocumentBytes");
             spy.mockReturnValue(Future.of("updateEncryptedBytes"));
 
-            DocumentSDK.updateEncryptedBytes("my doc", doc)
+            DocumentSDK.updateEncryptedBytes("mydoc", doc)
                 .then((result: any) => {
                     expect(result).toEqual("updateEncryptedBytes");
-                    expect(DocumentOperations.updateDocumentBytes).toHaveBeenCalledWith("my doc", doc);
+                    expect(DocumentOperations.updateDocumentBytes).toHaveBeenCalledWith("mydoc", doc);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -272,6 +282,7 @@ describe("DocumentSDK", () => {
     describe("updateEncryptedStream", () => {
         test("throws errors for invalid parameters", () => {
             expect(() => DocumentSDK.updateEncryptedStream("", "inputFile" as any, "outputFile" as any)).toThrow();
+            expect(() => DocumentSDK.updateEncryptedStream("doc&id", "inputFile" as any, "outputFile" as any)).toThrow();
         });
 
         test("calls updateEncryptedStream API and returns expected result", (done) => {
@@ -291,6 +302,7 @@ describe("DocumentSDK", () => {
     describe("updateName", () => {
         test("throws if ID does not look valid", () => {
             expect(() => DocumentSDK.updateName(null as any, "")).toThrow();
+            expect(() => DocumentSDK.updateName("docID?", "")).toThrow();
         });
 
         test("calls document update name API with values passed in", (done) => {
@@ -312,8 +324,9 @@ describe("DocumentSDK", () => {
             spy.mockReturnValue(Future.of("grantDocumentAccess"));
         });
 
-        test("throws errors if no document ID", () => {
+        test("throws errors if no document ID or ID is invalid", () => {
             expect(() => (DocumentSDK as any).grantAccess("", [])).toThrow();
+            expect(() => (DocumentSDK as any).grantAccess("docID^", [])).toThrow();
         });
 
         test("throws errors if list of user IDs has no valid values", () => {
@@ -324,33 +337,33 @@ describe("DocumentSDK", () => {
         });
 
         test("calls document grantAccess API with list of users", (done) => {
-            DocumentSDK.grantAccess("my doc", {users: [{id: "10"}, {id: "20"}]})
+            DocumentSDK.grantAccess("mydoc", {users: [{id: "10"}, {id: "20"}]})
                 .then((result: any) => {
                     expect(result).toEqual("grantDocumentAccess");
-                    expect(DocumentOperations.grantDocumentAccess).toHaveBeenCalledWith("my doc", ["10", "20"], []);
+                    expect(DocumentOperations.grantDocumentAccess).toHaveBeenCalledWith("mydoc", ["10", "20"], []);
                     done();
                 })
                 .catch((e) => fail(e.message));
         });
 
         test("dedupes array of ids provided", (done) => {
-            DocumentSDK.grantAccess("my doc", {
+            DocumentSDK.grantAccess("mydoc", {
                 users: [{id: "10"}, {id: "20"}, {id: "10"}, {id: "10"}, {id: "20"}],
                 groups: [{id: "35"}, {id: "32"}, {id: "35"}],
             })
                 .then((result: any) => {
                     expect(result).toEqual("grantDocumentAccess");
-                    expect(DocumentOperations.grantDocumentAccess).toHaveBeenCalledWith("my doc", ["10", "20"], ["35", "32"]);
+                    expect(DocumentOperations.grantDocumentAccess).toHaveBeenCalledWith("mydoc", ["10", "20"], ["35", "32"]);
                     done();
                 })
                 .catch((e) => fail(e.message));
         });
 
         test("passes in list of valid groups without users as well", (done) => {
-            DocumentSDK.grantAccess("my doc", {groups: [{id: "35"}, {id: "132"}, {id: "22"}]})
+            DocumentSDK.grantAccess("mydoc", {groups: [{id: "35"}, {id: "132"}, {id: "22"}]})
                 .then((result: any) => {
                     expect(result).toEqual("grantDocumentAccess");
-                    expect(DocumentOperations.grantDocumentAccess).toHaveBeenCalledWith("my doc", [], ["35", "132", "22"]);
+                    expect(DocumentOperations.grantDocumentAccess).toHaveBeenCalledWith("mydoc", [], ["35", "132", "22"]);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -363,8 +376,9 @@ describe("DocumentSDK", () => {
             spy.mockReturnValue(Future.of("revokeDocumentAccess"));
         });
 
-        test("throws errors if no document ID", () => {
+        test("throws errors if no document ID or invalid", () => {
             expect(() => (DocumentSDK as any).revokeAccess("", [])).toThrow();
+            expect(() => (DocumentSDK as any).revokeAccess('"id"', [])).toThrow();
         });
 
         test("throws errors if list of user IDs has no valid values", () => {
@@ -375,33 +389,33 @@ describe("DocumentSDK", () => {
         });
 
         test("calls document revokeAccess API with list of users", (done) => {
-            DocumentSDK.revokeAccess("my doc", {users: [{id: "10"}, {id: "20"}]})
+            DocumentSDK.revokeAccess("mydoc", {users: [{id: "10"}, {id: "20"}]})
                 .then((result: any) => {
                     expect(result).toEqual("revokeDocumentAccess");
-                    expect(DocumentOperations.revokeDocumentAccess).toHaveBeenCalledWith("my doc", ["10", "20"], []);
+                    expect(DocumentOperations.revokeDocumentAccess).toHaveBeenCalledWith("mydoc", ["10", "20"], []);
                     done();
                 })
                 .catch((e) => fail(e.message));
         });
 
         test("dedupes array of ids provided", (done) => {
-            DocumentSDK.revokeAccess("my doc", {
+            DocumentSDK.revokeAccess("mydoc", {
                 users: [{id: "10"}, {id: "20"}, {id: "10"}, {id: "10"}, {id: "20"}],
                 groups: [{id: "35"}, {id: "32"}, {id: "35"}],
             })
                 .then((result: any) => {
                     expect(result).toEqual("revokeDocumentAccess");
-                    expect(DocumentOperations.revokeDocumentAccess).toHaveBeenCalledWith("my doc", ["10", "20"], ["35", "32"]);
+                    expect(DocumentOperations.revokeDocumentAccess).toHaveBeenCalledWith("mydoc", ["10", "20"], ["35", "32"]);
                     done();
                 })
                 .catch((e) => fail(e.message));
         });
 
         test("passes in list of valid groups without users as well", (done) => {
-            DocumentSDK.revokeAccess("my doc", {groups: [{id: "35"}, {id: "132"}, {id: "22"}]})
+            DocumentSDK.revokeAccess("mydoc", {groups: [{id: "35"}, {id: "132"}, {id: "22"}]})
                 .then((result: any) => {
                     expect(result).toEqual("revokeDocumentAccess");
-                    expect(DocumentOperations.revokeDocumentAccess).toHaveBeenCalledWith("my doc", [], ["35", "132", "22"]);
+                    expect(DocumentOperations.revokeDocumentAccess).toHaveBeenCalledWith("mydoc", [], ["35", "132", "22"]);
                     done();
                 })
                 .catch((e) => fail(e.message));

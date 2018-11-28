@@ -24,7 +24,7 @@ export function get(groupID: string) {
  */
 export function create(options: GroupCreateOptions = {groupName: "", addAsMember: true}) {
     if (options.groupID) {
-        Utils.validateIDWithSeperators(options.groupID);
+        Utils.validateID(options.groupID);
     }
     return GroupOperations.create(options.groupID || "", options.groupName || "", options.addAsMember !== false).toPromise();
 }

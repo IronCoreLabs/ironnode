@@ -1,5 +1,6 @@
 import * as Initialization from "./sdk/Initialization";
 import {Base64String} from "./commonTypes";
+import * as Utils from "./lib/Utils";
 import {DeviceCreateOptions} from "../ironnode";
 
 /**
@@ -11,6 +12,13 @@ import {DeviceCreateOptions} from "../ironnode";
  * @param {Base64String} privateSigningKey Base64 encoded signing key bytes associated to the account in use
  */
 export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String) {
+    Utils.validateID(accountID);
+    if (typeof segmentID !== "number") {
+        throw new Error(`Expected a numerical segment ID but instead got '${segmentID}`);
+    }
+    if (typeof privateDeviceKey !== "string" || !privateDeviceKey.length || typeof privateSigningKey !== "string" || !privateSigningKey.length) {
+        throw new Error("Recieved invalid values for provided private device or signing keys");
+    }
     return Initialization.initialize(accountID, segmentID, privateDeviceKey, privateSigningKey).toPromise();
 }
 

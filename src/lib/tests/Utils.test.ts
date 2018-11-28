@@ -95,7 +95,7 @@ describe("Utils", () => {
     });
 
     describe("validateID", () => {
-        test("fails when ID is not a string with length", () => {
+        test("throws when ID is not a string with length", () => {
             expect(() => Utils.validateID(3 as any)).toThrow();
             expect(() => Utils.validateID(null as any)).toThrow();
             expect(() => Utils.validateID([] as any)).toThrow();
@@ -103,28 +103,24 @@ describe("Utils", () => {
             expect(() => Utils.validateID("")).toThrow();
         });
 
+        test("throws when ID is too long", () => {
+            const longID = "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdef";
+            expect(() => Utils.validateID(longID)).toThrow();
+        });
+
+        test("throws when provided ID contains invalid characters", () => {
+            expect(() => Utils.validateID("id1,id2")).toThrow();
+            expect(() => Utils.validateID("^id1id2")).toThrow();
+            expect(() => Utils.validateID("<id1id2>")).toThrow();
+            expect(() => Utils.validateID("[id]")).toThrow();
+            expect(() => Utils.validateID("{id}")).toThrow();
+            expect(() => Utils.validateID("id 38")).toThrow();
+        });
+
         test("does not throw when ID looks valid", () => {
             expect(() => Utils.validateID("12")).not.toThrow();
-        });
-    });
-
-    describe("validateIDWithSeperators", () => {
-        test("validates non strings and empty strings", () => {
-            expect(() => Utils.validateIDWithSeperators(3 as any)).toThrow();
-            expect(() => Utils.validateIDWithSeperators(null as any)).toThrow();
-            expect(() => Utils.validateIDWithSeperators([] as any)).toThrow();
-            expect(() => Utils.validateIDWithSeperators(["id-12"] as any)).toThrow();
-            expect(() => Utils.validateIDWithSeperators("")).toThrow();
-        });
-
-        test("validates that ID does not contain commas", () => {
-            expect(() => Utils.validateIDWithSeperators(",")).toThrow();
-            expect(() => Utils.validateIDWithSeperators("abceaf,aseg")).toThrow();
-        });
-
-        test("does not throw on valid IDs", () => {
-            expect(() => Utils.validateIDWithSeperators("abceafaseg")).not.toThrow();
-            expect(() => Utils.validateIDWithSeperators("~`!@#$%^&*()-_=+[{]};:'<.>/?|\"")).not.toThrow();
+            expect(() => Utils.validateID("group@domian.com")).not.toThrow();
+            expect(() => Utils.validateID("abcDEF123_.$#|@/:;=+'-")).not.toThrow();
         });
     });
 
