@@ -173,3 +173,24 @@ export function removeMembers(IronNode: SDK) {
         })
         .then(log);
 }
+
+/**
+ * Delete a group. Asks the user to re-type the groups ID to confirm delete before proceeding.
+ */
+export function deleteGroup(IronNode: SDK) {
+    return getFormattedGroupList(IronNode, true).then(({id}) => {
+        return inquirer
+            .prompt<{confirmID: string}>({
+                name: "confirmID",
+                type: "input",
+                message: "Please re-type the groups ID to confirm its deletion",
+            })
+            .then(({confirmID}) => {
+                if (confirmID !== id) {
+                    return Promise.reject(new Error("Confirmed group ID does not match group to delete."));
+                }
+                return IronNode.group.deleteGroup(id);
+            })
+            .then(log);
+    });
+}

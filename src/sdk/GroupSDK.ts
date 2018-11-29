@@ -86,3 +86,12 @@ export function removeMembers(groupID: string, userList: string[]) {
     Utils.validateIDList(userList);
     return GroupOperations.removeMembers(groupID, Utils.dedupeArray(userList, true)).toPromise();
 }
+
+/**
+ * Delete a group given its ID. Warning: Deleting a group is permanent and will cause all documents that are
+ * encrypted to the group to no longer be able to be decrypted.
+ */
+export function deleteGroup(groupID: string) {
+    Utils.validateID(groupID);
+    return GroupOperations.deleteGroup(groupID).toPromise();
+}

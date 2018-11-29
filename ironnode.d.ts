@@ -129,6 +129,7 @@ export interface Group {
     get(groupID: string): Promise<GroupMetaResponse | GroupDetailResponse>;
     create(options?: GroupCreateOptions): Promise<GroupDetailResponse>;
     update(groupID: string, options: GroupUpdateOptions): Promise<GroupMetaResponse>;
+    deleteGroup(groupID: string): Promise<{id: string}>;
     addAdmins(groupID: string, adminList: string[]): Promise<GroupUserEditResponse>;
     removeAdmins(groupID: string, adminList: string[]): Promise<GroupUserEditResponse>;
     addMembers(groupID: string, userList: string[]): Promise<GroupUserEditResponse>;

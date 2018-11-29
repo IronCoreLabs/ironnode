@@ -248,6 +248,23 @@ function removeMembers(sign: MessageSignature, groupID: string, removedMembers: 
     };
 }
 
+/**
+ * Delete a group given its ID
+ */
+function groupDelete(sign: MessageSignature, groupID: string) {
+    return {
+        url: `groups/${encodeURIComponent(groupID)}`,
+        options: {
+            method: "DELETE",
+            headers: {
+                Authorization: ApiRequest.getAuthHeader(sign),
+                "Content-Type": "application/json",
+            },
+        },
+        errorCode: ErrorCodes.GROUP_DELETE_REQUEST_FAILURE,
+    };
+}
+
 export default {
     /**
      * Invokes the group list API
@@ -350,5 +367,14 @@ export default {
     callRemoveMembersApi(groupID: string, memberList: string[]) {
         const {url, options, errorCode} = removeMembers(getSignatureHeader(), groupID, memberList);
         return ApiRequest.fetchJSON<GroupMemberModifyResponseType>(url, errorCode, options);
+    },
+
+    /**
+     * Delete a group given its ID
+     * @param {string} groupID ID of group to delete
+     */
+    callGroupDeleteApi(groupID: string) {
+        const {url, options, errorCode} = groupDelete(getSignatureHeader(), groupID);
+        return ApiRequest.fetchJSON<{id: string}>(url, errorCode, options);
     },
 };

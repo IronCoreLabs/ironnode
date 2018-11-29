@@ -181,3 +181,11 @@ export function removeMembers(groupID: string, userList: string[]) {
         mapOperationToSuccessAndFailureList(userList, succeededIds, failedIds)
     );
 }
+
+/**
+ * Delete a group given its ID.
+ * @param {string} groupID ID of the group to delete.
+ */
+export function deleteGroup(groupID: string) {
+    return GroupApi.callGroupDeleteApi(groupID);
+}
