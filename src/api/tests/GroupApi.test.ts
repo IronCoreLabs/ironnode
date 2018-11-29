@@ -416,5 +416,21 @@ describe("GroupApi", () => {
                 );
             });
         });
+
+        describe("callGroupDeleteApi", () => {
+            test("requests expected endpoint", () => {
+                GroupApi.callGroupDeleteApi("31&32").engage(
+                    (e) => fail(e),
+                    (deleteResult: any) => {
+                        expect(deleteResult).toEqual({foo: "bar"});
+                        expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("groups/31%2632", jasmine.any(Number), jasmine.any(Object));
+                        const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                        expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+
+                        expect(request.body).toBeUndefined();
+                    }
+                );
+            });
+        });
     });
 });

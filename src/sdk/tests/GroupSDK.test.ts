@@ -4,7 +4,7 @@ import * as GroupOperations from "../../operations/GroupOperations";
 
 describe("GroupSDK", () => {
     describe("list", () => {
-        test("sends message to frame and maps message", (done) => {
+        test("calls list operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "list");
             spy.mockReturnValue(Future.of("list"));
             GroupSDK.list()
@@ -24,7 +24,7 @@ describe("GroupSDK", () => {
             expect(() => GroupSDK.get("`ID")).toThrow();
         });
 
-        test("sends payload to frame", (done) => {
+        test("calls group get operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "get");
             spy.mockReturnValue(Future.of("get"));
             GroupSDK.get("3")
@@ -45,7 +45,7 @@ describe("GroupSDK", () => {
             expect(() => GroupSDK.create({groupID: "\\sega"} as any)).toThrow();
         });
 
-        test("sends create message to frame with default options if nothing is passed in", (done) => {
+        test("calls group create operation with expected defaults", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
             spy.mockReturnValue(Future.of("create"));
             GroupSDK.create()
@@ -57,7 +57,7 @@ describe("GroupSDK", () => {
                 .catch((e) => fail(e));
         });
 
-        test("sends create message to frame with groupID if that value is valid and passes as an option", (done) => {
+        test("calls group create operation with provided name", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
             spy.mockReturnValue(Future.of("create"));
             GroupSDK.create({groupID: "providedGroupID"})
@@ -69,7 +69,7 @@ describe("GroupSDK", () => {
                 .catch((e) => fail(e));
         });
 
-        test("sends create message to frame with addAsMemberValue if that value is passed in as options", (done) => {
+        test("calls group create operation with expected args", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
             spy.mockReturnValue(Future.of("create"));
             GroupSDK.create({addAsMember: false})
@@ -81,7 +81,7 @@ describe("GroupSDK", () => {
                 .catch((e) => fail(e));
         });
 
-        test("sends create message to frame with groupName if that value is passed in as options", (done) => {
+        test("calls group create with provided name", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
             spy.mockReturnValue(Future.of("create"));
             GroupSDK.create({groupName: "abc"})
@@ -93,7 +93,7 @@ describe("GroupSDK", () => {
                 .catch((e) => fail(e));
         });
 
-        test("sends create message to frame with options passed in if provided", (done) => {
+        test("calls group create operation with expected args", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
             spy.mockReturnValue(Future.of("create"));
             GroupSDK.create({groupID: "providedID", groupName: "abc", addAsMember: true})
@@ -151,7 +151,7 @@ describe("GroupSDK", () => {
             expect(() => GroupSDK.addAdmins("(ID)]", [])).toThrow();
         });
 
-        test("sends add admins message to frame", (done) => {
+        test("calls group add admins operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "addAdmins");
             spy.mockReturnValue(Future.of("addAdmins"));
             GroupSDK.addAdmins("6", ["5", "36", "894"])
@@ -183,7 +183,7 @@ describe("GroupSDK", () => {
             expect(() => GroupSDK.removeAdmins("3,5", ["ID2"])).toThrow();
         });
 
-        test("sends remove members message to frame", (done) => {
+        test("calls group remove admins operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "removeAdmins");
             spy.mockReturnValue(Future.of("removeAdmins"));
             GroupSDK.removeAdmins("6", ["5", "36", "894"])
@@ -215,7 +215,7 @@ describe("GroupSDK", () => {
             expect(() => GroupSDK.addMembers("|$#?", ["id2"])).toThrow();
         });
 
-        test("sends add members message to frame", (done) => {
+        test("calls group add members operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "addMembers");
             spy.mockReturnValue(Future.of("addMembers"));
             GroupSDK.addMembers("6", ["5", "36", "894"])
@@ -247,7 +247,7 @@ describe("GroupSDK", () => {
             expect(() => GroupSDK.removeMembers("8r%", ["ID1"])).toThrow();
         });
 
-        test("sends remove members message to frame", (done) => {
+        test("submits list of users to remove", (done) => {
             const spy = jest.spyOn(GroupOperations, "removeMembers");
             spy.mockReturnValue(Future.of("removeMembers"));
             GroupSDK.removeMembers("6", ["5", "36", "894"])
@@ -266,6 +266,25 @@ describe("GroupSDK", () => {
                 .then((result: any) => {
                     expect(result).toEqual("removeMembers");
                     expect(GroupOperations.removeMembers).toHaveBeenCalledWith("6", ["5", "36", "611"]);
+                    done();
+                })
+                .catch((e) => fail(e));
+        });
+    });
+
+    describe("deleteGroup", () => {
+        test("fails validation if groupID or member list is invalid", () => {
+            expect(() => GroupSDK.deleteGroup("")).toThrow();
+            expect(() => GroupSDK.deleteGroup("8r%")).toThrow();
+        });
+
+        test("submits list of users to remove", (done) => {
+            const spy = jest.spyOn(GroupOperations, "deleteGroup");
+            spy.mockReturnValue(Future.of("deleteGroup"));
+            GroupSDK.deleteGroup("6")
+                .then((result: any) => {
+                    expect(result).toEqual("deleteGroup");
+                    expect(GroupOperations.deleteGroup).toHaveBeenCalledWith("6");
                     done();
                 })
                 .catch((e) => fail(e));

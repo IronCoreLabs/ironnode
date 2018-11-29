@@ -561,4 +561,18 @@ describe("GroupOperations", () => {
             );
         });
     });
+
+    describe("deleteGroup", () => {
+        test("invokes group delete endpoint", () => {
+            const deleteApi = jest.spyOn(GroupApi, "callGroupDeleteApi");
+            deleteApi.mockReturnValue(Future.of("delete result"));
+
+            GroupOperations.deleteGroup("3235").engage(
+                (e) => fail(e.message),
+                (result) => {
+                    expect(result).toEqual("delete result");
+                }
+            );
+        });
+    });
 });
