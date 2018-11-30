@@ -49,7 +49,7 @@ export function fetchJSON<ResponseType>(url: string, failureErrorCode: number, o
             }
             if (response.status === CLOUDFLARE_RATE_LIMIT_STATUS_CODE) {
                 //Map a Cloudflare rate limit response code to a special error code
-                return Future.reject(new SDKError(new Error("Request was rate limited from too many requests."), ErrorCodes.REQUEST_RATE_LIMITED));
+                return Future.reject(new SDKError(new Error("Request was denied due to rate limiting."), ErrorCodes.REQUEST_RATE_LIMITED));
             }
             return parseErrorFromFailedResponse(response, failureErrorCode);
         });

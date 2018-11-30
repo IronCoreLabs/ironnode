@@ -10,7 +10,7 @@ export function list() {
 }
 
 /**
- * Get details about a specific group given it's ID.
+ * Get details about a specific group given its ID.
  * @param {string} groupID ID of group to retrieve
  */
 export function get(groupID: string) {
@@ -30,7 +30,7 @@ export function create(options: GroupCreateOptions = {groupName: "", addAsMember
 }
 
 /**
- * Update a group given it's ID. Currently only supports updating a groups name to either a new string or null to clear the name.
+ * Update a group given its ID. Currently only supports updating a groups name to either a new string or null to clear the name.
  * @param {string}             groupID ID of the group to update
  * @param {GroupUpdateOptions} options Group update options.
  */

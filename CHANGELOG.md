@@ -2,7 +2,7 @@
 
 ### Breaking Changes
 
-* Added restrictions for user, group, and document IDs. If any method is called with an ID that doesn't confirm to the ID requirements, that method will throw. IDs are now restricted to the following characters:
+* Added restrictions for user, group, and document IDs. If any method is called with an ID that doesn't conform to the ID requirements, that method will throw. IDs are now restricted to the following characters:
   + Any number (0-9)
   + Any uppercase or lowercase letter from a-z
   + The following special characters `_.$#|@/:;=+'-`
@@ -15,6 +15,7 @@
 * Added new [`SDK.User.listDevices()`](https://docs.ironcorelabs.com/ironnode-sdk/user#list-devices) method which will list all of the devices the user has currently authorized to decrypt their data.
 * Added new [`SDK.User.deleteDevice()`](https://docs.ironcorelabs.com/ironnode-sdk/user#delete-device) method which will deauthorize a users device keys given their ID and cause those keys to no longer be able to decrypt a users data.
 * Added argument to [`IronNode.User.generateDeviceKeys()`](https://docs.ironcorelabs.com/ironnode-sdk/user-operations#gen-device-keys) method to be able to specify a readable name for a device upon creation.
+* A new error code (`IronNode.ErrorCodes.REQUEST_RATE_LIMITED`) will be returned if usage of the SDK is high enough to cause the IP to be rate limited. When this error code is returned, no further API requests will be returned until usage has dropped for 1 minute.
 
 ## 0.5.4
 

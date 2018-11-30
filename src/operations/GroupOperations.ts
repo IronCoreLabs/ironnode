@@ -98,7 +98,7 @@ export function create(groupID: string, groupName: string, addAsMember: boolean)
 }
 
 /**
- * Update group information. Currently only supports updating a groups name.
+ * Update group information. Currently only supports updating a group's name.
  * @param {string}      groupID   ID of the group to update.
  * @param {string|null} groupName New name for the group or null to clear a groups name.
  */

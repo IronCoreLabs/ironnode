@@ -322,7 +322,7 @@ export default {
     },
 
     /**
-     * Update a groups name to a new value or clear it out with null
+     * Update a group's name to a new value or unset the name with null
      */
     callGroupUpdateApi(groupID: string, groupName: string | null) {
         const {url, options, errorCode} = groupUpdate(getSignatureHeader(), groupID, groupName);
