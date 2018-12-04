@@ -1,6 +1,6 @@
 import * as GroupOperations from "../operations/GroupOperations";
 import * as Utils from "../lib/Utils";
-import {GroupCreateOptions} from "../../ironnode";
+import {GroupCreateOptions, GroupUpdateOptions} from "../../ironnode";
 
 /**
  * List all groups that the current user is either an admin or member of.
@@ -10,7 +10,7 @@ export function list() {
 }
 
 /**
- * Get details about a specific group given it's ID.
+ * Get details about a specific group given its ID.
  * @param {string} groupID ID of group to retrieve
  */
 export function get(groupID: string) {
@@ -27,6 +27,19 @@ export function create(options: GroupCreateOptions = {groupName: "", addAsMember
         Utils.validateID(options.groupID);
     }
     return GroupOperations.create(options.groupID || "", options.groupName || "", options.addAsMember !== false).toPromise();
+}
+
+/**
+ * Update a group given its ID. Currently only supports updating a groups name to either a new string or null to clear the name.
+ * @param {string}             groupID ID of the group to update
+ * @param {GroupUpdateOptions} options Group update options.
+ */
+export function update(groupID: string, options: GroupUpdateOptions) {
+    Utils.validateID(groupID);
+    if (options.groupName === null || (typeof options.groupName === "string" && options.groupName.length)) {
+        return GroupOperations.update(groupID, options.groupName).toPromise();
+    }
+    throw new Error("Group update must provide a new name which is either a non-zero length string or null.");
 }
 
 /**
@@ -72,4 +85,13 @@ export function removeMembers(groupID: string, userList: string[]) {
     Utils.validateID(groupID);
     Utils.validateIDList(userList);
     return GroupOperations.removeMembers(groupID, Utils.dedupeArray(userList, true)).toPromise();
+}
+
+/**
+ * Delete a group given its ID. Warning: Deleting a group is permanent and will cause all documents that are
+ * encrypted to the group to no longer be able to be decrypted.
+ */
+export function deleteGroup(groupID: string) {
+    Utils.validateID(groupID);
+    return GroupOperations.deleteGroup(groupID).toPromise();
 }

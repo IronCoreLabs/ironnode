@@ -127,6 +127,26 @@ function groupCreate(sign: MessageSignature, groupID: string, createPayload: Gro
 }
 
 /**
+ * Update a group. Currently only supports updating the groups name to a new value or clearing it via null.
+ */
+function groupUpdate(sign: MessageSignature, groupID: string, groupName: string | null) {
+    return {
+        url: `groups/${encodeURIComponent(groupID)}`,
+        options: {
+            method: "PUT",
+            headers: {
+                Authorization: ApiRequest.getAuthHeader(sign),
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                name: groupName,
+            }),
+        },
+        errorCode: ErrorCodes.GROUP_UPDATE_REQUEST_FAILURE,
+    };
+}
+
+/**
  * Add the list of admins to the group by sending in their encrypted access keys
  * @param {MessageSignature}     sign        Signature for request validation
  * @param {string}               groupID     ID of the group to add admins
@@ -228,6 +248,23 @@ function removeMembers(sign: MessageSignature, groupID: string, removedMembers: 
     };
 }
 
+/**
+ * Delete a group given its ID
+ */
+function groupDelete(sign: MessageSignature, groupID: string) {
+    return {
+        url: `groups/${encodeURIComponent(groupID)}`,
+        options: {
+            method: "DELETE",
+            headers: {
+                Authorization: ApiRequest.getAuthHeader(sign),
+                "Content-Type": "application/json",
+            },
+        },
+        errorCode: ErrorCodes.GROUP_DELETE_REQUEST_FAILURE,
+    };
+}
+
 export default {
     /**
      * Invokes the group list API
@@ -285,6 +322,14 @@ export default {
     },
 
     /**
+     * Update a group's name to a new value or unset the name with null
+     */
+    callGroupUpdateApi(groupID: string, groupName: string | null) {
+        const {url, options, errorCode} = groupUpdate(getSignatureHeader(), groupID, groupName);
+        return ApiRequest.fetchJSON<GroupApiBasicResponse>(url, errorCode, options);
+    },
+
+    /**
      * Call the group add member API and map results to success/failed IDs
      * @param {string}               groupID   ID of group to add admins to
      * @param {EncryptedAccessKey[]} adminList List of admin users to add to the group
@@ -322,5 +367,14 @@ export default {
     callRemoveMembersApi(groupID: string, memberList: string[]) {
         const {url, options, errorCode} = removeMembers(getSignatureHeader(), groupID, memberList);
         return ApiRequest.fetchJSON<GroupMemberModifyResponseType>(url, errorCode, options);
+    },
+
+    /**
+     * Delete a group given its ID
+     * @param {string} groupID ID of group to delete
+     */
+    callGroupDeleteApi(groupID: string) {
+        const {url, options, errorCode} = groupDelete(getSignatureHeader(), groupID);
+        return ApiRequest.fetchJSON<{id: string}>(url, errorCode, options);
     },
 };

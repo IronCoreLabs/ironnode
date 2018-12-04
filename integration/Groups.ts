@@ -102,6 +102,23 @@ export function create(IronNode: SDK) {
 }
 
 /**
+ * Update the name of an existing group to a new name or clear out the value.
+ */
+export function update(IronNode: SDK) {
+    return getFormattedGroupList(IronNode, true)
+        .then(({id}) => {
+            return inquirer
+                .prompt<{newName: string | null}>({
+                    name: "newName",
+                    type: "input",
+                    message: "New Name (leave blank to clear name field):",
+                })
+                .then(({newName}) => IronNode.group.update(id, {groupName: newName || null}));
+        })
+        .then(log);
+}
+
+/**
  * Add admins to a group that the user is an admin of.
  */
 export function addAdmins(IronNode: SDK) {
@@ -155,4 +172,25 @@ export function removeMembers(IronNode: SDK) {
                 .then(({userList}) => IronNode.group.removeMembers(groupDetail.groupID, userList));
         })
         .then(log);
+}
+
+/**
+ * Delete a group. Asks the user to re-type the groups ID to confirm delete before proceeding.
+ */
+export function deleteGroup(IronNode: SDK) {
+    return getFormattedGroupList(IronNode, true).then(({id}) => {
+        return inquirer
+            .prompt<{confirmID: string}>({
+                name: "confirmID",
+                type: "input",
+                message: "Please re-type the groups ID to confirm its deletion",
+            })
+            .then(({confirmID}) => {
+                if (confirmID !== id) {
+                    return Promise.reject(new Error("Confirmed group ID does not match group to delete."));
+                }
+                return IronNode.group.deleteGroup(id);
+            })
+            .then(log);
+    });
 }

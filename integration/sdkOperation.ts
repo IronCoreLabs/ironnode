@@ -11,7 +11,7 @@ const topLevelPrompt = {
     type: "list",
     name: "operation",
     message: "Which operation do you want to run?",
-    pageSize: 17,
+    pageSize: 25,
     choices: [
         {name: "Document List", value: "docList"},
         {name: "Document Get", value: "docGet"},
@@ -26,10 +26,12 @@ const topLevelPrompt = {
         {name: "Group List", value: "groupList"},
         {name: "Group Get", value: "groupGet"},
         {name: "Group Create", value: "groupCreate"},
+        {name: "Group Update", value: "groupUpdate"},
         {name: "Group Add Admins", value: "groupAddAdmins"},
         {name: "Group Remove Admins", value: "groupRemoveAdmins"},
         {name: "Group Add Members", value: "groupAddMembers"},
         {name: "Group Remove Members", value: "groupRemoveMembers"},
+        {name: "Group Delete", value: "groupDelete"},
         new inquirer.Separator(),
         {name: "User Public Key Lookup", value: "userKeyLookup"},
         {name: "User Device List", value: "userDeviceList"},
@@ -69,6 +71,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Groups.get(IronNode);
         case "groupCreate":
             return Groups.create(IronNode);
+        case "groupUpdate":
+            return Groups.update(IronNode);
         case "groupAddAdmins":
             return Groups.addAdmins(IronNode);
         case "groupRemoveAdmins":
@@ -77,6 +81,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Groups.addMembers(IronNode);
         case "groupRemoveMembers":
             return Groups.removeMembers(IronNode);
+        case "groupDelete":
+            return Groups.deleteGroup(IronNode);
         case "userKeyLookup":
             return Users.publicKeyLookup(IronNode);
         case "userDeviceList":

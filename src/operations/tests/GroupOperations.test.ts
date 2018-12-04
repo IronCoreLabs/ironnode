@@ -205,12 +205,31 @@ describe("GroupOperations", () => {
         });
     });
 
+    describe("update", () => {
+        test("calls group update endpoint and maps result", () => {
+            const groupUpdateSpy = jest.spyOn(GroupApi, "callGroupUpdateApi");
+            groupUpdateSpy.mockReturnValue(Future.of({id: "groupID", name: "new group name", permissions: ["admin"]}));
+
+            GroupOperations.update("groupID", "new group name").engage(
+                (e) => fail(e),
+                (result) => {
+                    expect(result).toEqual({
+                        groupID: "groupID",
+                        groupName: "new group name",
+                        isAdmin: true,
+                        isMember: false,
+                    });
+                }
+            );
+        });
+    });
+
     describe("addAdmins", () => {
         test("makes all expected API calls to add admins to group", () => {
             const userKeys = [{id: "id1", userMasterPublicKey: {x: "key1"}}, {id: "id2", userMasterPublicKey: {x: "key2"}}];
 
             const groupGet = jest.spyOn(GroupApi, "callGroupGetApi");
-            groupGet.mockReturnValue(Future.of({groupID: "32", encryptedPrivateKey: "encryptedPrivKey", permissions: ["admin", "member"]}));
+            groupGet.mockReturnValue(Future.of({groupID: "32", encryptedPrivateKey: "encryptedPrivKey", permissions: ["admin", "member"], adminIds: ["id1"]}));
             const userKeyList = jest.spyOn(UserApi, "callUserKeyListApi");
             userKeyList.mockReturnValue(Future.of({result: userKeys}));
             const addAdmins = jest.spyOn(GroupCrypto, "addAdminsToGroup");
@@ -300,7 +319,7 @@ describe("GroupOperations", () => {
             const userKeys = [{id: "id1", userMasterPublicKey: {x: "key1"}}, {id: "id2", userMasterPublicKey: {x: "key2"}}];
 
             const groupGet = jest.spyOn(GroupApi, "callGroupGetApi");
-            groupGet.mockReturnValue(Future.of({groupID: "32", encryptedPrivateKey: "encryptedPrivKey", permissions: ["admin", "member"]}));
+            groupGet.mockReturnValue(Future.of({groupID: "32", encryptedPrivateKey: "encryptedPrivKey", permissions: ["admin", "member"], adminIds: ["id1"]}));
             const userKeyList = jest.spyOn(UserApi, "callUserKeyListApi");
             userKeyList.mockReturnValue(Future.of({result: userKeys}));
             const addAdmins = jest.spyOn(GroupCrypto, "addAdminsToGroup");
@@ -376,7 +395,7 @@ describe("GroupOperations", () => {
             const userKeys = [{id: "id1", userMasterPublicKey: {x: "key1"}}, {id: "id2", userMasterPublicKey: {x: "key2"}}];
 
             const groupGet = jest.spyOn(GroupApi, "callGroupGetApi");
-            groupGet.mockReturnValue(Future.of({groupID: "32", encryptedPrivateKey: "encryptedPrivKey", permissions: ["admin", "member"]}));
+            groupGet.mockReturnValue(Future.of({groupID: "32", encryptedPrivateKey: "encryptedPrivKey", permissions: ["admin", "member"], adminIds: ["id1"]}));
             const userKeyList = jest.spyOn(UserApi, "callUserKeyListApi");
             userKeyList.mockReturnValue(Future.of({result: userKeys}));
             const addMembersApi = jest.spyOn(GroupApi, "callAddMembersApi");
@@ -469,7 +488,7 @@ describe("GroupOperations", () => {
             const userKeys = [{id: "id1", userMasterPublicKey: {x: "key1"}}, {id: "id2", userMasterPublicKey: {x: "key2"}}];
 
             const groupGet = jest.spyOn(GroupApi, "callGroupGetApi");
-            groupGet.mockReturnValue(Future.of({groupID: "32", encryptedPrivateKey: "encryptedPrivKey", permissions: ["admin", "member"]}));
+            groupGet.mockReturnValue(Future.of({groupID: "32", encryptedPrivateKey: "encryptedPrivKey", permissions: ["admin", "member"], adminIds: ["id1"]}));
             const userKeyList = jest.spyOn(UserApi, "callUserKeyListApi");
             userKeyList.mockReturnValue(Future.of({result: userKeys}));
             const addMembersApi = jest.spyOn(GroupApi, "callAddMembersApi");
@@ -538,6 +557,20 @@ describe("GroupOperations", () => {
                             {id: "13", error: "ID did not exist in the system."},
                         ],
                     });
+                }
+            );
+        });
+    });
+
+    describe("deleteGroup", () => {
+        test("invokes group delete endpoint", () => {
+            const deleteApi = jest.spyOn(GroupApi, "callGroupDeleteApi");
+            deleteApi.mockReturnValue(Future.of("delete result"));
+
+            GroupOperations.deleteGroup("3235").engage(
+                (e) => fail(e.message),
+                (result) => {
+                    expect(result).toEqual("delete result");
                 }
             );
         });

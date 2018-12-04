@@ -1,5 +1,6 @@
 import * as fetch from "node-fetch";
 import * as ApiRequest from "../ApiRequest";
+import {ErrorCodes} from "../../Constants";
 import {getSigningKeyPair} from "../../tests/TestUtils";
 
 describe("ApiRequest", () => {
@@ -140,6 +141,23 @@ describe("ApiRequest", () => {
                     });
                     done();
                 }
+            );
+        });
+
+        test("returns special rate limiting error message when 429 response is returned", () => {
+            (fetch.default as jest.Mock).mockReturnValue(
+                Promise.resolve({
+                    ok: false,
+                    status: 429,
+                })
+            );
+
+            ApiRequest.fetchJSON("group/get", -1, {method: "GET"}).engage(
+                (e) => {
+                    expect(e.code).toEqual(ErrorCodes.REQUEST_RATE_LIMITED);
+                    expect(e.message).toBeString();
+                },
+                () => fail("Should not succeed when response returns 429 error.")
             );
         });
     });
