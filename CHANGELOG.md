@@ -12,8 +12,8 @@
 
 * Added new [`SDK.group.update()`](https://docs.ironcorelabs.com/ironnode-sdk/group#update-group) method to update a group. Currently only supports updating the name to a new value or clearing the name.
 * Added new [`SDK.group.delete()`](https://docs.ironcorelabs.com/ironnode-sdk/group#group-delete) method to delete a group. Group deletes are permanent and will cause all documents that are only encrypted to the group to no longer be decryptable. Use caution when calling this method.
-* Added new [`SDK.User.listDevices()`](https://docs.ironcorelabs.com/ironnode-sdk/user#list-devices) method which will list all of the devices the user has currently authorized to decrypt their data.
-* Added new [`SDK.User.deleteDevice()`](https://docs.ironcorelabs.com/ironnode-sdk/user#delete-device) method which will deauthorize a users device keys given their ID and cause those keys to no longer be able to decrypt a users data.
+* Added new [`SDK.user.listDevices()`](https://docs.ironcorelabs.com/ironnode-sdk/user#list-devices) method which will list all of the devices the user has currently authorized to decrypt their data.
+* Added new [`SDK.user.deleteDevice()`](https://docs.ironcorelabs.com/ironnode-sdk/user#delete-device) method which will deauthorize a users device keys given their ID and cause those keys to no longer be able to decrypt a users data.
 * Added argument to [`IronNode.User.generateDeviceKeys()`](https://docs.ironcorelabs.com/ironnode-sdk/user-operations#gen-device-keys) method to be able to specify a readable name for a device upon creation.
 * A new error code (`IronNode.ErrorCodes.REQUEST_RATE_LIMITED`) will be returned if usage of the SDK is high enough to cause the IP to be rate limited. When this error code is returned, no further API requests will be returned until usage has dropped for 1 minute.
 
