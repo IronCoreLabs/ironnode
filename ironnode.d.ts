@@ -1,4 +1,5 @@
 export type Base64String = string;
+export type RFC3339Date = string;
 export type PrivateKey<T> = T;
 export interface PublicKey<T> {
     x: T;
@@ -44,6 +45,8 @@ export interface ApiUserResponse {
 export interface DocumentIDNameResponse {
     documentID: string;
     documentName: string | null;
+    created: RFC3339Date;
+    updated: RFC3339Date;
 }
 export interface DocumentAssociationResponse extends DocumentIDNameResponse {
     association: DocumentAssociation;
@@ -80,6 +83,8 @@ export interface GroupMetaResponse {
     groupName: string | null;
     isAdmin: boolean;
     isMember: boolean;
+    created: RFC3339Date;
+    updated: RFC3339Date;
 }
 export interface GroupListResponse {
     result: GroupMetaResponse[];

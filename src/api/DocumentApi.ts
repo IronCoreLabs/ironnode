@@ -11,6 +11,8 @@ interface DocumentMetaApiResponse {
     association: {
         type: DocumentAssociation;
     };
+    created: string;
+    updated: string;
 }
 
 export interface DocumentListResponseType {
@@ -31,6 +33,8 @@ export interface DocumentGetResponseType extends DocumentMetaGetResponseType {
 export interface DocumentCreateResponseType {
     id: string;
     name: string;
+    created: string;
+    updated: string;
 }
 export type DocumentUpdateResponseType = DocumentGetResponseType;
 export interface DocumentAccessResponseType {

@@ -69,6 +69,8 @@ export interface GroupApiBasicResponse {
     name: string | null;
     status: number;
     permissions: string[];
+    created: string;
+    updated: string;
 }
 export interface GroupApiFullResponse extends GroupApiBasicResponse {
     groupMasterPublicKey: PublicKey<string>;

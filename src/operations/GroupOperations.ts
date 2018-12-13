@@ -54,6 +54,8 @@ function formatDetailedGroupResponse(group: GroupApiBasicResponse | GroupApiFull
         groupName: group.name,
         isAdmin: group.permissions.indexOf(GroupPermissions.ADMIN) !== -1,
         isMember: group.permissions.indexOf(GroupPermissions.MEMBER) !== -1,
+        created: group.created,
+        updated: group.updated
     };
 
     if (isFullGroupResponse(group)) {

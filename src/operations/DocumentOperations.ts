@@ -135,6 +135,8 @@ export function list() {
                 documentID: document.id,
                 documentName: document.name,
                 association: document.association.type,
+                created: document.created,
+                updated: document.updated
             })),
         };
     });
@@ -149,6 +151,8 @@ export function getMetadata(documentID: string): Future<SDKError, DocumentMetaRe
         documentName: docMeta.name,
         association: docMeta.association.type,
         visibleTo: docMeta.visibleTo,
+        created: docMeta.created,
+        updated: docMeta.updated
     }));
 }
 
@@ -247,6 +251,8 @@ export function encryptBytes(documentID: string, document: Buffer, documentName:
             documentID: createdDocument.id,
             documentName: createdDocument.name,
             document: encryptedDocument,
+            created: createdDocument.created,
+            updated: createdDocument.updated
         }));
 }
 
@@ -283,6 +289,8 @@ export function encryptStream(
             return DocumentCrypto.encryptStream(documentHeader, documentSymmetricKey, inputStream, outputStream).map(() => ({
                 documentID: createdDocument.id,
                 documentName: createdDocument.name,
+                created: createdDocument.created,
+                updated: createdDocument.updated
             }));
         });
 }
@@ -305,6 +313,8 @@ export function decryptBytes(documentID: string, encryptedDocument: Buffer): Fut
             visibleTo: documentResponse.visibleTo,
             data: decryptedDocument,
             association: documentResponse.association.type,
+            created: documentResponse.created,
+            updated: documentResponse.updated
         }));
     });
 }
@@ -319,6 +329,8 @@ export function decryptStream(documentID: string, encryptedWriteStream: NodeJS.R
             documentName: documentResponse.name,
             visibleTo: documentResponse.visibleTo,
             association: documentResponse.association.type,
+            created: documentResponse.created,
+            updated: documentResponse.updated
         }));
     });
 }
@@ -342,6 +354,8 @@ export function updateDocumentBytes(documentID: string, newDocumentData: Buffer)
             documentID: documentResponse.id,
             documentName: documentResponse.name,
             document: updatedDoc,
+            created: documentResponse.created,
+            updated: documentResponse.updated
         }));
 }
 
@@ -361,6 +375,8 @@ export function updateDocumentStream(documentID: string, inputStream: NodeJS.Rea
         ).map(() => ({
             documentID: documentResponse.id,
             documentName: documentResponse.name,
+            created: documentResponse.created,
+            updated: documentResponse.updated
         }));
     });
 }
@@ -372,6 +388,8 @@ export function updateDocumentName(documentID: string, documentName: string | nu
     return DocumentApi.callDocumentUpdateApi(documentID, documentName).map((updatedDocument) => ({
         documentID: updatedDocument.id,
         documentName: updatedDocument.name,
+        created: updatedDocument.created,
+        updated: updatedDocument.updated
     }));
 }
 
