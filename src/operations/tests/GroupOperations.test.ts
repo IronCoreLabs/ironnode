@@ -28,12 +28,16 @@ describe("GroupOperations", () => {
                             name: "group name",
                             id: "3",
                             permissions: ["admin"],
+                            created: "1",
+                            updated: "2",
                         },
                         {
                             foo: "bar",
                             name: null,
                             id: "87",
                             permissions: ["member", "admin"],
+                            created: "3",
+                            updated: "4",
                         },
                     ],
                 })
@@ -49,12 +53,16 @@ describe("GroupOperations", () => {
                                 groupName: "group name",
                                 isAdmin: true,
                                 isMember: false,
+                                created: "1",
+                                updated: "2",
                             },
                             {
                                 groupID: "87",
                                 groupName: null,
                                 isAdmin: true,
                                 isMember: true,
+                                created: "3",
+                                updated: "4",
                             },
                         ],
                     });
@@ -76,6 +84,8 @@ describe("GroupOperations", () => {
                     adminIds: ["2"],
                     memberIds: ["2", "53"],
                     permissions: ["member", "admin"],
+                    created: "1",
+                    updated: "2",
                 })
             );
 
@@ -89,6 +99,8 @@ describe("GroupOperations", () => {
                         groupMembers: ["2", "53"],
                         isAdmin: true,
                         isMember: true,
+                        created: "1",
+                        updated: "2",
                     });
 
                     expect(GroupApi.callGroupGetApi).toHaveBeenCalledWith("87");
@@ -104,6 +116,8 @@ describe("GroupOperations", () => {
                     name: "private group",
                     id: "87",
                     permissions: [],
+                    created: "1",
+                    updated: "2",
                 })
             );
 
@@ -115,6 +129,8 @@ describe("GroupOperations", () => {
                         groupName: "private group",
                         isAdmin: false,
                         isMember: false,
+                        created: "1",
+                        updated: "2",
                     });
 
                     expect(GroupApi.callGroupGetApi).toHaveBeenCalledWith("87");
@@ -134,6 +150,8 @@ describe("GroupOperations", () => {
                     adminIds: ["2"],
                     memberIds: ["2", "53"],
                     permissions: ["admin"],
+                    created: "1",
+                    updated: "2",
                 })
             );
 
@@ -156,6 +174,8 @@ describe("GroupOperations", () => {
                         groupMembers: ["2", "53"],
                         isAdmin: true,
                         isMember: false,
+                        created: "1",
+                        updated: "2",
                     });
 
                     expect(GroupApi.callGroupCreateApi).toHaveBeenCalledWith("23", "pub", "encGroupKey", "private group", undefined);
@@ -174,6 +194,8 @@ describe("GroupOperations", () => {
                     adminIds: ["2"],
                     memberIds: ["2", "53"],
                     permissions: ["admin"],
+                    created: "1",
+                    updated: "2",
                 })
             );
 
@@ -196,6 +218,8 @@ describe("GroupOperations", () => {
                         groupMembers: ["2", "53"],
                         isAdmin: true,
                         isMember: false,
+                        created: "1",
+                        updated: "2",
                     });
 
                     expect(GroupApi.callGroupCreateApi).toHaveBeenCalledWith("", "pub", "encGroupKey", "private group", TestUtils.getTransformKey());
@@ -208,7 +232,7 @@ describe("GroupOperations", () => {
     describe("update", () => {
         test("calls group update endpoint and maps result", () => {
             const groupUpdateSpy = jest.spyOn(GroupApi, "callGroupUpdateApi");
-            groupUpdateSpy.mockReturnValue(Future.of({id: "groupID", name: "new group name", permissions: ["admin"]}));
+            groupUpdateSpy.mockReturnValue(Future.of({id: "groupID", name: "new group name", permissions: ["admin"], created: "1", updated: "2"}));
 
             GroupOperations.update("groupID", "new group name").engage(
                 (e) => fail(e),
@@ -218,6 +242,8 @@ describe("GroupOperations", () => {
                         groupName: "new group name",
                         isAdmin: true,
                         isMember: false,
+                        created: "1",
+                        updated: "2",
                     });
                 }
             );

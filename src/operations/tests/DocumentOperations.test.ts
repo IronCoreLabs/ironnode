@@ -27,11 +27,15 @@ describe("DocumentOperations", () => {
                     id: "10",
                     name: "my doc 10",
                     association: {type: "owner"},
+                    created: '1',
+                    updated: '2'
                 },
                 {
                     id: "user-12",
                     name: null,
                     association: {type: "fromUser"},
+                    created: '3',
+                    updated: '4'
                 },
             ];
 
@@ -43,8 +47,8 @@ describe("DocumentOperations", () => {
                 (result) => {
                     expect(result).toEqual({
                         result: [
-                            {documentID: "10", documentName: "my doc 10", association: "owner"},
-                            {documentID: "user-12", documentName: null, association: "fromUser"},
+                            {documentID: "10", documentName: "my doc 10", association: "owner", created: '1', updated: '2'},
+                            {documentID: "user-12", documentName: null, association: "fromUser", created: '3', updated: '4'},
                         ],
                     });
                     done();
@@ -60,6 +64,8 @@ describe("DocumentOperations", () => {
                 name: "My Doc",
                 association: {type: "owner"},
                 visibleTo: [],
+                created: '1',
+                updated: '2'
             };
 
             const spy = jest.spyOn(DocumentApi, "callDocumentMetadataGetApi");
@@ -73,6 +79,8 @@ describe("DocumentOperations", () => {
                         documentName: "My Doc",
                         association: "owner",
                         visibleTo: [],
+                        created: '1',
+                        updated: '2'
                     });
                     expect(DocumentApi.callDocumentMetadataGetApi).toHaveBeenCalledWith("my-doc");
                     done();
@@ -287,13 +295,15 @@ describe("DocumentOperations", () => {
                 })
             );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
-            apiSpy.mockReturnValue(Future.of({id: "bar"}));
+            apiSpy.mockReturnValue(Future.of({id: "bar", created: '1', updated: '2'}));
 
             DocumentOperations.encryptBytes("my doc ID", Buffer.from([]), "", [], []).engage(
                 (e) => fail(e.message),
-                ({document, documentID, documentName}) => {
+                ({document, documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toBeUndefined();
+                    expect(created).toEqual('1');
+                    expect(updated).toEqual('2');
                     expect(document).toEqual(Buffer.alloc(33));
                     const currentUserRecord = {
                         id: "10",
@@ -330,14 +340,16 @@ describe("DocumentOperations", () => {
                 })
             );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
-            apiSpy.mockReturnValue(Future.of({id: "bar", name: docName}));
+            apiSpy.mockReturnValue(Future.of({id: "bar", name: docName, created: '1', updated: '2'}));
 
             DocumentOperations.encryptBytes("my doc ID", Buffer.from([]), docName, [], []).engage(
                 (e) => fail(e.message),
-                ({document, documentID, documentName}) => {
+                ({document, documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toEqual(docName);
                     expect(document).toEqual(Buffer.alloc(33));
+                    expect(created).toEqual('1');
+                    expect(updated).toEqual('2');
                 }
             );
         });
@@ -372,14 +384,16 @@ describe("DocumentOperations", () => {
                 })
             );
             const docSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
-            docSpy.mockReturnValue(Future.of({id: "bar"}));
+            docSpy.mockReturnValue(Future.of({id: "bar", created: '1', updated: '2'}));
 
             DocumentOperations.encryptBytes("doc key", Buffer.from([88, 73, 92]), "", ["user-55", "user-33"], ["user-33"]).engage(
                 (e) => fail(e.message),
-                ({documentID, documentName, document}) => {
+                ({documentID, documentName, document, created, updated}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toBeUndefined();
                     expect(document).toEqual(Buffer.alloc(33));
+                    expect(created).toEqual('1');
+                    expect(updated).toEqual('2');
 
                     const userKeyList = [
                         {id: "user-55", masterPublicKey: TestUtils.getEmptyPublicKeyString()},
@@ -444,13 +458,15 @@ describe("DocumentOperations", () => {
                 })
             );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
-            apiSpy.mockReturnValue(Future.of({id: "bar"}));
+            apiSpy.mockReturnValue(Future.of({id: "bar", created: '1', updated: '2'}));
 
             DocumentOperations.encryptStream("my doc ID", "inputStream" as any, "outputStream" as any, "", [], []).engage(
                 (e) => fail(e.message),
-                ({documentID, documentName}) => {
+                ({documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toBeUndefined();
+                    expect(created).toEqual('1');
+                    expect(updated).toEqual('2');
                     const currentUserRecord = {
                         id: "10",
                         masterPublicKey: TestUtils.accountPublicBytesBase64,
@@ -486,13 +502,15 @@ describe("DocumentOperations", () => {
                 })
             );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
-            apiSpy.mockReturnValue(Future.of({id: "bar", name: docName}));
+            apiSpy.mockReturnValue(Future.of({id: "bar", name: docName, created: '1', updated: '2'}));
 
             DocumentOperations.encryptStream("my doc ID", "inputStream" as any, "outputStream" as any, docName, [], []).engage(
                 (e) => fail(e.message),
-                ({documentID, documentName}) => {
+                ({documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toEqual(docName);
+                    expect(created).toEqual('1');
+                    expect(updated).toEqual('2');
                 }
             );
         });
@@ -525,13 +543,15 @@ describe("DocumentOperations", () => {
                 })
             );
             const docSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
-            docSpy.mockReturnValue(Future.of({id: "bar"}));
+            docSpy.mockReturnValue(Future.of({id: "bar", created: '1', updated: '2'}));
 
             DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", ["user-55", "user-33"], ["user-33"]).engage(
                 (e) => fail(e.message),
-                ({documentID, documentName}) => {
+                ({documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
                     expect(documentName).toBeUndefined();
+                    expect(created).toEqual('1');
+                    expect(updated).toEqual('2');
 
                     const userKeyList = [
                         {id: "user-55", masterPublicKey: TestUtils.getEmptyPublicKeyString()},
@@ -647,10 +667,12 @@ describe("DocumentOperations", () => {
 
             DocumentOperations.decryptBytes("docID", eDoc).engage(
                 (e) => fail(e.message),
-                ({data, documentID, documentName, visibleTo, association}) => {
+                ({data, documentID, documentName, visibleTo, association, created, updated}) => {
                     expect(documentID).toEqual("docID");
                     expect(documentName).toEqual("my doc");
                     expect(association).toEqual("owner");
+                    expect(created).toEqual('2018-11-28T00:20:16.617Z');
+                    expect(updated).toEqual('2018-12-04T15:50:01.837Z');
                     expect(visibleTo).toEqual({
                         users: [{id: "user-11"}, {id: "user-33"}],
                         groups: [{id: "group-34", name: "ICL"}],
@@ -670,10 +692,12 @@ describe("DocumentOperations", () => {
 
             DocumentOperations.decryptStream("docID", "inputStream" as any, "outputFile").engage(
                 (e) => fail(e.message),
-                ({documentID, documentName, visibleTo, association}) => {
+                ({documentID, documentName, visibleTo, association, created, updated}) => {
                     expect(documentID).toEqual("docID");
                     expect(documentName).toEqual("my doc");
                     expect(association).toEqual("owner");
+                    expect(created).toEqual('2018-11-28T00:20:16.617Z');
+                    expect(updated).toEqual('2018-12-04T15:50:01.837Z');
                     expect(visibleTo).toEqual({
                         users: [{id: "user-11"}, {id: "user-33"}],
                         groups: [{id: "group-34", name: "ICL"}],
@@ -692,10 +716,12 @@ describe("DocumentOperations", () => {
 
             DocumentOperations.updateDocumentBytes("doc id2", Buffer.from([88, 73, 92])).engage(
                 (e) => fail(e.message),
-                ({documentID, documentName, document}) => {
+                ({documentID, documentName, document, created, updated}) => {
                     expect(documentID).toEqual("docID");
                     expect(documentName).toEqual("my doc");
                     expect(document).toEqual(Buffer.alloc(33));
+                    expect(created).toEqual('2018-11-28T00:20:16.617Z');
+                    expect(updated).toEqual('2018-12-04T15:50:01.837Z');
 
                     expect(DocumentCrypto.reEncryptBytes).toHaveBeenCalledWith(
                         generateDocumentHeaderBytes("doc id2", TestUtils.testSegmentID),
@@ -718,9 +744,11 @@ describe("DocumentOperations", () => {
 
             DocumentOperations.updateDocumentStream("doc id2", "inputStream" as any, "outputStream" as any).engage(
                 (e) => fail(e.message),
-                ({documentID, documentName}) => {
+                ({documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("docID");
                     expect(documentName).toEqual("my doc");
+                    expect(created).toEqual('2018-11-28T00:20:16.617Z');
+                    expect(updated).toEqual('2018-12-04T15:50:01.837Z');
 
                     expect(DocumentCrypto.reEncryptStream).toHaveBeenCalledWith(
                         generateDocumentHeaderBytes("doc id2", TestUtils.testSegmentID),
@@ -738,7 +766,7 @@ describe("DocumentOperations", () => {
     describe("updateName", () => {
         test("invokes document update API and maps result subset", () => {
             const updateSpy = jest.spyOn(DocumentApi, "callDocumentUpdateApi");
-            updateSpy.mockReturnValue(Future.of({id: "bar", name: "updated doc", fromUserId: "user-33"}));
+            updateSpy.mockReturnValue(Future.of({id: "bar", name: "updated doc", fromUserId: "user-33", created: '1', updated: '2'}));
 
             DocumentOperations.updateDocumentName("doc-10", "new name").engage(
                 (e) => fail(e.message),
@@ -746,6 +774,8 @@ describe("DocumentOperations", () => {
                     expect(response).toEqual({
                         documentID: "bar",
                         documentName: "updated doc",
+                        created: '1',
+                        updated: '2'
                     });
                     expect(DocumentApi.callDocumentUpdateApi).toHaveBeenCalledWith("doc-10", "new name");
                 }

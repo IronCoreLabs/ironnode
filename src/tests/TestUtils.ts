@@ -58,6 +58,8 @@ export function getEncryptedDocumentMetaResponse(): DocumentMetaGetResponseType 
         association: {
             type: "owner",
         },
+        created: '2018-11-28T00:20:16.617Z',
+        updated: '2018-12-04T15:50:01.837Z'
     };
 }
 
