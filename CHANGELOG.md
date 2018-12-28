@@ -1,3 +1,9 @@
+## 0.6.1
+
+### Added
+
+* All document and group methods which return the details about the document/group will now include a `created` and `updated` timestamp fields. These timestamps are strings formatted in RFC3339 format which can be passed directly into the `Date` constructor (e.g. `new Date(document.created)`).
+
 ## 0.6.0
 
 ### Breaking Changes
@@ -37,7 +43,6 @@ None
 
 * Fixed exported TS types for `User` top level object.
 
-
 ## 0.5.2
 
 ### Breaking Changes
@@ -48,7 +53,6 @@ None
 
 * Consumed updated changes from [`recrypt-node-binding`](https://github.com/IronCoreLabs/recrypt-node-binding) for method name change.
 * Added supported Node versions, platforms, and architectures to package.json.
-
 
 ## 0.5.1
 
