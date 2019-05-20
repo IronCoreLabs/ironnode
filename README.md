@@ -66,3 +66,6 @@ This repo uses [Jest](http://jestjs.io/en) for all unit testing.
 To run a subset of the tests you can use the `-t` option of Jest to only run tests whose name matches the provided value
 
 `yarn run unit -t group`
+
+Copyright (c)  2018-present  IronCore Labs, Inc.
+All rights reserved.
