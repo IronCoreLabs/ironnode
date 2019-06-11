@@ -83,7 +83,7 @@ describe("UserOperations", () => {
     describe("getUserDevices", () => {
         test("calls user device list API", () => {
             const deviceList = jest.spyOn(UserApi, "callUserDeviceListApi");
-            deviceList.mockReturnValue(Future.of({result: [{id: 353, name: "device1"}]}));
+            deviceList.mockReturnValue(Future.of({result: [{id: 353, name: "device1"}]}) as any);
 
             UserOperations.getUserDevices().engage(
                 (e) => fail(e),

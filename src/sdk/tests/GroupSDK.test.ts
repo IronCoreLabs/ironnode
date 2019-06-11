@@ -6,7 +6,7 @@ describe("GroupSDK", () => {
     describe("list", () => {
         test("calls list operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "list");
-            spy.mockReturnValue(Future.of("list"));
+            spy.mockReturnValue(Future.of("list") as any);
             GroupSDK.list()
                 .then((result: any) => {
                     expect(result).toEqual("list");
@@ -26,7 +26,7 @@ describe("GroupSDK", () => {
 
         test("calls group get operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "get");
-            spy.mockReturnValue(Future.of("get"));
+            spy.mockReturnValue(Future.of("get") as any);
             GroupSDK.get("3")
                 .then((result: any) => {
                     expect(result).toEqual("get");
@@ -47,7 +47,7 @@ describe("GroupSDK", () => {
 
         test("calls group create operation with expected defaults", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
-            spy.mockReturnValue(Future.of("create"));
+            spy.mockReturnValue(Future.of("create") as any);
             GroupSDK.create()
                 .then((result: any) => {
                     expect(result).toEqual("create");
@@ -59,7 +59,7 @@ describe("GroupSDK", () => {
 
         test("calls group create operation with provided name", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
-            spy.mockReturnValue(Future.of("create"));
+            spy.mockReturnValue(Future.of("create") as any);
             GroupSDK.create({groupID: "providedGroupID"})
                 .then((result: any) => {
                     expect(result).toEqual("create");
@@ -71,7 +71,7 @@ describe("GroupSDK", () => {
 
         test("calls group create operation with expected args", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
-            spy.mockReturnValue(Future.of("create"));
+            spy.mockReturnValue(Future.of("create") as any);
             GroupSDK.create({addAsMember: false})
                 .then((result: any) => {
                     expect(result).toEqual("create");
@@ -83,7 +83,7 @@ describe("GroupSDK", () => {
 
         test("calls group create with provided name", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
-            spy.mockReturnValue(Future.of("create"));
+            spy.mockReturnValue(Future.of("create") as any);
             GroupSDK.create({groupName: "abc"})
                 .then((result: any) => {
                     expect(result).toEqual("create");
@@ -95,7 +95,7 @@ describe("GroupSDK", () => {
 
         test("calls group create operation with expected args", (done) => {
             const spy = jest.spyOn(GroupOperations, "create");
-            spy.mockReturnValue(Future.of("create"));
+            spy.mockReturnValue(Future.of("create") as any);
             GroupSDK.create({groupID: "providedID", groupName: "abc", addAsMember: true})
                 .then((result: any) => {
                     expect(result).toEqual("create");
@@ -121,7 +121,7 @@ describe("GroupSDK", () => {
 
         test("calls group operations to update group with new name", () => {
             const updateSpy = jest.spyOn(GroupOperations, "update");
-            updateSpy.mockReturnValue(Future.of("updated group"));
+            updateSpy.mockReturnValue(Future.of("updated group") as any);
 
             GroupSDK.update("groupID", {groupName: "new name"})
                 .then((group) => {
@@ -133,7 +133,7 @@ describe("GroupSDK", () => {
 
         test("calls group operations to clear name via null", () => {
             const updateSpy = jest.spyOn(GroupOperations, "update");
-            updateSpy.mockReturnValue(Future.of("cleared name"));
+            updateSpy.mockReturnValue(Future.of("cleared name") as any);
 
             GroupSDK.update("groupID", {groupName: null})
                 .then((group) => {
@@ -153,7 +153,7 @@ describe("GroupSDK", () => {
 
         test("calls group add admins operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "addAdmins");
-            spy.mockReturnValue(Future.of("addAdmins"));
+            spy.mockReturnValue(Future.of("addAdmins") as any);
             GroupSDK.addAdmins("6", ["5", "36", "894"])
                 .then((result: any) => {
                     expect(result).toEqual("addAdmins");
@@ -165,7 +165,7 @@ describe("GroupSDK", () => {
 
         test("dedupes users in array before submitting", (done) => {
             const spy = jest.spyOn(GroupOperations, "addAdmins");
-            spy.mockReturnValue(Future.of("addAdmins"));
+            spy.mockReturnValue(Future.of("addAdmins") as any);
             GroupSDK.addAdmins("6", ["5", "36", "5", "611"])
                 .then((result: any) => {
                     expect(result).toEqual("addAdmins");
@@ -185,7 +185,7 @@ describe("GroupSDK", () => {
 
         test("calls group remove admins operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "removeAdmins");
-            spy.mockReturnValue(Future.of("removeAdmins"));
+            spy.mockReturnValue(Future.of("removeAdmins") as any);
             GroupSDK.removeAdmins("6", ["5", "36", "894"])
                 .then((result: any) => {
                     expect(result).toEqual("removeAdmins");
@@ -197,7 +197,7 @@ describe("GroupSDK", () => {
 
         test("dedupes users in array before submitting", (done) => {
             const spy = jest.spyOn(GroupOperations, "removeAdmins");
-            spy.mockReturnValue(Future.of("removeAdmins"));
+            spy.mockReturnValue(Future.of("removeAdmins") as any);
             GroupSDK.removeAdmins("6", ["5", "36", "5", "611"])
                 .then((result: any) => {
                     expect(result).toEqual("removeAdmins");
@@ -217,7 +217,7 @@ describe("GroupSDK", () => {
 
         test("calls group add members operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "addMembers");
-            spy.mockReturnValue(Future.of("addMembers"));
+            spy.mockReturnValue(Future.of("addMembers") as any);
             GroupSDK.addMembers("6", ["5", "36", "894"])
                 .then((result: any) => {
                     expect(result).toEqual("addMembers");
@@ -229,7 +229,7 @@ describe("GroupSDK", () => {
 
         test("dedupes users in array before submitting", (done) => {
             const spy = jest.spyOn(GroupOperations, "addMembers");
-            spy.mockReturnValue(Future.of("addMembers"));
+            spy.mockReturnValue(Future.of("addMembers") as any);
             GroupSDK.addMembers("6", ["5", "36", "5", "611"])
                 .then((result: any) => {
                     expect(result).toEqual("addMembers");
@@ -249,7 +249,7 @@ describe("GroupSDK", () => {
 
         test("submits list of users to remove", (done) => {
             const spy = jest.spyOn(GroupOperations, "removeMembers");
-            spy.mockReturnValue(Future.of("removeMembers"));
+            spy.mockReturnValue(Future.of("removeMembers") as any);
             GroupSDK.removeMembers("6", ["5", "36", "894"])
                 .then((result: any) => {
                     expect(result).toEqual("removeMembers");
@@ -261,7 +261,7 @@ describe("GroupSDK", () => {
 
         test("dedupes users in array before submitting", (done) => {
             const spy = jest.spyOn(GroupOperations, "removeMembers");
-            spy.mockReturnValue(Future.of("removeMembers"));
+            spy.mockReturnValue(Future.of("removeMembers") as any);
             GroupSDK.removeMembers("6", ["5", "36", "5", "611"])
                 .then((result: any) => {
                     expect(result).toEqual("removeMembers");
@@ -280,7 +280,7 @@ describe("GroupSDK", () => {
 
         test("submits list of users to remove", (done) => {
             const spy = jest.spyOn(GroupOperations, "deleteGroup");
-            spy.mockReturnValue(Future.of("deleteGroup"));
+            spy.mockReturnValue(Future.of("deleteGroup") as any);
             GroupSDK.deleteGroup("6")
                 .then((result: any) => {
                     expect(result).toEqual("deleteGroup");

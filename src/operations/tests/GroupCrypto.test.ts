@@ -11,28 +11,22 @@ describe("GroupCrypto", () => {
             const signingKeys = TestUtils.getSigningKeyPair();
 
             const genKey = jest.spyOn(Recrypt, "generateGroupKeyPair");
-            genKey.mockReturnValue(
-                Future.of({
-                    publicKey: Buffer.alloc(32),
-                    plaintext: Buffer.alloc(12),
-                    privateKey: Buffer.alloc(29),
-                })
-            );
+            genKey.mockReturnValue(Future.of({
+                publicKey: Buffer.alloc(32),
+                plaintext: Buffer.alloc(12),
+                privateKey: Buffer.alloc(29),
+            }) as any);
 
             const encrypt = jest.spyOn(Recrypt, "encryptPlaintext");
-            encrypt.mockReturnValue(
-                Future.of({
-                    encryptedMessage: "stuff",
-                })
-            );
+            encrypt.mockReturnValue(Future.of({
+                encryptedMessage: "stuff",
+            }) as any);
 
             const transform = jest.spyOn(Recrypt, "generateTransformKey");
-            transform.mockReturnValue(
-                Future.of({
-                    fromPrivateKey: Buffer.alloc(29),
-                    toPublicKey: TestUtils.getEmptyPublicKey(),
-                })
-            );
+            transform.mockReturnValue(Future.of({
+                fromPrivateKey: Buffer.alloc(29),
+                toPublicKey: TestUtils.getEmptyPublicKey(),
+            }) as any);
 
             GroupCrypto.createGroup(userKey, signingKeys.privateKey, true).engage(
                 (e) => fail(e),
@@ -53,28 +47,22 @@ describe("GroupCrypto", () => {
             const signingKeys = TestUtils.getSigningKeyPair();
 
             const keyGen = jest.spyOn(Recrypt, "generateGroupKeyPair");
-            keyGen.mockReturnValue(
-                Future.of({
-                    publicKey: Buffer.alloc(32),
-                    plaintext: Buffer.alloc(12),
-                    privateKey: Buffer.alloc(29),
-                })
-            );
+            keyGen.mockReturnValue(Future.of({
+                publicKey: Buffer.alloc(32),
+                plaintext: Buffer.alloc(12),
+                privateKey: Buffer.alloc(29),
+            }) as any);
 
             const encrypt = jest.spyOn(Recrypt, "encryptPlaintext");
-            encrypt.mockReturnValue(
-                Future.of({
-                    encryptedMessage: "stuff",
-                })
-            );
+            encrypt.mockReturnValue(Future.of({
+                encryptedMessage: "stuff",
+            }) as any);
 
             const transform = jest.spyOn(Recrypt, "generateTransformKey");
-            transform.mockReturnValue(
-                Future.of({
-                    fromPrivateKey: Buffer.alloc(29),
-                    toPublicKey: TestUtils.getEmptyPublicKey(),
-                })
-            );
+            transform.mockReturnValue(Future.of({
+                fromPrivateKey: Buffer.alloc(29),
+                toPublicKey: TestUtils.getEmptyPublicKey(),
+            }) as any);
 
             GroupCrypto.createGroup(userKey, signingKeys.privateKey, false).engage(
                 (e) => fail(e),
@@ -108,9 +96,9 @@ describe("GroupCrypto", () => {
     describe("addAdminsToGroup", () => {
         test("decrypts group private key encrypts it to the provided list of public keys", () => {
             const decrypt = jest.spyOn(Recrypt, "decryptPlaintext");
-            decrypt.mockReturnValue(Future.of(["decryptedPlaintext"]));
+            decrypt.mockReturnValue(Future.of(["decryptedPlaintext"]) as any);
             const encrypt = jest.spyOn(Recrypt, "encryptPlaintextToList");
-            encrypt.mockReturnValue(Future.of(["accessKey1", "accessKey2"]));
+            encrypt.mockReturnValue(Future.of(["accessKey1", "accessKey2"]) as any);
 
             const groupPrivateKey = TestUtils.getTransformedSymmetricKey();
             const adminPrivateKey = Buffer.alloc(20);
@@ -149,9 +137,9 @@ describe("GroupCrypto", () => {
     describe("addMembersToGroup", () => {
         test("decrypts key and reencrypts it to the list of users provided", (done) => {
             const decrypt = jest.spyOn(Recrypt, "decryptPlaintext");
-            decrypt.mockReturnValue(Future.of(["anything", "documentSymKey"]));
+            decrypt.mockReturnValue(Future.of(["anything", "documentSymKey"]) as any);
             const transform = jest.spyOn(Recrypt, "generateTransformKeyToList");
-            transform.mockReturnValue(Future.of("keysForUser"));
+            transform.mockReturnValue(Future.of("keysForUser") as any);
 
             const groupPrivateKey = TestUtils.getTransformedSymmetricKey();
             const adminPrivateKey = Buffer.alloc(20);

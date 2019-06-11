@@ -83,14 +83,12 @@ describe("Initialization", () => {
 
         test("invokes user verify result and returns user fields if they exist", () => {
             const verifySpy = jest.spyOn(UserApi, "callUserVerifyApi");
-            verifySpy.mockReturnValue(
-                Future.of({
-                    id: "353",
-                    segmentId: 3,
-                    status: 232,
-                    userMasterPublicKey: "abc",
-                })
-            );
+            verifySpy.mockReturnValue(Future.of({
+                id: "353",
+                segmentId: 3,
+                status: 232,
+                userMasterPublicKey: "abc",
+            }) as any);
 
             Initialization.userVerify("jwt").engage(
                 (e) => fail(e),
@@ -121,14 +119,12 @@ describe("Initialization", () => {
 
         test("returns existing user is they already exists from verify", () => {
             const verifySpy = jest.spyOn(UserApi, "callUserVerifyApi");
-            verifySpy.mockReturnValue(
-                Future.of({
-                    id: "353",
-                    segmentId: 3,
-                    status: 232,
-                    userMasterPublicKey: "abc",
-                })
-            );
+            verifySpy.mockReturnValue(Future.of({
+                id: "353",
+                segmentId: 3,
+                status: 232,
+                userMasterPublicKey: "abc",
+            }) as any);
 
             Initialization.createUser("jwt", "password").engage(
                 (e) => fail(e),
@@ -144,14 +140,12 @@ describe("Initialization", () => {
 
         test("creates new user with jwt and provided password", (done) => {
             jest.spyOn(UserApi, "callUserVerifyApi").mockReturnValue(Future.of(undefined));
-            const createSpy = jest.spyOn(UserApi, "callUserCreateApi").mockReturnValue(
-                Future.of({
-                    id: "353",
-                    segmentId: 3,
-                    status: 232,
-                    userMasterPublicKey: "abc",
-                })
-            );
+            const createSpy = jest.spyOn(UserApi, "callUserCreateApi").mockReturnValue(Future.of({
+                id: "353",
+                segmentId: 3,
+                status: 232,
+                userMasterPublicKey: "abc",
+            }) as any);
 
             Initialization.createUser("jwt", "password").engage(
                 (e) => fail(e),
@@ -214,11 +208,9 @@ describe("Initialization", () => {
             );
             jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(Future.of(Buffer.alloc(32)));
             const deviceAddSpy = jest.spyOn(UserApi, "callUserDeviceAdd");
-            deviceAddSpy.mockReturnValue(
-                Future.of({
-                    devicePublicKey: TestUtils.getEmptyPublicKey(),
-                })
-            );
+            deviceAddSpy.mockReturnValue(Future.of({
+                devicePublicKey: TestUtils.getEmptyPublicKey(),
+            }) as any);
 
             Initialization.generateDevice("jwt", "password", {deviceName: ""}).engage(
                 (e) => fail(e),
@@ -261,11 +253,9 @@ describe("Initialization", () => {
             );
             jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(Future.of(Buffer.alloc(32)));
             const deviceAddSpy = jest.spyOn(UserApi, "callUserDeviceAdd");
-            deviceAddSpy.mockReturnValue(
-                Future.of({
-                    devicePublicKey: TestUtils.getEmptyPublicKey(),
-                })
-            );
+            deviceAddSpy.mockReturnValue(Future.of({
+                devicePublicKey: TestUtils.getEmptyPublicKey(),
+            }) as any);
 
             Initialization.generateDevice("jwt", "password", {deviceName: "OSX"}).engage(
                 (e) => fail(e),

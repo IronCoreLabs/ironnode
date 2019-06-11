@@ -34,7 +34,7 @@ describe("DocumentCrypto", () => {
                 if (keyList.length) {
                     return Future.of(encryptedUserKeyList);
                 }
-                return Future.of([]);
+                return Future.of([]) as any;
             });
 
             DocumentCrypto.encryptPlaintextToUsersAndGroups(plaintext, userPublicKeyList, [], signingKeys.privateKey).engage(
@@ -66,7 +66,7 @@ describe("DocumentCrypto", () => {
                 if (keyList.length) {
                     return Future.of(encryptedGroupKeyList);
                 }
-                return Future.of([]);
+                return Future.of([]) as any;
             });
 
             DocumentCrypto.encryptPlaintextToUsersAndGroups(plaintext, [], groupPublicKeyList, signingKeys.privateKey).engage(
@@ -102,7 +102,7 @@ describe("DocumentCrypto", () => {
                 if (keyList.length === 1) {
                     return Future.of(encryptedUserKeyList);
                 }
-                return Future.of(encryptedGroupKeyList);
+                return Future.of(encryptedGroupKeyList) as any;
             });
 
             DocumentCrypto.encryptPlaintextToUsersAndGroups(plaintext, userPublicKeyList, groupPublicKeyList, signingKeys.privateKey).engage(
@@ -144,12 +144,10 @@ describe("DocumentCrypto", () => {
             const docToEncrypt = Buffer.alloc(35);
 
             const aesEncrypt = jest.spyOn(AES, "encryptBytes");
-            aesEncrypt.mockReturnValue(
-                Future.of({
-                    data,
-                    dataNonce,
-                })
-            );
+            aesEncrypt.mockReturnValue(Future.of({
+                data,
+                dataNonce,
+            }) as any);
 
             DocumentCrypto.encryptBytes(Buffer.from([0, 0, 0, 0]), docToEncrypt, generatedKey).engage(
                 (e) => fail(e),
@@ -165,7 +163,7 @@ describe("DocumentCrypto", () => {
 
         test("maps failures to SDK error with specific error code", (done) => {
             const aesEncrypt = jest.spyOn(AES, "encryptBytes");
-            aesEncrypt.mockReturnValue(Future.reject(new Error("aes encrypt")));
+            aesEncrypt.mockReturnValue(Future.reject(new Error("aes encrypt")) as any);
 
             DocumentCrypto.encryptBytes(Buffer.from([0, 0, 0, 0]), Buffer.alloc(35), Buffer.from([33, 113, 53])).engage(
                 (error) => {
@@ -195,7 +193,7 @@ describe("DocumentCrypto", () => {
 
         test("maps failures to SDK error with specific error code", (done) => {
             const aesEncrypt = jest.spyOn(AES, "encryptStream");
-            aesEncrypt.mockReturnValue(Future.reject(new Error("aes encrypt")));
+            aesEncrypt.mockReturnValue(Future.reject(new Error("aes encrypt")) as any);
 
             DocumentCrypto.encryptStream(Buffer.from([0, 0, 0, 0]), Buffer.alloc(38), "inputStream" as any, "outputStream" as any).engage(
                 (error) => {
@@ -215,7 +213,7 @@ describe("DocumentCrypto", () => {
             const decryptPlaintext = jest.spyOn(Recrypt, "decryptPlaintext");
             decryptPlaintext.mockReturnValue(Future.of([plaintext, decryptedKey]));
             const aesDecrypt = jest.spyOn(AES, "decryptBytes");
-            aesDecrypt.mockReturnValue(Future.of("decrypted document"));
+            aesDecrypt.mockReturnValue(Future.of("decrypted document") as any);
 
             const symKey = TestUtils.getTransformedSymmetricKey();
             const privKey = Buffer.alloc(32);
@@ -290,7 +288,7 @@ describe("DocumentCrypto", () => {
             const recryptDecrypt = jest.spyOn(Recrypt, "decryptPlaintext");
             recryptDecrypt.mockReturnValue(Future.of([plaintext, decryptKey]));
             const aesEncrypt = jest.spyOn(AES, "encryptBytes");
-            aesEncrypt.mockReturnValue(Future.of(decryptResult));
+            aesEncrypt.mockReturnValue(Future.of(decryptResult) as any);
 
             const symKey = TestUtils.getTransformedSymmetricKey();
             const newData = Buffer.alloc(35);
@@ -379,7 +377,7 @@ describe("DocumentCrypto", () => {
             const recryptDecrypt = jest.spyOn(Recrypt, "decryptPlaintext");
             recryptDecrypt.mockReturnValue(Future.of([decryptPlaintext, decryptKey]));
             const recryptEncrypt = jest.spyOn(Recrypt, "encryptPlaintextToList");
-            recryptEncrypt.mockReturnValue(Future.of(EncryptedAccessKeyList));
+            recryptEncrypt.mockReturnValue(Future.of(EncryptedAccessKeyList) as any);
 
             const userList = [{id: "abc-123", masterPublicKey: {x: "", y: ""}}, {id: "def-456", masterPublicKey: {x: "", y: ""}}];
             const groupList = [{id: "group-353", masterPublicKey: {x: "", y: ""}}];

@@ -17,7 +17,7 @@ describe("StreamingAES", () => {
 
                 const transformer = se.getTransform();
 
-                const mockTransform = {push: jest.fn()};
+                const mockTransform = {push: jest.fn()} as any;
                 const callback = jest.fn();
 
                 transformer.call(mockTransform, Buffer.from([5, 10, 15, 20, 25, 30]), "", callback);
@@ -42,11 +42,11 @@ describe("StreamingAES", () => {
             test("should get AES final and auth tag and add to result", () => {
                 const se = new StreamingEncryption(Buffer.from([0, 0, 0, 0]), Buffer.alloc(32));
                 se.hasPushedOnIV = true;
-                const mockFlush = {push: jest.fn()};
+                const mockFlush = {push: jest.fn()} as any;
                 const callback = jest.fn();
 
                 const finalSpy = jest.spyOn(se.cipher, "final");
-                finalSpy.mockReturnValue(Buffer.from([10]));
+                finalSpy.mockReturnValue(Buffer.from([10]) as any);
                 const authTagSpy = jest.spyOn(se.cipher, "getAuthTag");
                 authTagSpy.mockReturnValue(Buffer.from([30, 40, 50, 60, 70]));
 
@@ -59,11 +59,11 @@ describe("StreamingAES", () => {
 
             test("should push on header and IV if no data was yet processed", () => {
                 const se = new StreamingEncryption(Buffer.from([0, 0, 0, 0]), Buffer.alloc(32));
-                const mockFlush = {push: jest.fn()};
+                const mockFlush = {push: jest.fn()} as any;
                 const callback = jest.fn();
 
                 const finalSpy = jest.spyOn(se.cipher, "final");
-                finalSpy.mockReturnValue(Buffer.from([10]));
+                finalSpy.mockReturnValue(Buffer.from([10]) as any);
                 const authTagSpy = jest.spyOn(se.cipher, "getAuthTag");
                 authTagSpy.mockReturnValue(Buffer.from([30, 40, 50, 60, 70]));
 
@@ -198,7 +198,7 @@ describe("StreamingAES", () => {
             test("does nothing when no data provided", () => {
                 const sd = new StreamingDecryption(Buffer.alloc(32));
                 const callback = jest.fn();
-                const mockTransform = {push: jest.fn()};
+                const mockTransform = {push: jest.fn()} as any;
                 const transform = sd.getTransform();
 
                 transform.call(mockTransform, Buffer.from([]), "", callback);
@@ -210,7 +210,7 @@ describe("StreamingAES", () => {
             test("it doesnt push on any data when IV is not yet pulled off", () => {
                 const sd = new StreamingDecryption(Buffer.alloc(32));
                 const callback = jest.fn();
-                const mockTransform = {push: jest.fn()};
+                const mockTransform = {push: jest.fn()} as any;
                 const transform = sd.getTransform();
 
                 transform.call(mockTransform, Buffer.from([1, 10, 20, 30, 40, 50, 60, 70]), "", callback);
@@ -231,7 +231,7 @@ describe("StreamingAES", () => {
             test("pushes on data that it has decrypted", () => {
                 const sd = new StreamingDecryption(Buffer.alloc(32));
                 const callback = jest.fn();
-                const mockTransform = {push: jest.fn()};
+                const mockTransform = {push: jest.fn()} as any;
                 const transform = sd.getTransform();
 
                 const iv = Buffer.alloc(12);
@@ -260,7 +260,7 @@ describe("StreamingAES", () => {
             test("should throw an error if we havent gotten any data in the transformer yet", () => {
                 const sd = new StreamingDecryption(Buffer.alloc(32));
                 const callback = jest.fn();
-                const mockTransform = {push: jest.fn()};
+                const mockTransform = {push: jest.fn()} as any;
 
                 const flush = sd.getFlush();
 
@@ -275,15 +275,15 @@ describe("StreamingAES", () => {
 
                 const flush = sd.getFlush();
                 const callback = jest.fn();
-                flush.call({push: jest.fn()}, callback);
+                flush.call({push: jest.fn()} as any, callback);
                 expect(callback).toHaveBeenCalledWith(expect.any(Error));
             });
 
             test("sets auth tag before doing final AES data update", () => {
                 const sd = new StreamingDecryption(Buffer.alloc(32));
                 const callback = jest.fn();
-                const mockTransform = {push: jest.fn()};
-                const mockFlush = {push: jest.fn()};
+                const mockTransform = {push: jest.fn()} as any;
+                const mockFlush = {push: jest.fn()} as any;
                 const transform = sd.getTransform();
                 const flush = sd.getFlush();
 
@@ -295,7 +295,7 @@ describe("StreamingAES", () => {
 
                 jest.spyOn(sd.decipher!, "setAuthTag");
                 const finalSpy = jest.spyOn(sd.decipher!, "final");
-                finalSpy.mockReturnValue(Buffer.from([100]));
+                finalSpy.mockReturnValue(Buffer.from([100]) as any);
                 flush.call(mockFlush, callback);
                 expect(sd.decipher!.setAuthTag).toHaveBeenCalledWith(Buffer.from([80, 85, 90, 95, 100, 105, 110, 115, 120, 130, 135, 140, 145, 150, 155, 160]));
                 expect(mockFlush.push).toHaveBeenCalledWith(Buffer.from([225, 126, 75, 231, 77, 61, 89, 47, 30, 218, 117, 118, 247, 160, 199, 240, 100]));
