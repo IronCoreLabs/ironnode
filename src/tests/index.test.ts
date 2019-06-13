@@ -16,7 +16,7 @@ describe("IronNode", () => {
 
         test("should call into init when all parameters appear valid", () => {
             const initSpy = jest.spyOn(Initialization, "initialize");
-            initSpy.mockReturnValue(Future.of("init"));
+            initSpy.mockReturnValue(Future.of("init") as any);
             IronNode.initialize("abc", 3, "aaaa", "aaaa")
                 .then((res) => {
                     expect(res).toEqual("init");
@@ -28,7 +28,7 @@ describe("IronNode", () => {
     describe("User", () => {
         describe("verify", () => {
             const verifySpy = jest.spyOn(Initialization, "userVerify");
-            verifySpy.mockReturnValue(Future.of("verify"));
+            verifySpy.mockReturnValue(Future.of("verify") as any);
             IronNode.User.verify("jwt")
                 .then((res) => {
                     expect(res).toEqual("verify");
@@ -38,7 +38,7 @@ describe("IronNode", () => {
 
         describe("create", () => {
             const createSpy = jest.spyOn(Initialization, "createUser");
-            createSpy.mockReturnValue(Future.of("create"));
+            createSpy.mockReturnValue(Future.of("create") as any);
             IronNode.User.create("jwt", "password")
                 .then((res) => {
                     expect(res).toEqual("create");
@@ -48,7 +48,7 @@ describe("IronNode", () => {
 
         describe("generateDeviceKeys", () => {
             const genDeviceSpy = jest.spyOn(Initialization, "generateDevice");
-            genDeviceSpy.mockReturnValue(Future.of("genDevice"));
+            genDeviceSpy.mockReturnValue(Future.of("genDevice") as any);
             IronNode.User.generateDeviceKeys("jwt", "password")
                 .then((res) => {
                     expect(res).toEqual("genDevice");

@@ -17,5 +17,5 @@ module.exports = {
     testRegex: "(\\.|/)(test)\\.(js|ts)$",
     moduleFileExtensions: ["ts", "js", "json"],
     testEnvironment: "node",
-    setupTestFrameworkScriptFile: "./src/tests/jestSetup.ts",
+    setupFilesAfterEnv: ["./src/tests/jestSetup.ts"],
 };

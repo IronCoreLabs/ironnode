@@ -6,7 +6,7 @@ describe("DocumentSDK", () => {
     describe("list", () => {
         test("returns Promise invoking document list", (done) => {
             const spy = jest.spyOn(DocumentOperations, "list");
-            spy.mockReturnValue(Future.of("list"));
+            spy.mockReturnValue(Future.of("list") as any);
             DocumentSDK.list()
                 .then((result: any) => {
                     expect(result).toEqual("list");
@@ -27,7 +27,7 @@ describe("DocumentSDK", () => {
 
         test("returns Promise invoking document metadata get", (done) => {
             const spy = jest.spyOn(DocumentOperations, "getMetadata");
-            spy.mockReturnValue(Future.of("getmetadata"));
+            spy.mockReturnValue(Future.of("getmetadata") as any);
             DocumentSDK.getMetadata("docID")
                 .then((result: any) => {
                     expect(result).toEqual("getmetadata");
@@ -82,7 +82,7 @@ describe("DocumentSDK", () => {
 
         test("calls decrypt bytes api and returns response", (done) => {
             const spy = jest.spyOn(DocumentOperations, "decryptBytes");
-            spy.mockReturnValue(Future.of("decryptBytes"));
+            spy.mockReturnValue(Future.of("decryptBytes") as any);
             DocumentSDK.decryptBytes("mydoc", Buffer.alloc(35))
                 .then((result: any) => {
                     expect(result).toEqual("decryptBytes");
@@ -125,7 +125,7 @@ describe("DocumentSDK", () => {
     describe("encryptBytes", () => {
         beforeEach(() => {
             const spy = jest.spyOn(DocumentOperations, "encryptBytes");
-            spy.mockReturnValue(Future.of("encryptBytes"));
+            spy.mockReturnValue(Future.of("encryptBytes") as any);
         });
 
         test("throws errors if arguments are invalid", () => {
@@ -196,7 +196,7 @@ describe("DocumentSDK", () => {
     describe("encryptStream", () => {
         beforeEach(() => {
             const spy = jest.spyOn(DocumentOperations, "encryptStream");
-            spy.mockReturnValue(Future.of("encryptStream"));
+            spy.mockReturnValue(Future.of("encryptStream") as any);
         });
 
         test("throws errors if arguments are invalid", () => {
@@ -267,7 +267,7 @@ describe("DocumentSDK", () => {
         test("calls updateEncryptedBytes API and returns expected result", (done) => {
             const doc = Buffer.from([100, 111, 99]);
             const spy = jest.spyOn(DocumentOperations, "updateDocumentBytes");
-            spy.mockReturnValue(Future.of("updateEncryptedBytes"));
+            spy.mockReturnValue(Future.of("updateEncryptedBytes") as any);
 
             DocumentSDK.updateEncryptedBytes("mydoc", doc)
                 .then((result: any) => {
@@ -287,7 +287,7 @@ describe("DocumentSDK", () => {
 
         test("calls updateEncryptedStream API and returns expected result", (done) => {
             const spy = jest.spyOn(DocumentOperations, "updateDocumentStream");
-            spy.mockReturnValue(Future.of("updateDocumentStream"));
+            spy.mockReturnValue(Future.of("updateDocumentStream") as any);
 
             DocumentSDK.updateEncryptedStream("fileID", "inputFile" as any, "outputFile" as any)
                 .then((result: any) => {
@@ -307,7 +307,7 @@ describe("DocumentSDK", () => {
 
         test("calls document update name API with values passed in", (done) => {
             const spy = jest.spyOn(DocumentOperations, "updateDocumentName");
-            spy.mockReturnValue(Future.of("updateDocumentName"));
+            spy.mockReturnValue(Future.of("updateDocumentName") as any);
             DocumentSDK.updateName("doc-10", "new name")
                 .then((result: any) => {
                     expect(result).toEqual("updateDocumentName");
@@ -321,7 +321,7 @@ describe("DocumentSDK", () => {
     describe("grantAccess", () => {
         beforeEach(() => {
             const spy = jest.spyOn(DocumentOperations, "grantDocumentAccess");
-            spy.mockReturnValue(Future.of("grantDocumentAccess"));
+            spy.mockReturnValue(Future.of("grantDocumentAccess") as any);
         });
 
         test("throws errors if no document ID or ID is invalid", () => {
@@ -373,7 +373,7 @@ describe("DocumentSDK", () => {
     describe("revokeAccess", () => {
         beforeEach(() => {
             const spy = jest.spyOn(DocumentOperations, "revokeDocumentAccess");
-            spy.mockReturnValue(Future.of("revokeDocumentAccess"));
+            spy.mockReturnValue(Future.of("revokeDocumentAccess") as any);
         });
 
         test("throws errors if no document ID or invalid", () => {

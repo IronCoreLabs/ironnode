@@ -7,7 +7,7 @@ import * as Groups from "./Groups";
 import * as Users from "./Users";
 import {SDK} from "../ironnode";
 
-const topLevelPrompt = {
+const topLevelPrompt: inquirer.ListQuestion<{operation: string}> = {
     type: "list",
     name: "operation",
     message: "Which operation do you want to run?",
@@ -101,9 +101,9 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
  * Ask the top level question about which operation to run. If it fails log the error. In both cases, recursively
  * show the top level operation prompt again.
  */
-function askForOperation(IronNode: SDK) {
+function askForOperation(IronNode: SDK): Promise<void> {
     return inquirer
-        .prompt<{operation: string}>(topLevelPrompt)
+        .prompt(topLevelPrompt)
         .then(({operation}) => {
             return routeAnswerToOperation(IronNode, operation).catch((error) => {
                 console.log("\x1Bc");
@@ -112,8 +112,9 @@ function askForOperation(IronNode: SDK) {
                 return Promise.resolve();
             });
         })
-        .then(() => {
-            askForOperation(IronNode);
+        .then(() => askForOperation(IronNode))
+        .catch((e) => {
+            console.error(`${e.message}\n\n`);
         });
 }
 

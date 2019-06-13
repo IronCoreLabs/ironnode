@@ -6,15 +6,13 @@ import {getSigningKeyPair} from "../../tests/TestUtils";
 describe("ApiRequest", () => {
     describe("fetchJSON", () => {
         beforeEach(() => {
-            jest.spyOn(fetch, "default").mockReturnValue(
-                Promise.resolve({
-                    foo: "bar",
-                })
-            );
+            jest.spyOn(fetch, "default").mockReturnValue(Promise.resolve({
+                foo: "bar",
+            }) as any);
         });
 
         afterEach(() => {
-            (fetch.default as jest.Mock).mockClear();
+            (fetch.default as any).mockClear();
         });
 
         test("invokes fetch with expected parameters", () => {
@@ -24,7 +22,7 @@ describe("ApiRequest", () => {
         });
 
         test("converts failed request to SDK error", (done) => {
-            (fetch.default as jest.Mock).mockReturnValue(Promise.reject(new Error("forced error")));
+            (fetch.default as any).mockReturnValue(Promise.reject(new Error("forced error")));
 
             ApiRequest.fetchJSON("api/method", -1, {method: "POST"}).engage(
                 (error) => {
@@ -37,7 +35,7 @@ describe("ApiRequest", () => {
         });
 
         test("converts failed request with JSON error into SDK Error", (done) => {
-            (fetch.default as jest.Mock).mockReturnValue(
+            (fetch.default as any).mockReturnValue(
                 Promise.resolve({
                     ok: false,
                     statusText: "not good",
@@ -56,7 +54,7 @@ describe("ApiRequest", () => {
         });
 
         test("falls back to status text if response JSON is not in the expected format", (done) => {
-            (fetch.default as jest.Mock).mockReturnValue(
+            (fetch.default as any).mockReturnValue(
                 Promise.resolve({
                     ok: false,
                     statusText: "not good",
@@ -75,7 +73,7 @@ describe("ApiRequest", () => {
         });
 
         test("falls back to status text if response body cannot be JSON parsed", (done) => {
-            (fetch.default as jest.Mock).mockReturnValue(
+            (fetch.default as any).mockReturnValue(
                 Promise.resolve({
                     ok: false,
                     statusText: "not good",
@@ -94,7 +92,7 @@ describe("ApiRequest", () => {
         });
 
         test("returns empty object if request status is a 204", (done) => {
-            (fetch.default as jest.Mock).mockReturnValue(Promise.resolve({ok: true, status: 204}));
+            (fetch.default as any).mockReturnValue(Promise.resolve({ok: true, status: 204}));
 
             ApiRequest.fetchJSON("api/method", -1, {method: "POST"}).engage(
                 (e) => done.fail(e),
@@ -106,7 +104,7 @@ describe("ApiRequest", () => {
         });
 
         test("falls back to hardcoded message text when response is success but JSON parsing fails", (done) => {
-            (fetch.default as jest.Mock).mockReturnValue(
+            (fetch.default as any).mockReturnValue(
                 Promise.resolve({
                     ok: true,
                     status: 200,
@@ -125,7 +123,7 @@ describe("ApiRequest", () => {
         });
 
         test("invokes response.json on result and maps data to result and response", (done) => {
-            (fetch.default as jest.Mock).mockReturnValue(
+            (fetch.default as any).mockReturnValue(
                 Promise.resolve({
                     ok: true,
                     status: 200,
@@ -145,7 +143,7 @@ describe("ApiRequest", () => {
         });
 
         test("returns special rate limiting error message when 429 response is returned", () => {
-            (fetch.default as jest.Mock).mockReturnValue(
+            (fetch.default as any).mockReturnValue(
                 Promise.resolve({
                     ok: false,
                     status: 429,

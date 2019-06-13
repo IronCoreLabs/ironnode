@@ -11,7 +11,7 @@ describe("UserSDK", () => {
 
         test("converts single ID to array and returns value from UserOperations call", (done) => {
             const spy = jest.spyOn(UserOperations, "getUserPublicKeys");
-            spy.mockReturnValue(Future.of("resp"));
+            spy.mockReturnValue(Future.of("resp") as any);
             UserSDK.getPublicKey("userID")
                 .then((resp) => {
                     expect(resp).toEqual("resp");
@@ -23,7 +23,7 @@ describe("UserSDK", () => {
 
         test("leaves provided arrays alone", (done) => {
             const spy = jest.spyOn(UserOperations, "getUserPublicKeys");
-            spy.mockReturnValue(Future.of("resp"));
+            spy.mockReturnValue(Future.of("resp") as any);
             UserSDK.getPublicKey(["userID1", "userID2"])
                 .then((resp) => {
                     expect(resp).toEqual("resp");
@@ -37,7 +37,7 @@ describe("UserSDK", () => {
     describe("listDevices", () => {
         test("calls user operations", () => {
             const spy = jest.spyOn(UserOperations, "getUserDevices");
-            spy.mockReturnValue(Future.of("resp"));
+            spy.mockReturnValue(Future.of("resp") as any);
             UserSDK.listDevices()
                 .then((resp) => {
                     expect(resp).toEqual("resp");
@@ -56,7 +56,7 @@ describe("UserSDK", () => {
 
         test("calls user operations method with device ID", () => {
             const spy = jest.spyOn(UserOperations, "deleteUserDevice");
-            spy.mockReturnValue(Future.of("resp"));
+            spy.mockReturnValue(Future.of("resp") as any);
             UserSDK.deleteDevice(34)
                 .then((resp) => {
                     expect(resp).toEqual("resp");

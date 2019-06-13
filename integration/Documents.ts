@@ -8,7 +8,7 @@ import {log} from "./Logger";
 /**
  * Shared list of inquirer questions for document creation
  */
-const sharedDocumentQuestions = [
+const sharedDocumentQuestions: inquirer.Question[] = [
     {
         name: "id",
         type: "input",
@@ -52,7 +52,7 @@ function normalizePath(filePath: string) {
  * Generic method to ask user for file input and output paths with customized messages. Handles filtering, validation, and transforming of
  * data to display fully qualified file paths.
  */
-function getFormattedFilePathQuestions(inputMessage: string, outputMessage: string) {
+function getFormattedFilePathQuestions(inputMessage: string, outputMessage: string): inquirer.Question[] {
     return [
         {
             name: "inputFile",
