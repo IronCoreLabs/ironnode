@@ -1,3 +1,7 @@
+## 0.7.0
+
+* Upgraded `recrypt-node-binding` dependency as well as all other dependencies. This adds support for Node 12 and removes support for Node 9 and Node 11.
+
 ## 0.6.1
 
 ### Added
