@@ -7,7 +7,7 @@
  * This build file is responsible for compiling the IronNode SDK from TypeScript into ES6 JavaScript to work within Node applications. The
  * resulting build will be put into a top-level `dist` directory where it will be ready to perform an NPM publish step. If the `--publish` option
  * is provided then the entire dist directory will be pushed up to NPM as @ironcorelabs/ironnode and a tag of the released version will be added
- * to git. Otherwise we'll run a mock publish (using irish-pub) and leave the dist directory in place.
+ * to git. Otherwise we'll run a mock publish and leave the dist directory in place.
  *
  * Running this build script will also run unit tests to ensure they pass before deploying any code.
  *
@@ -40,7 +40,7 @@ if (args.indexOf("-h") !== -1 || args.indexOf("--help") !== -1) {
  */
 function publishModule() {
     shell.pushd("./dist");
-    shell.exec(SHOULD_PUBLISH ? "npm publish --access public" : "irish-pub");
+    shell.exec(SHOULD_PUBLISH ? "npm publish --access public" : "npm publish --dry-run");
     shell.popd();
 }
 
