@@ -1,7 +1,7 @@
-import * as path from "path";
 import * as fs from "fs";
-import * as request from "request";
 import * as inquirer from "inquirer";
+import * as path from "path";
+import * as request from "request";
 import {SDK} from "../ironnode";
 import {log} from "./Logger";
 
@@ -52,7 +52,7 @@ function normalizePath(filePath: string) {
  * Generic method to ask user for file input and output paths with customized messages. Handles filtering, validation, and transforming of
  * data to display fully qualified file paths.
  */
-function getFormattedFilePathQuestions(inputMessage: string, outputMessage: string): inquirer.Question[] {
+function getFormattedFilePathQuestions(inputMessage: string, outputMessage: string): inquirer.InputQuestionOptions[] {
     return [
         {
             name: "inputFile",

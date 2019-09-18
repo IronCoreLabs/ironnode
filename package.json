@@ -1,6 +1,6 @@
 {
     "name": "@ironcorelabs/ironnode",
-    "version": "0.7.0",
+    "version": "0.7.1",
     "description": "IronCore Labs SDK for NodeJS Applications",
     "homepage": "https://docs.ironcorelabs.com",
     "main": "index.js",
@@ -19,34 +19,34 @@
         "x64"
     ],
     "scripts": {
-        "start": "ts-node -- ./integration/index.ts",
+        "start": "_ICL_API_DOMAIN_REPLACEMENT_=http://localhost:9090 ts-node -- ./integration/index.ts",
         "build": "./build.js",
         "test": "yarn run lint && yarn run unit",
         "unit": "jest",
         "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\""
     },
     "dependencies": {
-        "@ironcorelabs/recrypt-node-binding": "0.5.1",
+        "@ironcorelabs/recrypt-node-binding": "0.5.2",
         "futurejs": "2.1.1",
         "node-fetch": "2.6.0"
     },
     "devDependencies": {
         "@types/inquirer": "^6.5.0",
-        "@types/jest": "^24.0.17",
-        "@types/jsonwebtoken": "^8.3.3",
-        "@types/node": "^12.7.1",
-        "@types/node-fetch": "^2.5.0",
-        "@types/request": "^2.48.2",
-        "inquirer": "^6.5.1",
-        "jest": "^24.8.0",
+        "@types/jest": "^24.0.18",
+        "@types/jsonwebtoken": "^8.3.4",
+        "@types/node": "^12.7.5",
+        "@types/node-fetch": "^2.5.1",
+        "@types/request": "^2.48.3",
+        "inquirer": "^7.0.0",
+        "jest": "^24.9.0",
         "jest-extended": "^0.11.2",
         "jsonwebtoken": "^8.5.1",
         "request": "^2.88.0",
         "shelljs": "^0.8.3",
-        "ts-jest": "^24.0.2",
-        "ts-node": "^8.3.0",
-        "tslint": "^5.18.0",
-        "typescript": "^3.5.3",
+        "ts-jest": "^24.1.0",
+        "ts-node": "^8.4.1",
+        "tslint": "^5.20.0",
+        "typescript": "^3.6.3",
         "typestrict": "^1.0.2"
     },
     "prettier": {
