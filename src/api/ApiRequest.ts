@@ -1,14 +1,13 @@
 import Future from "futurejs";
 import fetch, {RequestInit, Response} from "node-fetch";
+import {MessageSignature, SigningKeyPair} from "../commonTypes";
+import {ErrorCodes} from "../Constants";
 import {ed25519Sign} from "../crypto/Recrypt";
 import SDKError from "../lib/SDKError";
 import {Codec} from "../lib/Utils";
-import {ErrorCodes} from "../Constants";
-import {MessageSignature, SigningKeyPair} from "../commonTypes";
 
 const SIGNATURE_VERSION = 1;
-//const IRONCORE_ID_API_BASE_URL = "https://api.ironcorelabs.com/api/1/";
-const IRONCORE_ID_API_BASE_URL = "http://localhost:9090/api/1/";
+const IRONCORE_ID_API_BASE_URL = `${process.env._ICL_API_DOMAIN_REPLACEMENT_ || "https://api.ironcorelabs.com"}/api/1/`;
 const CLOUDFLARE_RATE_LIMIT_STATUS_CODE = 429; //support.cloudflare.com/hc/en-us/articles/115001635128-Configuring-Rate-Limiting-in-the-Cloudflare-Dashboard#basic
 
 type ApiErrorList = Array<{

@@ -87,10 +87,6 @@ function ensureNoChangesOnMasterBeforePublish() {
     }
 }
 
-function replaceApiEndpointToProduction() {
-    shell.sed("-i", "http://localhost:9090/api/1/", "https://api.ironcorelabs.com/api/1/", "./dist/api/ApiRequest.js");
-}
-
 //Ensure that we're at the root directory of the repo to start
 const buildScriptDirectory = path.dirname(process.argv[1]);
 shell.cd(path.join(buildScriptDirectory));
@@ -109,7 +105,6 @@ shell.exec("yarn test --coverage");
 shell.echo("\n\nCompiling all source from TypeScript to ES6 JS and removing unit test files");
 shell.exec("./node_modules/typescript/bin/tsc --target ES6 --sourceMap false --module CommonJS --outDir ./dist");
 shell.exec("find dist -type d -name tests -prune -exec rm -rf {} \\;");
-replaceApiEndpointToProduction();
 
 //Copy in various files that we need to deploy as part of our NPM package
 shell.cp("./package.json", "./dist");
