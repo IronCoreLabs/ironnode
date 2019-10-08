@@ -7,16 +7,17 @@ SDK for using IronCore Labs from your NodeJS server side applications. Read [our
 
 ## Supported Platforms
 
-|           | Node 8 | Node 10 | Node 12 |
-| --------- | ------ | ------- | ------- |
-| Linux x64 |    ✓   |    ✓    |    ✓    |
-| OSX x64   |    ✓   |    ✓    |    ✓    |
+|                     | Node 8 | Node 10 | Node 12 |
+| ------------------- | ------ | ------- | ------- |
+| Linux x64 glibc     | ✓      | ✓       | ✓       |
+| Linux x64 musl-libc | ✓      | ✓       | ✓       |
+| OSX x64             | ✓      | ✓       | ✓       |
 
 ## Installation
 
 `npm install @ironcorelabs/ironnode`
 
-This SDK relies on our [recrypt-node-binding](https://github.com/IronCoreLabs/recrypt-node-binding) Node addon library. This library is distributed as a binary which is specific to both an architecture (OSX/Linux) and Node version (8/10). When you NPM install this SDK it will automatically determine the proper binary to pull down into your `node_modules` directory based on your architecture and Node version.
+This SDK relies on our [recrypt-node-binding](https://github.com/IronCoreLabs/recrypt-node-binding) Node addon library. This library is distributed as a binary which is specific to both an architecture (OSX/Linux) and Node version (8/10/12). When you NPM install this SDK it will automatically determine the proper binary to pull down into your `node_modules` directory based on your architecture and Node version.
 
 This means that you'll need to make sure that the machine that runs `npm install` to install this library is the architecture/Node version where the code will run. This library will not work if you run `npm install` on an OSX machine and move the node_modules directory over to a Linux machine, for example.
 
@@ -34,8 +35,8 @@ In order to run the integration tests for this repo you need to have an IronCore
 
 Once you have all three items configured, do the following:
 
-+ Copy your Service Key `private.key` file into the `integration` directory.
-+ Create a `project.json` file in the `integration` directory with the following JSON form
+-   Copy your Service Key `private.key` file into the `integration` directory.
+-   Create a `project.json` file in the `integration` directory with the following JSON form
 
 ```
 {
@@ -67,5 +68,5 @@ To run a subset of the tests you can use the `-t` option of Jest to only run tes
 
 `yarn run unit -t group`
 
-Copyright (c)  2018-present  IronCore Labs, Inc.
+Copyright (c) 2019 IronCore Labs, Inc.
 All rights reserved.
