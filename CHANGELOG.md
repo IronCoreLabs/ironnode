@@ -1,3 +1,13 @@
+## 0.7.3
+
+### Breaking Changes
+
+None
+
+### Changed
+
+Updated to latest version of `recrypt-node-binding`.
+
 ## 0.7.2
 
 ### Breaking Changes
