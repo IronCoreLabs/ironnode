@@ -1,20 +1,20 @@
-import Future from "futurejs";
 import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
-import {ErrorCodes} from "../Constants";
-import {Codec, transformKeyToBase64} from "../lib/Utils";
-import * as ApiRequest from "./ApiRequest";
-import {TransformKeyGrant} from "../crypto/Recrypt";
-import SDKError from "../lib/SDKError";
-import ApiState from "../lib/ApiState";
+import Future from "futurejs";
 import {
     EncryptedAccessKey,
+    GroupApiBasicResponse,
+    GroupApiFullDetailResponse,
+    GroupApiFullResponse,
     MessageSignature,
     PublicKey,
     RecryptEncryptedMessage,
-    GroupApiBasicResponse,
-    GroupApiFullResponse,
-    GroupApiFullDetailResponse,
 } from "../commonTypes";
+import {ErrorCodes} from "../Constants";
+import {TransformKeyGrant} from "../crypto/Recrypt";
+import ApiState from "../lib/ApiState";
+import SDKError from "../lib/SDKError";
+import {Codec, transformKeyToBase64} from "../lib/Utils";
+import * as ApiRequest from "./ApiRequest";
 
 export interface GroupListResponseType {
     result: GroupApiFullResponse[];
@@ -48,7 +48,7 @@ function getSignatureHeader() {
  * @param {string[]}         groupIDList Optional list of group IDs to retrieve. If omitted all groups will be returned.
  */
 function groupList(sign: MessageSignature, groupIDList: string[] = []) {
-    const groupFilter = groupIDList.length ? `?id=${groupIDList.map(encodeURIComponent).join(",")}` : "";
+    const groupFilter = groupIDList.length ? `?id=${encodeURIComponent(groupIDList.join(","))}` : "";
     return {
         url: `groups${groupFilter}`,
         options: {

@@ -1,13 +1,13 @@
-import Future from "futurejs";
 import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
-import * as ApiRequest from "./ApiRequest";
+import Future from "futurejs";
+import {DeviceCreateOptions, UserDeviceListResponse} from "../../ironnode";
+import {Base64String, MessageSignature, PrivateKey, PublicKey} from "../commonTypes";
 import {ErrorCodes} from "../Constants";
+import {computeEd25519PublicKey} from "../crypto/Recrypt";
 import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
 import {Codec, transformKeyToBase64} from "../lib/Utils";
-import {computeEd25519PublicKey} from "../crypto/Recrypt";
-import {PublicKey, PrivateKey, Base64String, MessageSignature} from "../commonTypes";
-import {DeviceCreateOptions, UserDeviceListResponse} from "../../ironnode";
+import * as ApiRequest from "./ApiRequest";
 
 export interface ApiServerUserResponse {
     id: string;
@@ -119,7 +119,7 @@ function userDeviceAdd(
  */
 function userKeyList(sign: MessageSignature, userList: string[]) {
     return {
-        url: `users?id=${userList.join(",")}`,
+        url: `users?id=${encodeURIComponent(userList.join(","))}`,
         options: {
             method: "GET",
             headers: {
@@ -135,7 +135,7 @@ function userKeyList(sign: MessageSignature, userList: string[]) {
  */
 function userDeviceList(sign: MessageSignature, accountID: string) {
     return {
-        url: `users/${accountID}/devices`,
+        url: `users/${encodeURIComponent(accountID)}/devices`,
         options: {
             method: "GET",
             headers: {
@@ -151,7 +151,7 @@ function userDeviceList(sign: MessageSignature, accountID: string) {
  */
 function userDeviceDelete(sign: MessageSignature, accountID: string, deviceID?: number) {
     return {
-        url: `users/${accountID}/devices/${deviceID || "current"}`,
+        url: `users/${encodeURIComponent(accountID)}/devices/${deviceID || "current"}`,
         options: {
             method: "DELETE",
             headers: {
