@@ -208,7 +208,7 @@ describe("UserApi", () => {
                         result: [{id: "user-10", userMasterPublicKey: {x: ""}}, {id: "user-20", userMasterPublicKey: {x: ""}}],
                     });
 
-                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("users?id=user-10,user-20-!%40%23%24%25", jasmine.any(Number), jasmine.any(Object));
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("users?id=user-10%2Cuser-20-!%40%23%24%25", jasmine.any(Number), jasmine.any(Object));
                     const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
                     expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
                     done();

@@ -1,8 +1,8 @@
-import GroupApi from "../GroupApi";
-import * as TestUtils from "../../tests/TestUtils";
-import * as ApiRequest from "../ApiRequest";
 import Future from "futurejs";
 import ApiState from "../../lib/ApiState";
+import * as TestUtils from "../../tests/TestUtils";
+import * as ApiRequest from "../ApiRequest";
+import GroupApi from "../GroupApi";
 
 describe("GroupApi", () => {
     beforeEach(() => {
@@ -44,7 +44,7 @@ describe("GroupApi", () => {
                 (e) => fail(e),
                 (groups: any) => {
                     expect(groups).toEqual({foo: "bar"});
-                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("groups?id=group-10,group-20", jasmine.any(Number), jasmine.any(Object));
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("groups?id=group-10%2Cgroup-20", jasmine.any(Number), jasmine.any(Object));
                     const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
                     expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
                 }
@@ -57,7 +57,7 @@ describe("GroupApi", () => {
                 (groups: any) => {
                     expect(groups).toEqual({foo: "bar"});
                     expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(
-                        "groups?id=~%60!%40%23%24%25%5E%26*()-_%3D%2B%5B%7B%5D%7D%3B%3A%3C.%3E%2F%3F,%26%3C%3E",
+                        "groups?id=~%60!%40%23%24%25%5E%26*()-_%3D%2B%5B%7B%5D%7D%3B%3A%3C.%3E%2F%3F%2C%26%3C%3E",
                         jasmine.any(Number),
                         jasmine.any(Object)
                     );

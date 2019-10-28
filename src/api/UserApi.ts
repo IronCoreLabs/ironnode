@@ -119,7 +119,7 @@ function userDeviceAdd(
  */
 function userKeyList(sign: MessageSignature, userList: string[]) {
     return {
-        url: `users?id=${userList.map(encodeURIComponent).join(",")}`,
+        url: `users?id=${encodeURIComponent(userList.join(","))}`,
         options: {
             method: "GET",
             headers: {
