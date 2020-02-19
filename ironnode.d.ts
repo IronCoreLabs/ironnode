@@ -18,6 +18,7 @@ export interface DocumentCreateOptions {
     documentID?: string;
     documentName?: string;
     accessList?: DocumentAccessList;
+    grantToAuthor?: boolean;
 }
 export interface GroupCreateOptions {
     groupID?: string;

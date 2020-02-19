@@ -1,7 +1,7 @@
 import * as crypto from "crypto";
-import {DocumentCreateOptions, EncryptedDocumentResponse, DocumentAccessList} from "../../ironnode";
-import * as DocumentOperations from "../operations/DocumentOperations";
+import {DocumentAccessList, DocumentCreateOptions, EncryptedDocumentResponse} from "../../ironnode";
 import * as Utils from "../lib/Utils";
+import * as DocumentOperations from "../operations/DocumentOperations";
 
 /**
  * Takes the document encrypt options object and normalizes it to a complete object with proper default values.
@@ -11,12 +11,13 @@ import * as Utils from "../lib/Utils";
 function calculateDocumentCreateOptionsDefault(options?: DocumentCreateOptions) {
     const randomDocID = crypto.randomBytes(16).toString("hex");
     if (!options) {
-        return {documentID: randomDocID, documentName: "", accessList: {users: [], groups: []}};
+        return {documentID: randomDocID, documentName: "", grantToAuthor: true, accessList: {users: [], groups: []}};
     }
     return {
         //Use the user provided ID or generate a random ID if not provided
         documentID: options.documentID || randomDocID,
         documentName: options.documentName || "",
+        grantToAuthor: options.grantToAuthor !== false,
         accessList: {
             users: options.accessList && options.accessList.users ? options.accessList.users : [],
             groups: options.accessList && options.accessList.groups ? options.accessList.groups : [],
@@ -98,6 +99,7 @@ export function decryptBytes(documentID: string, encryptedDocument: Buffer) {
  * @param {DocumentCreateOptions} options      Document create options. Includes:
  *                                               documentID: string - Optional ID to use for the document. Document ID will be stored unencrypted and must be unique per segment
  *                                               documentName: string - Optional name to provide to document. Document name will be stored unencrypted.
+ *                                               grantToAuthor: boolean - Denotes if the document should be enrypted to the current user of the SDK. Defaults to true.
  *                                               accessList: object - Optional object which allows document to be shared with others upon creation. Contains the following keys:
  *                                                   users: Array - List of user IDs to share document with. Each value in the array should be in the form {id: string}.
  *                                                   groups: Array - List of group IDs to share document with. Each value in the array should be in the form {id: string}.
@@ -109,7 +111,14 @@ export function encryptBytes(documentData: Buffer, options?: DocumentCreateOptio
         Utils.validateID(encryptOptions.documentID);
     }
     const [userGrants, groupGrants] = Utils.dedupeAccessLists(encryptOptions.accessList);
-    return DocumentOperations.encryptBytes(encryptOptions.documentID, documentData, encryptOptions.documentName, userGrants, groupGrants).toPromise();
+    return DocumentOperations.encryptBytes(
+        encryptOptions.documentID,
+        documentData,
+        encryptOptions.documentName,
+        userGrants,
+        groupGrants,
+        encryptOptions.grantToAuthor
+    ).toPromise();
 }
 
 /**
@@ -119,6 +128,7 @@ export function encryptBytes(documentData: Buffer, options?: DocumentCreateOptio
  * @param {DocumentCreateOptions} options      Document create options. Includes:
  *                                               documentID: string - Optional ID to use for the document. Document ID will be stored unencrypted and must be unique per segment
  *                                               documentName: string - Optional name to provide to document. Document name will be stored unencrypted.
+ * *                                             grantToAuthor: boolean - Denotes if the document should be enrypted to the current user of the SDK. Defaults to true.
  *                                               accessList: object - Optional object which allows document to be shared with others upon creation. Contains the following keys:
  *                                                   users: Array - List of user IDs to share document with. Each value in the array should be in the form {id: string}.
  *                                                   groups: Array - List of group IDs to share document with. Each value in the array should be in the form {id: string}.
@@ -135,7 +145,8 @@ export function encryptStream(inputStream: NodeJS.ReadableStream, outputStream: 
         outputStream,
         encryptOptions.documentName,
         userGrants,
-        groupGrants
+        groupGrants,
+        encryptOptions.grantToAuthor
     ).toPromise();
 }
 

@@ -1,6 +1,6 @@
-import * as DocumentSDK from "../DocumentSDK";
-import * as DocumentOperations from "../../operations/DocumentOperations";
 import Future from "futurejs";
+import * as DocumentOperations from "../../operations/DocumentOperations";
+import * as DocumentSDK from "../DocumentSDK";
 
 describe("DocumentSDK", () => {
     describe("list", () => {
@@ -139,7 +139,7 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptBytes(Buffer.alloc(32))
                 .then((result) => {
                     expect(result).toEqual("encryptBytes");
-                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith(jasmine.any(String), Buffer.alloc(32), "", [], []);
+                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith(jasmine.any(String), Buffer.alloc(32), "", [], [], true);
                     const docID = (DocumentOperations.encryptBytes as jest.Mock).mock.calls[0][0];
                     expect(docID).toHaveLength(32);
                     expect(docID).toMatch(/[0-9a-fA-F]+/);
@@ -154,7 +154,7 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptBytes(document, {documentID: "providedID"})
                 .then((result: any) => {
                     expect(result).toEqual("encryptBytes");
-                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith("providedID", document, "", [], []);
+                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith("providedID", document, "", [], [], true);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -166,7 +166,7 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptBytes(document, {documentName: "my doc name"})
                 .then((result: any) => {
                     expect(result).toEqual("encryptBytes");
-                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith(jasmine.any(String), document, "my doc name", [], []);
+                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith(jasmine.any(String), document, "my doc name", [], [], true);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -185,8 +185,22 @@ describe("DocumentSDK", () => {
                         document,
                         "",
                         ["user-31", "user-55"],
-                        ["group-1", "group-2", "group-3"]
+                        ["group-1", "group-2", "group-3"],
+                        true
                     );
+                    done();
+                })
+                .catch((e) => fail(e.message));
+        });
+
+        test("passes false for encrypting to current user when provided", (done) => {
+            const userList = [{id: "user-31"}];
+            const document = Buffer.from([100, 111, 99]);
+
+            DocumentSDK.encryptBytes(document, {accessList: {users: userList}, grantToAuthor: false})
+                .then((result: any) => {
+                    expect(result).toEqual("encryptBytes");
+                    expect(DocumentOperations.encryptBytes).toHaveBeenCalledWith(jasmine.any(String), document, "", ["user-31"], [], false);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -209,7 +223,7 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any)
                 .then((result) => {
                     expect(result).toEqual("encryptStream");
-                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith(jasmine.any(String), "inputStream", "outputStream", "", [], []);
+                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith(jasmine.any(String), "inputStream", "outputStream", "", [], [], true);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -219,7 +233,7 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any, {documentID: "providedID"})
                 .then((result: any) => {
                     expect(result).toEqual("encryptStream");
-                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith("providedID", "inputStream", "outputStream", "", [], []);
+                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith("providedID", "inputStream", "outputStream", "", [], [], true);
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -229,7 +243,15 @@ describe("DocumentSDK", () => {
             DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any, {documentName: "my doc name"})
                 .then((result: any) => {
                     expect(result).toEqual("encryptStream");
-                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith(jasmine.any(String), "inputStream", "outputStream", "my doc name", [], []);
+                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith(
+                        jasmine.any(String),
+                        "inputStream",
+                        "outputStream",
+                        "my doc name",
+                        [],
+                        [],
+                        true
+                    );
                     done();
                 })
                 .catch((e) => fail(e.message));
@@ -248,7 +270,28 @@ describe("DocumentSDK", () => {
                         "outputStream",
                         "",
                         ["user-31", "user-55"],
-                        ["group-1", "group-2", "group-3"]
+                        ["group-1", "group-2", "group-3"],
+                        true
+                    );
+                    done();
+                })
+                .catch((e) => fail(e.message));
+        });
+
+        test("doesnt encrypt to author when provided", (done) => {
+            const userList = [{id: "user-31"}];
+
+            DocumentSDK.encryptStream("inputStream" as any, "outputStream" as any, {accessList: {users: userList}, grantToAuthor: false})
+                .then((result: any) => {
+                    expect(result).toEqual("encryptStream");
+                    expect(DocumentOperations.encryptStream).toHaveBeenCalledWith(
+                        jasmine.any(String),
+                        "inputStream",
+                        "outputStream",
+                        "",
+                        ["user-31"],
+                        [],
+                        false
                     );
                     done();
                 })

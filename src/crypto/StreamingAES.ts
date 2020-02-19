@@ -1,6 +1,6 @@
 import * as crypto from "crypto";
 import {Transform, TransformCallback} from "stream";
-import {AES_ALGORITHM, AES_IV_LENGTH, AES_BLOCK_SIZE, AES_GCM_TAG_LENGTH, VERSION_HEADER_LENGTH} from "../Constants";
+import {AES_ALGORITHM, AES_BLOCK_SIZE, AES_GCM_TAG_LENGTH, AES_IV_LENGTH, VERSION_HEADER_LENGTH} from "../Constants";
 
 //tslint:disable:max-classes-per-file
 
@@ -24,7 +24,7 @@ export class StreamingEncryption {
     getTransform() {
         //tslint:disable-next-line:no-this-assignment
         const streamClass = this;
-        return function transform(this: NodeJS.ReadStream, chunk: Buffer, _: string, callback: TransformCallback) {
+        return function transform(this: Transform, chunk: Buffer, _: string, callback: TransformCallback) {
             //Check if this is our first transform operation. If so, we need to shove the IV at the front of the resulting
             //buffer in unencrypted form so we can pull it out on decryption.
             if (!streamClass.hasPushedOnIV) {
@@ -46,7 +46,7 @@ export class StreamingEncryption {
     getFlush() {
         //tslint:disable-next-line:no-this-assignment
         const streamClass = this;
-        return function flush(this: NodeJS.ReadStream, callback: TransformCallback) {
+        return function flush(this: Transform, callback: TransformCallback) {
             //This will only happen if the user is somehow streaming in an empty file. A pretty dumb use case I'll grant you, but it's easy enough to support
             if (!streamClass.hasPushedOnIV) {
                 this.push(streamClass.documentHeader);
@@ -122,7 +122,7 @@ export class StreamingDecryption {
     getTransform() {
         //tslint:disable-next-line:no-this-assignment
         const streamClass = this;
-        return function transform(this: NodeJS.ReadStream, chunk: Buffer, _: string, callback: TransformCallback) {
+        return function transform(this: Transform, chunk: Buffer, _: string, callback: TransformCallback) {
             //Don't do anything if we don't get any data for some odd reason
             if (!chunk.length) {
                 return callback();
@@ -162,7 +162,7 @@ export class StreamingDecryption {
     getFlush() {
         //tslint:disable-next-line:no-this-assignment
         const streamClass = this;
-        return function flush(this: NodeJS.ReadStream, callback: TransformCallback) {
+        return function flush(this: Transform, callback: TransformCallback) {
             //If we get a flush call before we got a transform call where we setup the decipher, that likely means the file was empty
             if (!streamClass.decipher) {
                 return callback(new Error("Data could not be read from input stream."));

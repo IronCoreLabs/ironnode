@@ -1,13 +1,13 @@
 import Future from "futurejs";
-import * as DocumentOperations from "../DocumentOperations";
-import * as DocumentCrypto from "../DocumentCrypto";
-import * as TestUtils from "../../tests/TestUtils";
 import DocumentApi from "../../api/DocumentApi";
-import {generateDocumentHeaderBytes} from "../../lib/Utils";
-import {ErrorCodes, VERSION_HEADER_LENGTH, HEADER_META_LENGTH_LENGTH} from "../../Constants";
-import UserApi from "../../api/UserApi";
 import GroupApi from "../../api/GroupApi";
+import UserApi from "../../api/UserApi";
+import {ErrorCodes, HEADER_META_LENGTH_LENGTH, VERSION_HEADER_LENGTH} from "../../Constants";
 import ApiState from "../../lib/ApiState";
+import {generateDocumentHeaderBytes} from "../../lib/Utils";
+import * as TestUtils from "../../tests/TestUtils";
+import * as DocumentCrypto from "../DocumentCrypto";
+import * as DocumentOperations from "../DocumentOperations";
 
 describe("DocumentOperations", () => {
     beforeEach(() => {
@@ -287,15 +287,17 @@ describe("DocumentOperations", () => {
             const encryptBytes = jest.spyOn(DocumentCrypto, "encryptBytes");
             encryptBytes.mockReturnValue(Future.of(Buffer.alloc(33)));
             const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
-            encryptSpy.mockReturnValue(Future.of({
-                userAccessKeys: [{id: "10", key: encryptedSymKey}],
-                groupAccessKeys: [],
-                encryptedDocument: Buffer.alloc(55),
-            }) as any);
+            encryptSpy.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [{id: "10", key: encryptedSymKey}],
+                    groupAccessKeys: [],
+                    encryptedDocument: Buffer.alloc(55),
+                }) as any
+            );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
             apiSpy.mockReturnValue(Future.of({id: "bar", created: "1", updated: "2"}) as any);
 
-            DocumentOperations.encryptBytes("my doc ID", Buffer.from([]), "", [], []).engage(
+            DocumentOperations.encryptBytes("my doc ID", Buffer.from([]), "", [], [], true).engage(
                 (e) => fail(e.message),
                 ({document, documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
@@ -330,15 +332,17 @@ describe("DocumentOperations", () => {
             const encryptBytes = jest.spyOn(DocumentCrypto, "encryptBytes");
             encryptBytes.mockReturnValue(Future.of(Buffer.alloc(33)));
             const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
-            encryptSpy.mockReturnValue(Future.of({
-                userAccessKeys: [{id: "10", key: encryptedSymKey}],
-                groupAccessKeys: [],
-                encryptedDocument: Buffer.alloc(33),
-            }) as any);
+            encryptSpy.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [{id: "10", key: encryptedSymKey}],
+                    groupAccessKeys: [],
+                    encryptedDocument: Buffer.alloc(33),
+                }) as any
+            );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
             apiSpy.mockReturnValue(Future.of({id: "bar", name: docName, created: "1", updated: "2"}));
 
-            DocumentOperations.encryptBytes("my doc ID", Buffer.from([]), docName, [], []).engage(
+            DocumentOperations.encryptBytes("my doc ID", Buffer.from([]), docName, [], [], true).engage(
                 (e) => fail(e.message),
                 ({document, documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
@@ -350,7 +354,7 @@ describe("DocumentOperations", () => {
             );
         });
 
-        test("encrypts to list of users and groups provided", (done) => {
+        test("encrypts to list of users and groups provided and not author if requested", (done) => {
             const encryptedSymKey = TestUtils.getEncryptedSymmetricKey();
 
             const userSpy = jest.spyOn(UserApi, "callUserKeyListApi");
@@ -363,22 +367,26 @@ describe("DocumentOperations", () => {
                 })
             );
             const groupSpy = jest.spyOn(GroupApi, "callGroupKeyListApi");
-            groupSpy.mockReturnValue(Future.of({
-                result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
-            }) as any);
+            groupSpy.mockReturnValue(
+                Future.of({
+                    result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
+                }) as any
+            );
 
             const encryptBytes = jest.spyOn(DocumentCrypto, "encryptBytes");
             encryptBytes.mockReturnValue(Future.of(Buffer.alloc(33)));
             const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
-            encryptSpy.mockReturnValue(Future.of({
-                userAccessKeys: [{id: "10", key: encryptedSymKey}],
-                groupAccessKeys: [],
-                encryptedDocument: Buffer.alloc(55),
-            }) as any);
+            encryptSpy.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [{id: "10", key: encryptedSymKey}],
+                    groupAccessKeys: [],
+                    encryptedDocument: Buffer.alloc(55),
+                }) as any
+            );
             const docSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
             docSpy.mockReturnValue(Future.of({id: "bar", created: "1", updated: "2"}) as any);
 
-            DocumentOperations.encryptBytes("doc key", Buffer.from([88, 73, 92]), "", ["user-55", "user-33"], ["user-33"]).engage(
+            DocumentOperations.encryptBytes("doc key", Buffer.from([88, 73, 92]), "", ["user-55", "user-33"], ["user-33"], false).engage(
                 (e) => fail(e.message),
                 ({documentID, documentName, document, created, updated}) => {
                     expect(documentID).toEqual("bar");
@@ -390,7 +398,6 @@ describe("DocumentOperations", () => {
                     const userKeyList = [
                         {id: "user-55", masterPublicKey: TestUtils.getEmptyPublicKeyString()},
                         {id: "user-33", masterPublicKey: TestUtils.getEmptyPublicKeyString()},
-                        {id: "10", masterPublicKey: TestUtils.accountPublicBytesBase64},
                     ];
                     const groupKeyList = [{id: "group-20", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
 
@@ -419,17 +426,34 @@ describe("DocumentOperations", () => {
                 })
             );
             const groupSpy = jest.spyOn(GroupApi, "callGroupKeyListApi");
-            groupSpy.mockReturnValue(Future.of({
-                result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
-            }) as any);
+            groupSpy.mockReturnValue(
+                Future.of({
+                    result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
+                }) as any
+            );
 
-            DocumentOperations.encryptBytes("doc key", Buffer.from([88, 73, 92]), "", ["user-33"], ["group-20", "group-33"]).engage(
+            DocumentOperations.encryptBytes("doc key", Buffer.from([88, 73, 92]), "", ["user-33"], ["group-20", "group-33"], true).engage(
                 (e) => {
                     expect(e.message).toBeString();
                     expect(e.message).toContain("[group-33]");
                     done();
                 },
                 () => fail("Should not call create when any user or group could not be found")
+            );
+        });
+
+        test("fails if no users/groups or author provided to encrypt to", (done) => {
+            const userSpy = jest.spyOn(UserApi, "callUserKeyListApi");
+            const groupSpy = jest.spyOn(GroupApi, "callGroupKeyListApi");
+
+            DocumentOperations.encryptBytes("doc key", Buffer.from([88, 73, 92]), "", [], [], false).engage(
+                (e) => {
+                    expect(userSpy).toHaveBeenCalledTimes(1);
+                    expect(groupSpy).toHaveBeenCalledTimes(1);
+                    expect(e.message).toContain("No users or groups");
+                    done();
+                },
+                () => fail("Should not call create when no users/groups were encrypted to")
             );
         });
     });
@@ -441,14 +465,16 @@ describe("DocumentOperations", () => {
             const encryptStreamSpy = jest.spyOn(DocumentCrypto, "encryptStream");
             encryptStreamSpy.mockReturnValue(Future.of(undefined));
             const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
-            encryptSpy.mockReturnValue(Future.of({
-                userAccessKeys: [{id: "10", key: encryptedSymKey}],
-                groupAccessKeys: [],
-            }) as any);
+            encryptSpy.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [{id: "10", key: encryptedSymKey}],
+                    groupAccessKeys: [],
+                }) as any
+            );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
             apiSpy.mockReturnValue(Future.of({id: "bar", created: "1", updated: "2"}) as any);
 
-            DocumentOperations.encryptStream("my doc ID", "inputStream" as any, "outputStream" as any, "", [], []).engage(
+            DocumentOperations.encryptStream("my doc ID", "inputStream" as any, "outputStream" as any, "", [], [], true).engage(
                 (e) => fail(e.message),
                 ({documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
@@ -483,14 +509,16 @@ describe("DocumentOperations", () => {
             const encryptStreamSpy = jest.spyOn(DocumentCrypto, "encryptStream");
             encryptStreamSpy.mockReturnValue(Future.of(undefined));
             const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
-            encryptSpy.mockReturnValue(Future.of({
-                userAccessKeys: [{id: "10", key: encryptedSymKey}],
-                groupAccessKeys: [],
-            }) as any);
+            encryptSpy.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [{id: "10", key: encryptedSymKey}],
+                    groupAccessKeys: [],
+                }) as any
+            );
             const apiSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
             apiSpy.mockReturnValue(Future.of({id: "bar", name: docName, created: "1", updated: "2"}));
 
-            DocumentOperations.encryptStream("my doc ID", "inputStream" as any, "outputStream" as any, docName, [], []).engage(
+            DocumentOperations.encryptStream("my doc ID", "inputStream" as any, "outputStream" as any, docName, [], [], true).engage(
                 (e) => fail(e.message),
                 ({documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
@@ -501,7 +529,7 @@ describe("DocumentOperations", () => {
             );
         });
 
-        test("encrypts to list of users and groups provided", (done) => {
+        test("encrypts to list of users and groups provided and not author when requested", (done) => {
             const encryptedSymKey = TestUtils.getEncryptedSymmetricKey();
 
             const userSpy = jest.spyOn(UserApi, "callUserKeyListApi");
@@ -514,20 +542,24 @@ describe("DocumentOperations", () => {
                 })
             );
             const groupSpy = jest.spyOn(GroupApi, "callGroupKeyListApi");
-            groupSpy.mockReturnValue(Future.of({
-                result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
-            }) as any);
+            groupSpy.mockReturnValue(
+                Future.of({
+                    result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
+                }) as any
+            );
             const encryptStreamSpy = jest.spyOn(DocumentCrypto, "encryptStream");
             encryptStreamSpy.mockReturnValue(Future.of(undefined));
             const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
-            encryptSpy.mockReturnValue(Future.of({
-                userAccessKeys: [{id: "10", key: encryptedSymKey}],
-                groupAccessKeys: [],
-            }) as any);
+            encryptSpy.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [{id: "10", key: encryptedSymKey}],
+                    groupAccessKeys: [],
+                }) as any
+            );
             const docSpy = jest.spyOn(DocumentApi, "callDocumentCreateApi");
             docSpy.mockReturnValue(Future.of({id: "bar", created: "1", updated: "2"}) as any);
 
-            DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", ["user-55", "user-33"], ["user-33"]).engage(
+            DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", ["user-55", "user-33"], ["user-33"], false).engage(
                 (e) => fail(e.message),
                 ({documentID, documentName, created, updated}) => {
                     expect(documentID).toEqual("bar");
@@ -538,7 +570,6 @@ describe("DocumentOperations", () => {
                     const userKeyList = [
                         {id: "user-55", masterPublicKey: TestUtils.getEmptyPublicKeyString()},
                         {id: "user-33", masterPublicKey: TestUtils.getEmptyPublicKeyString()},
-                        {id: "10", masterPublicKey: TestUtils.accountPublicBytesBase64},
                     ];
                     const groupKeyList = [{id: "group-20", masterPublicKey: TestUtils.getEmptyPublicKeyString()}];
 
@@ -568,11 +599,13 @@ describe("DocumentOperations", () => {
                 })
             );
             const groupSpy = jest.spyOn(GroupApi, "callGroupKeyListApi");
-            groupSpy.mockReturnValue(Future.of({
-                result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
-            }) as any);
+            groupSpy.mockReturnValue(
+                Future.of({
+                    result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
+                }) as any
+            );
 
-            DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", ["user-33"], ["group-20", "group-33"]).engage(
+            DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", ["user-33"], ["group-20", "group-33"], true).engage(
                 (e) => {
                     expect(e.message).toBeString();
                     expect(e.message).toContain("[group-33]");
@@ -598,24 +631,43 @@ describe("DocumentOperations", () => {
                 })
             );
             const groupSpy = jest.spyOn(GroupApi, "callGroupKeyListApi");
-            groupSpy.mockReturnValue(Future.of({
-                result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
-            }) as any);
+            groupSpy.mockReturnValue(
+                Future.of({
+                    result: [{id: "group-20", groupMasterPublicKey: TestUtils.getEmptyPublicKeyString()}],
+                }) as any
+            );
             const encryptStreamSpy = jest.spyOn(DocumentCrypto, "encryptStream");
             encryptStreamSpy.mockReturnValue(Future.of(undefined));
             const encryptSpy = jest.spyOn(DocumentCrypto, "encryptPlaintextToUsersAndGroups");
-            encryptSpy.mockReturnValue(Future.of({
-                userAccessKeys: [{id: "10", key: encryptedSymKey}],
-                groupAccessKeys: [],
-            }) as any);
+            encryptSpy.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [{id: "10", key: encryptedSymKey}],
+                    groupAccessKeys: [],
+                }) as any
+            );
 
-            DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", ["user-55", "user-33"], ["user-33"]).engage(
+            DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", ["user-55", "user-33"], ["user-33"], false).engage(
                 (e: any) => {
                     expect(e.message).toEqual("forced request failure");
                     expect(DocumentCrypto.encryptStream).not.toHaveBeenCalled();
                     done();
                 },
                 () => fail("Should not succeed when API request fails.")
+            );
+        });
+
+        test("fails if no users/groups or author provided to encrypt to", (done) => {
+            const userSpy = jest.spyOn(UserApi, "callUserKeyListApi");
+            const groupSpy = jest.spyOn(GroupApi, "callGroupKeyListApi");
+
+            DocumentOperations.encryptStream("doc key", "inputStream" as any, "outputStream" as any, "", [], [], false).engage(
+                (e) => {
+                    expect(userSpy).toHaveBeenCalledTimes(1);
+                    expect(groupSpy).toHaveBeenCalledTimes(1);
+                    expect(e.message).toContain("No users or groups");
+                    done();
+                },
+                () => fail("Should not call create when no users/groups were encrypted to")
             );
         });
     });
@@ -771,26 +823,32 @@ describe("DocumentOperations", () => {
             const keyList = jest.spyOn(UserApi, "callUserKeyListApi");
             keyList.mockReturnValue(Future.of({result: userKeys}) as any);
             const metaGet = jest.spyOn(DocumentApi, "callDocumentMetadataGetApi");
-            metaGet.mockReturnValue(Future.of({
-                encryptedSymmetricKey: docSymKey,
-            }) as any);
+            metaGet.mockReturnValue(
+                Future.of({
+                    encryptedSymmetricKey: docSymKey,
+                }) as any
+            );
             const grant = jest.spyOn(DocumentApi, "callDocumentGrantApi");
-            grant.mockReturnValue(Future.of({
-                succeededIds: [{userOrGroup: {type: "user", id: "userID"}}],
-                failedIds: [
-                    {
-                        userOrGroup: {type: "user", id: "userID2"},
-                        errorMessage: "failed user",
-                    },
-                ],
-            }) as any);
+            grant.mockReturnValue(
+                Future.of({
+                    succeededIds: [{userOrGroup: {type: "user", id: "userID"}}],
+                    failedIds: [
+                        {
+                            userOrGroup: {type: "user", id: "userID2"},
+                            errorMessage: "failed user",
+                        },
+                    ],
+                }) as any
+            );
             const groupKey = jest.spyOn(GroupApi, "callGroupKeyListApi");
             groupKey.mockReturnValue(Future.of({result: []}));
             const encryptToKeys = jest.spyOn(DocumentCrypto, "encryptDocumentToKeys");
-            encryptToKeys.mockReturnValue(Future.of({
-                userAccessKeys: ["encryptedUserKey"],
-                groupAccessKeys: [],
-            }) as any);
+            encryptToKeys.mockReturnValue(
+                Future.of({
+                    userAccessKeys: ["encryptedUserKey"],
+                    groupAccessKeys: [],
+                }) as any
+            );
 
             DocumentOperations.grantDocumentAccess("docID", ["userID", "userID2"], []).engage(
                 (e) => fail(e.message),
@@ -840,19 +898,25 @@ describe("DocumentOperations", () => {
             const group = jest.spyOn(GroupApi, "callGroupKeyListApi");
             group.mockReturnValue(Future.of({result: groupKeys}) as any);
             const metaGet = jest.spyOn(DocumentApi, "callDocumentMetadataGetApi");
-            metaGet.mockReturnValue(Future.of({
-                encryptedSymmetricKey: docSymKey,
-            }) as any);
+            metaGet.mockReturnValue(
+                Future.of({
+                    encryptedSymmetricKey: docSymKey,
+                }) as any
+            );
             const grantSpy = jest.spyOn(DocumentApi, "callDocumentGrantApi");
-            grantSpy.mockReturnValue(Future.of({
-                succeededIds: [{userOrGroup: {type: "group", id: "groupID"}}],
-                failedIds: [],
-            }) as any);
+            grantSpy.mockReturnValue(
+                Future.of({
+                    succeededIds: [{userOrGroup: {type: "group", id: "groupID"}}],
+                    failedIds: [],
+                }) as any
+            );
             const encryptToKey = jest.spyOn(DocumentCrypto, "encryptDocumentToKeys");
-            encryptToKey.mockReturnValue(Future.of({
-                userAccessKeys: [],
-                groupAccessKeys: ["encryptedGroupKey"],
-            }) as any);
+            encryptToKey.mockReturnValue(
+                Future.of({
+                    userAccessKeys: [],
+                    groupAccessKeys: ["encryptedGroupKey"],
+                }) as any
+            );
 
             DocumentOperations.grantDocumentAccess("docID", [], ["groupID"]).engage(
                 (e) => fail(e.message),
@@ -884,8 +948,14 @@ describe("DocumentOperations", () => {
         });
 
         test("runs all of the above for lists of users and lists of groups", (done) => {
-            const userKeys = [{id: "userID1", userMasterPublicKey: {x: "firstuserkey"}}, {id: "userID2", userMasterPublicKey: {x: "seconduserkey"}}];
-            const groupKeys = [{id: "groupID1", groupMasterPublicKey: {x: "firstgroupkey"}}, {id: "groupID2", groupMasterPublicKey: {x: "secondgroupkey"}}];
+            const userKeys = [
+                {id: "userID1", userMasterPublicKey: {x: "firstuserkey"}},
+                {id: "userID2", userMasterPublicKey: {x: "seconduserkey"}},
+            ];
+            const groupKeys = [
+                {id: "groupID1", groupMasterPublicKey: {x: "firstgroupkey"}},
+                {id: "groupID2", groupMasterPublicKey: {x: "secondgroupkey"}},
+            ];
             const docSymKey = {
                 encryptedSymmetricKey: "esk",
                 ephemeralPublicKey: "epk",
@@ -897,29 +967,41 @@ describe("DocumentOperations", () => {
             const group = jest.spyOn(GroupApi, "callGroupKeyListApi");
             group.mockReturnValue(Future.of({result: groupKeys}) as any);
             const metaGet = jest.spyOn(DocumentApi, "callDocumentMetadataGetApi");
-            metaGet.mockReturnValue(Future.of({
-                encryptedSymmetricKey: docSymKey,
-            }) as any);
+            metaGet.mockReturnValue(
+                Future.of({
+                    encryptedSymmetricKey: docSymKey,
+                }) as any
+            );
             const grantSpy = jest.spyOn(DocumentApi, "callDocumentGrantApi");
-            grantSpy.mockReturnValue(Future.of({
-                succeededIds: [{userOrGroup: {type: "group", id: "groupID1"}}, {userOrGroup: {type: "user", id: "userID2"}}],
-                failedIds: [
-                    {userOrGroup: {type: "group", id: "groupID2"}, errorMessage: "foo"},
-                    {userOrGroup: {type: "user", id: "userID1"}, errorMessage: "bar"},
-                ],
-            }) as any);
+            grantSpy.mockReturnValue(
+                Future.of({
+                    succeededIds: [{userOrGroup: {type: "group", id: "groupID1"}}, {userOrGroup: {type: "user", id: "userID2"}}],
+                    failedIds: [
+                        {userOrGroup: {type: "group", id: "groupID2"}, errorMessage: "foo"},
+                        {userOrGroup: {type: "user", id: "userID1"}, errorMessage: "bar"},
+                    ],
+                }) as any
+            );
             const encryptToKeys = jest.spyOn(DocumentCrypto, "encryptDocumentToKeys");
-            encryptToKeys.mockReturnValue(Future.of({
-                userAccessKeys: ["encryptedUserKey"],
-                groupAccessKeys: ["encryptedGroupKey"],
-            }) as any);
+            encryptToKeys.mockReturnValue(
+                Future.of({
+                    userAccessKeys: ["encryptedUserKey"],
+                    groupAccessKeys: ["encryptedGroupKey"],
+                }) as any
+            );
 
             DocumentOperations.grantDocumentAccess("docID", ["userID1", "userID2"], ["groupID1", "groupID2"]).engage(
                 (e) => fail(e.message),
                 (data: any) => {
                     expect(data).toEqual({
-                        succeeded: [{id: "groupID1", type: "group"}, {id: "userID2", type: "user"}],
-                        failed: [{id: "groupID2", type: "group", error: "foo"}, {id: "userID1", type: "user", error: "bar"}],
+                        succeeded: [
+                            {id: "groupID1", type: "group"},
+                            {id: "userID2", type: "user"},
+                        ],
+                        failed: [
+                            {id: "groupID2", type: "group", error: "foo"},
+                            {id: "userID1", type: "user", error: "bar"},
+                        ],
                     });
 
                     expect(UserApi.callUserKeyListApi).toHaveBeenCalledWith(["userID1", "userID2"]);
@@ -927,8 +1009,14 @@ describe("DocumentOperations", () => {
                     expect(DocumentApi.callDocumentMetadataGetApi).toHaveBeenCalledWith("docID");
                     expect(DocumentCrypto.encryptDocumentToKeys).toHaveBeenCalledWith(
                         docSymKey,
-                        [{id: "userID1", masterPublicKey: {x: "firstuserkey"}}, {id: "userID2", masterPublicKey: {x: "seconduserkey"}}],
-                        [{id: "groupID1", masterPublicKey: {x: "firstgroupkey"}}, {id: "groupID2", masterPublicKey: {x: "secondgroupkey"}}],
+                        [
+                            {id: "userID1", masterPublicKey: {x: "firstuserkey"}},
+                            {id: "userID2", masterPublicKey: {x: "seconduserkey"}},
+                        ],
+                        [
+                            {id: "groupID1", masterPublicKey: {x: "firstgroupkey"}},
+                            {id: "groupID2", masterPublicKey: {x: "secondgroupkey"}},
+                        ],
                         TestUtils.devicePrivateBytes,
                         ApiState.signingKeys().privateKey
                     );
@@ -939,7 +1027,10 @@ describe("DocumentOperations", () => {
         });
 
         test("returns failures for users or groups that dont exist", (done) => {
-            const userKeys = [{id: "userID1", userMasterPublicKey: {x: "firstuserkey"}}, {id: "userID2", userMasterPublicKey: {x: "seconduserkey"}}];
+            const userKeys = [
+                {id: "userID1", userMasterPublicKey: {x: "firstuserkey"}},
+                {id: "userID2", userMasterPublicKey: {x: "seconduserkey"}},
+            ];
             const groupKeys = [{id: "groupID1", groupMasterPublicKey: {x: "firstgroupkey"}}];
             const docSymKey = {
                 encryptedSymmetricKey: "esk",
@@ -952,23 +1043,29 @@ describe("DocumentOperations", () => {
             const group = jest.spyOn(GroupApi, "callGroupKeyListApi");
             group.mockReturnValue(Future.of({result: groupKeys}) as any);
             const metaGet = jest.spyOn(DocumentApi, "callDocumentMetadataGetApi");
-            metaGet.mockReturnValue(Future.of({
-                id: "stored ID",
-                encryptedSymmetricKey: docSymKey,
-            }) as any);
+            metaGet.mockReturnValue(
+                Future.of({
+                    id: "stored ID",
+                    encryptedSymmetricKey: docSymKey,
+                }) as any
+            );
             const grantSpy = jest.spyOn(DocumentApi, "callDocumentGrantApi");
-            grantSpy.mockReturnValue(Future.of({
-                succeededIds: [{userOrGroup: {type: "group", id: "groupID1"}}, {userOrGroup: {type: "user", id: "userID2"}}],
-                failedIds: [
-                    {userOrGroup: {type: "group", id: "groupID2"}, errorMessage: "foo"},
-                    {userOrGroup: {type: "user", id: "userID1"}, errorMessage: "bar"},
-                ],
-            }) as any);
+            grantSpy.mockReturnValue(
+                Future.of({
+                    succeededIds: [{userOrGroup: {type: "group", id: "groupID1"}}, {userOrGroup: {type: "user", id: "userID2"}}],
+                    failedIds: [
+                        {userOrGroup: {type: "group", id: "groupID2"}, errorMessage: "foo"},
+                        {userOrGroup: {type: "user", id: "userID1"}, errorMessage: "bar"},
+                    ],
+                }) as any
+            );
             const encryptToKeys = jest.spyOn(DocumentCrypto, "encryptDocumentToKeys");
-            encryptToKeys.mockReturnValue(Future.of({
-                userAccessKeys: ["encryptedUserKey"],
-                groupAccessKeys: ["encryptedGroupKey"],
-            }) as any);
+            encryptToKeys.mockReturnValue(
+                Future.of({
+                    userAccessKeys: ["encryptedUserKey"],
+                    groupAccessKeys: ["encryptedGroupKey"],
+                }) as any
+            );
 
             DocumentOperations.grantDocumentAccess(
                 "docID",
@@ -978,7 +1075,10 @@ describe("DocumentOperations", () => {
                 (e) => fail(e.message),
                 (data: any) => {
                     expect(data).toEqual({
-                        succeeded: [{id: "groupID1", type: "group"}, {id: "userID2", type: "user"}],
+                        succeeded: [
+                            {id: "groupID1", type: "group"},
+                            {id: "userID2", type: "user"},
+                        ],
                         failed: [
                             {id: "groupID2", type: "group", error: "foo"},
                             {id: "userID1", type: "user", error: "bar"},
@@ -1027,20 +1127,28 @@ describe("DocumentOperations", () => {
     describe("revokeDocumentAccess", () => {
         test("calls document revoke API and returns with expected mapped result", () => {
             const revokeApi = jest.spyOn(DocumentApi, "callDocumentRevokeApi");
-            revokeApi.mockReturnValue(Future.of({
-                succeededIds: [{userOrGroup: {type: "group", id: "groupID1"}}, {userOrGroup: {type: "user", id: "userID2"}}],
-                failedIds: [
-                    {userOrGroup: {type: "group", id: "groupID2"}, errorMessage: "foo"},
-                    {userOrGroup: {type: "user", id: "userID1"}, errorMessage: "bar"},
-                ],
-            }) as any);
+            revokeApi.mockReturnValue(
+                Future.of({
+                    succeededIds: [{userOrGroup: {type: "group", id: "groupID1"}}, {userOrGroup: {type: "user", id: "userID2"}}],
+                    failedIds: [
+                        {userOrGroup: {type: "group", id: "groupID2"}, errorMessage: "foo"},
+                        {userOrGroup: {type: "user", id: "userID1"}, errorMessage: "bar"},
+                    ],
+                }) as any
+            );
 
             DocumentOperations.revokeDocumentAccess("docID", ["userID1", "userID2"], ["groupID1", "groupID2"]).engage(
                 (e) => fail(e.message),
                 (result) => {
                     expect(result).toEqual({
-                        succeeded: [{id: "groupID1", type: "group"}, {id: "userID2", type: "user"}],
-                        failed: [{id: "groupID2", type: "group", error: "foo"}, {id: "userID1", type: "user", error: "bar"}],
+                        succeeded: [
+                            {id: "groupID1", type: "group"},
+                            {id: "userID2", type: "user"},
+                        ],
+                        failed: [
+                            {id: "groupID2", type: "group", error: "foo"},
+                            {id: "userID1", type: "user", error: "bar"},
+                        ],
                     });
                 }
             );
