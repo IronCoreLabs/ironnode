@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as inquirer from "inquirer";
+import fetch from "node-fetch";
 import * as path from "path";
-import * as request from "request";
 import {SDK} from "../ironnode";
 import {log} from "./Logger";
 
@@ -28,6 +28,12 @@ const sharedDocumentQuestions: inquirer.Question[] = [
         name: "groupShares",
         type: "input",
         message: "Comma separated list of groups to grant access:",
+    },
+    {
+        name: "grantToAuthor",
+        type: "confirm",
+        message: "Encrypt document to current user?",
+        default: true,
     },
 ];
 
@@ -101,7 +107,7 @@ function getFormattedDocumentList(IronNode: SDK) {
  */
 function encryptDirectInput(IronNode: SDK) {
     return inquirer
-        .prompt<{data: string; id: string; name: string; userShares: string; groupShares: string}>([
+        .prompt<{data: string; id: string; name: string; userShares: string; groupShares: string; grantToAuthor: boolean}>([
             {
                 name: "data",
                 type: "input",
@@ -109,7 +115,7 @@ function encryptDirectInput(IronNode: SDK) {
             },
             ...sharedDocumentQuestions,
         ])
-        .then(({id, name, data, userShares, groupShares}) => {
+        .then(({id, name, data, userShares, groupShares, grantToAuthor}) => {
             const options = {
                 documentID: id || undefined,
                 documentName: name || undefined,
@@ -117,6 +123,7 @@ function encryptDirectInput(IronNode: SDK) {
                     users: idListToAccessList(userShares),
                     groups: idListToAccessList(groupShares),
                 },
+                grantToAuthor,
             };
             const docData = {
                 type: "list",
@@ -176,7 +183,7 @@ function decryptDirectInput(IronNode: SDK, documentID: string) {
  */
 function encryptUrl(IronNode: SDK) {
     return inquirer
-        .prompt<{url: string; outputFile: string; id: string; name: string; userShares: string; groupShares: string}>([
+        .prompt<{url: string; outputFile: string; id: string; name: string; userShares: string; groupShares: string; grantToAuthor: boolean}>([
             {
                 name: "url",
                 type: "input",
@@ -191,7 +198,7 @@ function encryptUrl(IronNode: SDK) {
             },
             ...sharedDocumentQuestions,
         ])
-        .then(({url, outputFile, id, name, userShares, groupShares}) => {
+        .then(({url, outputFile, id, name, userShares, groupShares, grantToAuthor}) => {
             const options = {
                 documentID: id || undefined,
                 documentName: name || undefined,
@@ -199,10 +206,13 @@ function encryptUrl(IronNode: SDK) {
                     users: idListToAccessList(userShares),
                     groups: idListToAccessList(groupShares),
                 },
+                grantToAuthor,
             };
-            return IronNode.document
-                .encryptStream(request.get(url) as any, fs.createWriteStream(outputFile), options)
-                .then((encryptedDocument) => ({encryptedDocument, outputFile}));
+            return fetch(url).then((response) =>
+                IronNode.document
+                    .encryptStream(response.body, fs.createWriteStream(outputFile), options)
+                    .then((encryptedDocument) => ({encryptedDocument, outputFile}))
+            );
         })
         .then(({encryptedDocument, outputFile}) => {
             log({
@@ -217,11 +227,11 @@ function encryptUrl(IronNode: SDK) {
  */
 function encryptFile(IronNode: SDK) {
     return inquirer
-        .prompt<{inputFile: string; outputFile: string; id: string; name: string; userShares: string; groupShares: string}>([
+        .prompt<{inputFile: string; outputFile: string; id: string; name: string; userShares: string; groupShares: string; grantToAuthor: boolean}>([
             ...getFormattedFilePathQuestions("Provide the path to the file to encrypt:", "Provide the path of where to write the output:"),
             ...sharedDocumentQuestions,
         ])
-        .then(({id, name, inputFile, outputFile, userShares, groupShares}) => {
+        .then(({id, name, inputFile, outputFile, userShares, groupShares, grantToAuthor}) => {
             const options = {
                 documentID: id || undefined,
                 documentName: name || undefined,
@@ -229,6 +239,7 @@ function encryptFile(IronNode: SDK) {
                     users: idListToAccessList(userShares),
                     groups: idListToAccessList(groupShares),
                 },
+                grantToAuthor,
             };
             return IronNode.document
                 .encryptStream(fs.createReadStream(inputFile), fs.createWriteStream(outputFile), options)
@@ -310,7 +321,10 @@ export function parseID(IronNode: SDK) {
             name: "docType",
             type: "list",
             message: "What type of document are we parsing?",
-            choices: [{name: "Direct Input", value: "direct"}, {name: "File", value: "file"}],
+            choices: [
+                {name: "Direct Input", value: "direct"},
+                {name: "File", value: "file"},
+            ],
         })
         .then(({docType}) => {
             if (docType === "file") {
@@ -350,7 +364,11 @@ export function encryptDocument(IronNode: SDK) {
             name: "docType",
             type: "list",
             message: "What type of document are you encrypting?",
-            choices: [{name: "Direct Input", value: "direct"}, {name: "File", value: "file"}, {name: "URL", value: "url"}],
+            choices: [
+                {name: "Direct Input", value: "direct"},
+                {name: "File", value: "file"},
+                {name: "URL", value: "url"},
+            ],
         })
         .then(({docType}) => {
             if (docType === "file") {
@@ -373,7 +391,10 @@ export function decryptDocument(IronNode: SDK) {
                 name: "docType",
                 type: "list",
                 message: "What type of document is this?",
-                choices: [{name: "Direct Input", value: "direct"}, {name: "File", value: "file"}],
+                choices: [
+                    {name: "Direct Input", value: "direct"},
+                    {name: "File", value: "file"},
+                ],
             })
             .then(({docType}) => {
                 if (docType === "direct") {
@@ -410,7 +431,10 @@ export function updateDocumentData(IronNode: SDK) {
                 name: "docType",
                 type: "list",
                 message: "What type of document is this?",
-                choices: [{name: "Direct Input", value: "direct"}, {name: "File", value: "file"}],
+                choices: [
+                    {name: "Direct Input", value: "direct"},
+                    {name: "File", value: "file"},
+                ],
             })
             .then(({docType}) => {
                 if (docType === "direct") {

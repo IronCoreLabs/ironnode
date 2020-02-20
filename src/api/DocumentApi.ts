@@ -1,13 +1,13 @@
+import {DocumentAssociation} from "../../ironnode";
+import {Base64String, EncryptedAccessKey, MessageSignature, PublicKey, TransformedEncryptedMessage, UserOrGroup} from "../commonTypes";
 import {ErrorCodes, UserAndGroupTypes} from "../Constants";
+import ApiState from "../lib/ApiState";
 import {Codec} from "../lib/Utils";
 import * as ApiRequest from "./ApiRequest";
-import ApiState from "../lib/ApiState";
-import {DocumentAssociation} from "../../ironnode";
-import {TransformedEncryptedMessage, Base64String, UserOrGroup, EncryptedAccessKey, MessageSignature, PublicKey} from "../commonTypes";
 
 interface DocumentMetaApiResponse {
     id: string;
-    name: string;
+    name: string | null;
     association: {
         type: DocumentAssociation;
     };

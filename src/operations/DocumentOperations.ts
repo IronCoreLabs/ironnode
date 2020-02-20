@@ -1,24 +1,26 @@
 import Future from "futurejs";
+import {DecryptedDocumentResponse, DocumentAccessResponse, DocumentMetaResponse} from "../../ironnode";
 import DocumentApi, {DocumentAccessResponseType} from "../api/DocumentApi";
-import UserApi, {UserKeyListResponseType} from "../api/UserApi";
 import GroupApi, {GroupListResponseType} from "../api/GroupApi";
+import UserApi, {UserKeyListResponseType} from "../api/UserApi";
+import {DocumentHeader, UserOrGroup} from "../commonTypes";
+import {ErrorCodes, HEADER_META_LENGTH_LENGTH, UserAndGroupTypes, VERSION_HEADER_LENGTH} from "../Constants";
+import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
 import {Codec, generateDocumentHeaderBytes} from "../lib/Utils";
 import * as DocumentCrypto from "./DocumentCrypto";
-import {DocumentMetaResponse, DecryptedDocumentResponse, DocumentAccessResponse} from "../../ironnode";
-import {ErrorCodes, UserAndGroupTypes, VERSION_HEADER_LENGTH, HEADER_META_LENGTH_LENGTH} from "../Constants";
-import ApiState from "../lib/ApiState";
-import {UserOrGroup, DocumentHeader} from "../commonTypes";
 
 /**
  * Get a list of user and group keys for the provided users and then also add in the current account to the list of user keys
  * @param {string[]} userGrants  List of users to get public keys for
  * @param {string[]} groupGrants List of groups to get public keys for
+ * @param {boolean}  encryptToAuthor True if the document should be encrypted to the user making the SDK call.
  */
-function getKeyListsForUsersAndGroups(
+const getKeyListsForUsersAndGroups = (
     userGrants: string[],
-    groupGrants: string[]
-): Future<SDKError, {userKeys: UserKeyListResponseType; groupKeys: GroupListResponseType}> {
+    groupGrants: string[],
+    encryptToAuthor: boolean
+): Future<SDKError, {userKeys: UserKeyListResponseType; groupKeys: GroupListResponseType}> => {
     const {accountID} = ApiState.accountAndSegmentIDs();
     return Future.gather2(UserApi.callUserKeyListApi(userGrants), GroupApi.callGroupKeyListApi(groupGrants)).flatMap(([userKeys, groupKeys]) => {
         if (userKeys.result.length !== userGrants.length || groupKeys.result.length !== groupGrants.length) {
@@ -36,55 +38,55 @@ function getKeyListsForUsersAndGroups(
                 )
             );
         }
-        //Add in the current user to the list of users as we always encrypt new documents to the author directly
+        //Optionally add the user who is making this SDK call to the list of users to encrypt to
+        const currentUser = encryptToAuthor ? [{id: accountID, userMasterPublicKey: Codec.PublicKey.toBase64(ApiState.accountPublicKey())}] : [];
+        if (groupKeys.result.length === 0 && userKeys.result.length === 0 && currentUser.length === 0) {
+            return Future.reject(new SDKError(new Error("No users or groups were provided to encrypt document to."), ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
+        }
         return Future.of({
-            userKeys: {result: [...userKeys.result, {id: accountID, userMasterPublicKey: Codec.PublicKey.toBase64(ApiState.accountPublicKey())}]},
+            userKeys: {result: [...userKeys.result, ...currentUser]},
             groupKeys,
         });
     });
-}
+};
 
 /**
  * Take the result of listing a user/groups public keys and normalize them into a similar structure.
  */
-function normalizeUserAndGroupPublicKeyList(userKeys: UserKeyListResponseType, groupKeys: GroupListResponseType) {
-    return [
-        userKeys.result.map((user) => ({id: user.id, masterPublicKey: user.userMasterPublicKey})),
-        groupKeys.result.map((group) => ({id: group.id, masterPublicKey: group.groupMasterPublicKey})),
-    ];
-}
+const normalizeUserAndGroupPublicKeyList = (userKeys: UserKeyListResponseType, groupKeys: GroupListResponseType) => [
+    userKeys.result.map((user) => ({id: user.id, masterPublicKey: user.userMasterPublicKey})),
+    groupKeys.result.map((group) => ({id: group.id, masterPublicKey: group.groupMasterPublicKey})),
+];
 
 /**
  * Convert list of successful and failed access changes into mapped result that we expose from the SDK.
  */
-function accessResultToAccessResponse(
+const accessResultToAccessResponse = (
     succeededIDs: Array<{userOrGroup: UserOrGroup}>,
     failedIDs: Array<{userOrGroup: UserOrGroup; errorMessage: string}>
-): DocumentAccessResponse {
-    return {
-        succeeded: succeededIDs.map(({userOrGroup}) => ({
-            id: userOrGroup.id,
-            type: userOrGroup.type,
-        })),
-        failed: failedIDs.map(({userOrGroup, errorMessage}) => ({
-            id: userOrGroup.id,
-            type: userOrGroup.type,
-            error: errorMessage,
-        })),
-    };
-}
+): DocumentAccessResponse => ({
+    succeeded: succeededIDs.map(({userOrGroup}) => ({
+        id: userOrGroup.id,
+        type: userOrGroup.type,
+    })),
+    failed: failedIDs.map(({userOrGroup, errorMessage}) => ({
+        id: userOrGroup.id,
+        type: userOrGroup.type,
+        error: errorMessage,
+    })),
+});
 
 /**
  * Take the list of requested access change entities, the list of successful and failed operations, and the type of entity we're dealing with. Then iterate over the list of requested
  * entities to filter out the ones that weren't found in either the success nor failed arrays. Then map that resulting list to an array of objects that represent a failed
  * operation.
  */
-function missingEntitiesToFailures(
+const missingEntitiesToFailures = (
     entityList: string[],
     successfulList: Array<{userOrGroup: UserOrGroup}>,
     failureList: Array<{userOrGroup: UserOrGroup}>,
     type: "user" | "group"
-) {
+) => {
     const matches = (id: string, {userOrGroup}: {userOrGroup: UserOrGroup}) => userOrGroup.type === type && userOrGroup.id === id;
 
     return entityList
@@ -97,7 +99,7 @@ function missingEntitiesToFailures(
             type,
             error: "ID did not exist in the system.",
         }));
-}
+};
 
 /**
  * Format access change response to build up a list of successful and failed access changes. Resulting lists will have both users and groups, discriminated via
@@ -106,7 +108,7 @@ function missingEntitiesToFailures(
  * @param {string[]}                   requestedUserAccess  List of user IDs the user requested to change access
  * @param {string[]}                   requestedGroupAccess List of groupIDs the user requested to change access
  */
-function accessResponseToSDKResult(accessChangeResult: DocumentAccessResponseType, requestedUserAccess: string[], requestedGroupAccess: string[]) {
+const accessResponseToSDKResult = (accessChangeResult: DocumentAccessResponseType, requestedUserAccess: string[], requestedGroupAccess: string[]) => {
     const missingUsers = missingEntitiesToFailures(
         requestedUserAccess,
         accessChangeResult.succeededIds,
@@ -123,7 +125,7 @@ function accessResponseToSDKResult(accessChangeResult: DocumentAccessResponseTyp
     const mappedResults = accessResultToAccessResponse(accessChangeResult.succeededIds, accessChangeResult.failedIds);
     mappedResults.failed = mappedResults.failed.concat(missingUsers).concat(missingGroups);
     return mappedResults;
-}
+};
 
 /**
  * Invoke document list API endpoint and map results to expected format
@@ -136,7 +138,7 @@ export function list() {
                 documentName: document.name,
                 association: document.association.type,
                 created: document.created,
-                updated: document.updated
+                updated: document.updated,
             })),
         };
     });
@@ -152,7 +154,7 @@ export function getMetadata(documentID: string): Future<SDKError, DocumentMetaRe
         association: docMeta.association.type,
         visibleTo: docMeta.visibleTo,
         created: docMeta.created,
-        updated: docMeta.updated
+        updated: docMeta.updated,
     }));
 }
 
@@ -229,8 +231,15 @@ export function getDocumentIDFromStream(inputStream: NodeJS.ReadableStream): Fut
  * Create a new encrypted document. Use the provided ID and name to create it and encrypt it to the provided users and groups as well
  * as the currently authenticated account. Attempts to encrypt the bytes before creating the document within ironcore-id.
  */
-export function encryptBytes(documentID: string, document: Buffer, documentName: string, userGrants: string[], groupGrants: string[]) {
-    return Future.gather2(getKeyListsForUsersAndGroups(userGrants, groupGrants), DocumentCrypto.generateDocumentKeys())
+export function encryptBytes(
+    documentID: string,
+    document: Buffer,
+    documentName: string,
+    userGrants: string[],
+    groupGrants: string[],
+    encryptToAuthor: boolean
+) {
+    return Future.gather2(getKeyListsForUsersAndGroups(userGrants, groupGrants, encryptToAuthor), DocumentCrypto.generateDocumentKeys())
         .flatMap(([{userKeys, groupKeys}, {documentPlaintext, documentSymmetricKey}]) => {
             const [userPublicKeys, groupPublicKeys] = normalizeUserAndGroupPublicKeyList(userKeys, groupKeys);
             const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
@@ -252,7 +261,7 @@ export function encryptBytes(documentID: string, document: Buffer, documentName:
             documentName: createdDocument.name,
             document: encryptedDocument,
             created: createdDocument.created,
-            updated: createdDocument.updated
+            updated: createdDocument.updated,
         }));
 }
 
@@ -267,9 +276,10 @@ export function encryptStream(
     outputStream: NodeJS.WritableStream,
     documentName: string,
     userGrants: string[],
-    groupGrants: string[]
+    groupGrants: string[],
+    encryptToAuthor: boolean
 ) {
-    return Future.gather2(getKeyListsForUsersAndGroups(userGrants, groupGrants), DocumentCrypto.generateDocumentKeys())
+    return Future.gather2(getKeyListsForUsersAndGroups(userGrants, groupGrants, encryptToAuthor), DocumentCrypto.generateDocumentKeys())
         .flatMap(([{userKeys, groupKeys}, {documentPlaintext, documentSymmetricKey}]) => {
             const [userPublicKeys, groupPublicKeys] = normalizeUserAndGroupPublicKeyList(userKeys, groupKeys);
             return DocumentCrypto.encryptPlaintextToUsersAndGroups(documentPlaintext, userPublicKeys, groupPublicKeys, ApiState.signingKeys().privateKey).map(
@@ -280,9 +290,12 @@ export function encryptStream(
             );
         })
         .flatMap(({createPayload, documentSymmetricKey}) => {
-            return DocumentApi.callDocumentCreateApi(documentID, createPayload.userAccessKeys, createPayload.groupAccessKeys, documentName).map(
-                (createdDocument) => ({createdDocument, documentSymmetricKey})
-            );
+            return DocumentApi.callDocumentCreateApi(
+                documentID,
+                createPayload.userAccessKeys,
+                createPayload.groupAccessKeys,
+                documentName
+            ).map((createdDocument) => ({createdDocument, documentSymmetricKey}));
         })
         .flatMap(({createdDocument, documentSymmetricKey}) => {
             const documentHeader = generateDocumentHeaderBytes(documentID, ApiState.accountAndSegmentIDs().segmentID);
@@ -290,7 +303,7 @@ export function encryptStream(
                 documentID: createdDocument.id,
                 documentName: createdDocument.name,
                 created: createdDocument.created,
-                updated: createdDocument.updated
+                updated: createdDocument.updated,
             }));
         });
 }
@@ -314,7 +327,7 @@ export function decryptBytes(documentID: string, encryptedDocument: Buffer): Fut
             data: decryptedDocument,
             association: documentResponse.association.type,
             created: documentResponse.created,
-            updated: documentResponse.updated
+            updated: documentResponse.updated,
         }));
     });
 }
@@ -330,7 +343,7 @@ export function decryptStream(documentID: string, encryptedWriteStream: NodeJS.R
             visibleTo: documentResponse.visibleTo,
             association: documentResponse.association.type,
             created: documentResponse.created,
-            updated: documentResponse.updated
+            updated: documentResponse.updated,
         }));
     });
 }
@@ -355,7 +368,7 @@ export function updateDocumentBytes(documentID: string, newDocumentData: Buffer)
             documentName: documentResponse.name,
             document: updatedDoc,
             created: documentResponse.created,
-            updated: documentResponse.updated
+            updated: documentResponse.updated,
         }));
 }
 
@@ -376,7 +389,7 @@ export function updateDocumentStream(documentID: string, inputStream: NodeJS.Rea
             documentID: documentResponse.id,
             documentName: documentResponse.name,
             created: documentResponse.created,
-            updated: documentResponse.updated
+            updated: documentResponse.updated,
         }));
     });
 }
@@ -389,7 +402,7 @@ export function updateDocumentName(documentID: string, documentName: string | nu
         documentID: updatedDocument.id,
         documentName: updatedDocument.name,
         created: updatedDocument.created,
-        updated: updatedDocument.updated
+        updated: updatedDocument.updated,
     }));
 }
 
