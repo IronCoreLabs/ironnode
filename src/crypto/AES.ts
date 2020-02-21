@@ -1,10 +1,11 @@
 import * as crypto from "crypto";
-import * as path from "path";
 import * as fs from "fs";
-import {tmpdir} from "os";
 import Future from "futurejs";
-import {StreamingEncryption, StreamingDecryption} from "./StreamingAES";
+import {tmpdir} from "os";
+import * as path from "path";
 import * as Constants from "../Constants";
+import SDKError from "../lib/SDKError";
+import {StreamingDecryption, StreamingEncryption} from "./StreamingAES";
 const {
     AES_IV_LENGTH,
     AES_GCM_TAG_LENGTH,
@@ -15,13 +16,12 @@ const {
     HEADER_META_LENGTH_LENGTH,
     ErrorCodes,
 } = Constants;
-import SDKError from "../lib/SDKError";
 
 /**
  * Compute an AES-256 symmetric key from the provided password and salt.
  */
-function generatePasswordDerivedKey(password: string, salt: Buffer) {
-    return new Future<SDKError, Buffer>((reject, resolve) => {
+const generatePasswordDerivedKey = (password: string, salt: Buffer) =>
+    new Future<SDKError, Buffer>((reject, resolve) => {
         crypto.pbkdf2(password, salt, Constants.PBKDF2_ITERATIONS(), AES_SYMMETRIC_KEY_LENGTH, "sha256", (error, derivedKey) => {
             if (error) {
                 return reject(new SDKError(error, ErrorCodes.USER_MASTER_KEY_GENERATION_FAILURE));
@@ -29,19 +29,16 @@ function generatePasswordDerivedKey(password: string, salt: Buffer) {
             resolve(derivedKey);
         });
     });
-}
 
 /**
  * Remove the leading header from the provided encrypted document. Determines the header version and strips off everything
  * up until the encrypted data IV bytes start. Returns any metadata that is present at the beginning of the document.
  */
-function stripHeaderFromEncryptedDocument(document: Buffer) {
-    if (document[0] === 1) {
-        return document.slice(VERSION_HEADER_LENGTH);
-    }
-    //We already validate before this that the document is a valid version, so since we only have two versions, we can safely assume this is a v2 doc
-    return document.slice(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH + document.readUInt16BE(VERSION_HEADER_LENGTH));
-}
+const stripHeaderFromEncryptedDocument = (document: Buffer) =>
+    document[0] === 1
+        ? document.slice(VERSION_HEADER_LENGTH)
+        : //We already validate before this that the document is a valid version, so since we only have two versions, we can safely assume this is a v2 doc
+          document.slice(VERSION_HEADER_LENGTH + HEADER_META_LENGTH_LENGTH + document.readUInt16BE(VERSION_HEADER_LENGTH));
 
 /**
  * Use the provided password to generate a symmetric key using PBKDF2 and encrypt the provided user master private key.
@@ -56,10 +53,23 @@ export function encryptUserMasterKey(password: string, userMasterKey: Buffer) {
 }
 
 /**
+ * Encrypt the provided user master private key using an already derived key. Also takes the salt used during key derivation in order
+ * to prepend everything in the resulting encrypted private key.
+ */
+export function encryptUserMasterKeyWithExistingDerivedKey(userMasterKey: Buffer, derivedKey: Buffer, derivedKeySalt: Buffer): Buffer {
+    const iv = crypto.randomBytes(AES_IV_LENGTH);
+    const cipher = crypto.createCipheriv(AES_ALGORITHM, derivedKey, iv);
+    return Buffer.concat([derivedKeySalt, iv, cipher.update(userMasterKey), cipher.final(), cipher.getAuthTag()]);
+}
+
+/**
  * Decrypt the provided encrypted user master key with the provide password. Generates a derived key using PBKDF2 from the provided
  * password which is used to decrypt the encrypted master key.
  */
-export function decryptUserMasterKey(password: string, encryptedUserMasterKey: Buffer) {
+export function decryptUserMasterKey(
+    password: string,
+    encryptedUserMasterKey: Buffer
+): Future<SDKError, {decryptedPrivateKey: Buffer; derivedKey: Buffer; derivedKeySalt: Buffer}> {
     const salt = encryptedUserMasterKey.slice(0, PBKDF2_SALT_LENGTH);
     const iv = encryptedUserMasterKey.slice(PBKDF2_SALT_LENGTH, AES_IV_LENGTH + PBKDF2_SALT_LENGTH);
     const encryptedKey = encryptedUserMasterKey.slice(AES_IV_LENGTH + PBKDF2_SALT_LENGTH, encryptedUserMasterKey.length - AES_GCM_TAG_LENGTH);
@@ -69,7 +79,7 @@ export function decryptUserMasterKey(password: string, encryptedUserMasterKey: B
         try {
             const decipher = crypto.createDecipheriv(AES_ALGORITHM, derivedKey, iv);
             decipher.setAuthTag(gcmTag);
-            return Future.of(Buffer.concat([decipher.update(encryptedKey), decipher.final()]));
+            return Future.of({decryptedPrivateKey: Buffer.concat([decipher.update(encryptedKey), decipher.final()]), derivedKey, derivedKeySalt: salt});
         } catch (e) {
             return Future.reject(new SDKError(new Error("User password was incorrect."), ErrorCodes.USER_PASSCODE_INCORRECT));
         }

@@ -11,13 +11,7 @@ describe("GroupApi", () => {
                 foo: "bar",
             })
         );
-        return ApiState.setAccountContext(
-            TestUtils.testAccountID,
-            TestUtils.testSegmentID,
-            TestUtils.accountPublicBytes,
-            TestUtils.devicePrivateBytes,
-            TestUtils.signingPrivateBytes
-        );
+        return ApiState.setAccountContext(...TestUtils.getTestApiState());
     });
 
     afterEach(() => {

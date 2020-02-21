@@ -28,3 +28,11 @@ export function deleteDevice(deviceID?: number) {
     }
     return UserOperations.deleteUserDevice(deviceID).toPromise();
 }
+
+/**
+ * Rotate the current users master private key. Requires the users escrow password so that we can decrypt their private key
+ * before performing rotation.
+ */
+export function rotateMasterKey(password: string) {
+    return UserOperations.rotateMasterKey(password).toPromise();
+}

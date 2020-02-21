@@ -1,7 +1,7 @@
-import * as Initialization from "./sdk/Initialization";
+import {DeviceCreateOptions, UserCreateOptions} from "../ironnode";
 import {Base64String} from "./commonTypes";
 import * as Utils from "./lib/Utils";
-import {DeviceCreateOptions} from "../ironnode";
+import * as Initialization from "./sdk/Initialization";
 
 /**
  * Initialize the Node SDK by providing account information necessary to run operations from a server side context. Returns a Promise which
@@ -36,9 +36,10 @@ export const User = {
      * provided password.
      * @param {string} jwt      Signed JWT for the user to sync
      * @param {string} password Password to use to escrow the users private key
+     * @param {UserCreateOptions} options Optional options when creating a new user.
      */
-    create(jwt: string, password: string) {
-        return Initialization.createUser(jwt, password).toPromise();
+    create(jwt: string, password: string, options: UserCreateOptions = {needsRotation: false}) {
+        return Initialization.createUser(jwt, password, options).toPromise();
     },
     /**
      * Generate a new pair of device keys for the user specified in the provided signed JWT. Takes the users password in order to decrypt their master
@@ -59,7 +60,6 @@ export const User = {
  * List of SDK Error Codes
  */
 export {ErrorCodes} from "./Constants";
-
 /**
  * SDK Error which extends normal Error object but adds `code` property which will be one of the ErrorCodes from above
  */
