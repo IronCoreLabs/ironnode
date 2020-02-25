@@ -1,18 +1,13 @@
 import Future from "futurejs";
-import * as UserOperations from "../UserOperations";
 import UserApi from "../../api/UserApi";
-import * as TestUtils from "../../tests/TestUtils";
 import ApiState from "../../lib/ApiState";
+import * as TestUtils from "../../tests/TestUtils";
+import * as UserCrypto from "../UserCrypto";
+import * as UserOperations from "../UserOperations";
 
 describe("UserOperations", () => {
     beforeEach(() => {
-        ApiState.setAccountContext(
-            TestUtils.testAccountID,
-            TestUtils.testSegmentID,
-            TestUtils.accountPublicBytes,
-            TestUtils.devicePrivateBytes,
-            TestUtils.signingPrivateBytes
-        );
+        ApiState.setAccountContext(...TestUtils.getTestApiState());
     });
 
     describe("getUserPublicKeys", () => {
@@ -104,6 +99,29 @@ describe("UserOperations", () => {
                 (result: any) => {
                     expect(result).toEqual({id: 352});
                     expect(UserApi.callUserDeviceDeleteApi).toHaveBeenCalledWith(352);
+                }
+            );
+        });
+    });
+
+    describe("rotateMasterKey", () => {
+        test("rotates key, saves it to the API, and then sets result in ApiState", () => {
+            expect(ApiState.accountEncryptedPrivateKey()).toEqual(TestUtils.accountEncryptedPrivateKeyBytes);
+
+            jest.spyOn(UserCrypto, "rotateUsersPrivateKey").mockReturnValue(
+                Future.of({
+                    newEncryptedPrivateUserKey: Buffer.from([1, 2, 3]),
+                    augmentationFactor: Buffer.from([8, 9, 10]),
+                })
+            );
+
+            jest.spyOn(UserApi, "callUserKeyUpdateApi").mockReturnValue(Future.of({needsRotation: false} as any));
+
+            UserOperations.rotateMasterKey("password").engage(
+                (e) => fail(e),
+                (resp) => {
+                    expect(resp).toEqual({needsRotation: false});
+                    expect(ApiState.accountEncryptedPrivateKey()).toEqual(Buffer.from([1, 2, 3]));
                 }
             );
         });

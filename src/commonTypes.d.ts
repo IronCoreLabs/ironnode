@@ -3,6 +3,7 @@
  */
 export type Base64String = string;
 export type PrivateKey<T> = T;
+export type AugmentationFactor = Buffer;
 export type SigningPublicKey<T> = T;
 
 export interface PublicKey<T> {

@@ -10,7 +10,9 @@ export interface DocumentAccessList {
     users?: Array<{id: string}>;
     groups?: Array<{id: string}>;
 }
-
+export interface UserCreateOptions {
+    needsRotation: boolean;
+}
 export interface DeviceCreateOptions {
     deviceName: string;
 }
@@ -146,6 +148,7 @@ export interface User {
     getPublicKey(users: string | string[]): Promise<UserPublicKeyGetResponse>;
     listDevices(): Promise<UserDeviceListResponse>;
     deleteDevice(id?: number): Promise<{id: number}>;
+    rotateMasterKey(password: string): Promise<{needsRotation: boolean}>;
 }
 
 export interface SDK {
@@ -179,6 +182,6 @@ export interface DeviceDetails {
 
 export namespace User {
     export function verify(jwt: string): Promise<ApiUserResponse | undefined>;
-    export function create(jwt: string, password: string): Promise<ApiUserResponse>;
+    export function create(jwt: string, password: string, options?: UserCreateOptions): Promise<ApiUserResponse>;
     export function generateDeviceKeys(jwt: string, password: string, options?: DeviceCreateOptions): Promise<DeviceDetails>;
 }

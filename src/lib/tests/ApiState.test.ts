@@ -1,59 +1,36 @@
-import ApiState from "../ApiState";
 import * as TestUtils from "../../tests/TestUtils";
+import ApiState from "../ApiState";
 
-test("ApiState", () => {
-    ApiState.setAccountContext(
-        TestUtils.testAccountID,
-        TestUtils.testSegmentID,
-        TestUtils.accountPublicBytes,
-        TestUtils.devicePrivateBytes,
-        TestUtils.signingPrivateBytes
-    );
+describe("ApiState", () => {
+    test("setting context sets value for all fields", () => {
+        ApiState.setAccountContext(...TestUtils.getTestApiState());
 
-    expect(ApiState.accountAndSegmentIDs()).toEqual({
-        accountID: "10",
-        segmentID: 30,
+        expect(ApiState.accountAndSegmentIDs()).toEqual({
+            accountID: "10",
+            segmentID: 30,
+        });
+
+        expect(ApiState.accountEncryptedPrivateKey()).toEqual(TestUtils.accountEncryptedPrivateKeyBytes);
+
+        expect(ApiState.accountPublicKey()).toEqual(TestUtils.accountPublicBytes);
+
+        expect(ApiState.devicePrivateKey()).toEqual(TestUtils.devicePrivateBytes);
+
+        expect(ApiState.signingKeys()).toEqual({
+            //prettier-ignore
+            publicKey: Buffer.from([191,198,194,108,71,19,144,15,144,232,128,27,163,12,3,171,100,32,136,198,69,71,128,255,29,204,142,14,59,243,125,118,]),
+            privateKey: TestUtils.signingPrivateBytes,
+        });
+
+        expect(ApiState.keyId()).toEqual(TestUtils.testCurrentKeyId);
     });
 
-    expect(ApiState.accountPublicKey()).toEqual(TestUtils.accountPublicBytes);
+    test("can reset encrypted private user key", () => {
+        ApiState.setAccountContext(...TestUtils.getTestApiState());
 
-    expect(ApiState.devicePrivateKey()).toEqual(TestUtils.devicePrivateBytes);
+        expect(ApiState.accountEncryptedPrivateKey()).toEqual(TestUtils.accountEncryptedPrivateKeyBytes);
 
-    expect(ApiState.signingKeys()).toEqual({
-        publicKey: Buffer.from([
-            191,
-            198,
-            194,
-            108,
-            71,
-            19,
-            144,
-            15,
-            144,
-            232,
-            128,
-            27,
-            163,
-            12,
-            3,
-            171,
-            100,
-            32,
-            136,
-            198,
-            69,
-            71,
-            128,
-            255,
-            29,
-            204,
-            142,
-            14,
-            59,
-            243,
-            125,
-            118,
-        ]),
-        privateKey: TestUtils.signingPrivateBytes,
+        ApiState.setEncryptedPrivateUserKey(Buffer.alloc(92));
+        expect(ApiState.accountEncryptedPrivateKey()).toEqual(Buffer.alloc(92));
     });
 });

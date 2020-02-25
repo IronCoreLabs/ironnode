@@ -11,13 +11,7 @@ describe("UserApi", () => {
                 foo: "bar",
             })
         );
-        return ApiState.setAccountContext(
-            TestUtils.testAccountID,
-            TestUtils.testSegmentID,
-            TestUtils.accountPublicBytes,
-            TestUtils.devicePrivateBytes,
-            TestUtils.signingPrivateBytes
-        );
+        return ApiState.setAccountContext(...TestUtils.getTestApiState());
     });
 
     afterEach(() => {
@@ -41,7 +35,7 @@ describe("UserApi", () => {
                         result: [{id: "svc-user", userMasterPublicKey: {x: ""}}],
                     });
 
-                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("users?id=svc-user", jasmine.any(Number), jasmine.any(Object));
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("users/current", jasmine.any(Number), jasmine.any(Object));
                     const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
                     expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
                     done();
@@ -97,7 +91,7 @@ describe("UserApi", () => {
                 })
             );
 
-            UserApi.callUserCreateApi("jwt", TestUtils.getEmptyPublicKey(), Buffer.alloc(5)).engage(
+            UserApi.callUserCreateApi("jwt", TestUtils.getEmptyPublicKey(), Buffer.alloc(5), false).engage(
                 (e) => fail(e),
                 (result) => {
                     expect(result).toEqual({
@@ -111,6 +105,43 @@ describe("UserApi", () => {
                     expect(JSON.parse(request.body)).toEqual({
                         userPrivateKey: "AAAAAAA=",
                         userPublicKey: {x: "", y: ""},
+                        needsRotation: false,
+                    });
+                    done();
+                }
+            );
+        });
+    });
+
+    describe("callUserKeyUpdateApi", () => {
+        test("calls API with new key and returns response", (done) => {
+            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(
+                Future.of({
+                    currentKeyId: 83,
+                    userPrivateKey: "AAAA",
+                    needsRotation: false,
+                })
+            );
+
+            UserApi.callUserKeyUpdateApi(Buffer.alloc(3), Buffer.alloc(5)).engage(
+                (e) => fail(e),
+                (result) => {
+                    expect(result).toEqual({
+                        currentKeyId: 83,
+                        userPrivateKey: "AAAA",
+                        needsRotation: false,
+                    });
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(
+                        `users/${TestUtils.testAccountID}/keys/${TestUtils.testCurrentKeyId}`,
+                        jasmine.any(Number),
+                        jasmine.any(Object)
+                    );
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+                    expect(request.method).toEqual("PUT");
+                    expect(JSON.parse(request.body)).toEqual({
+                        userPrivateKey: "AAAA",
+                        augmentationFactor: "AAAAAAA=",
                     });
                     done();
                 }
@@ -197,7 +228,10 @@ describe("UserApi", () => {
         test("calls API and returns mapped response data", (done) => {
             (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(
                 Future.of({
-                    result: [{id: "user-10", userMasterPublicKey: {x: ""}}, {id: "user-20", userMasterPublicKey: {x: ""}}],
+                    result: [
+                        {id: "user-10", userMasterPublicKey: {x: ""}},
+                        {id: "user-20", userMasterPublicKey: {x: ""}},
+                    ],
                 })
             );
 
@@ -205,7 +239,10 @@ describe("UserApi", () => {
                 (error) => done.fail(error),
                 (userList: any) => {
                     expect(userList).toEqual({
-                        result: [{id: "user-10", userMasterPublicKey: {x: ""}}, {id: "user-20", userMasterPublicKey: {x: ""}}],
+                        result: [
+                            {id: "user-10", userMasterPublicKey: {x: ""}},
+                            {id: "user-20", userMasterPublicKey: {x: ""}},
+                        ],
                     });
 
                     expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("users?id=user-10%2Cuser-20-!%40%23%24%25", jasmine.any(Number), jasmine.any(Object));
@@ -231,7 +268,10 @@ describe("UserApi", () => {
     describe("callUserDeviceListApi", () => {
         test("calls API and returns response", (done) => {
             const deviceListResult = {
-                result: [{id: 35, name: "device1", created: 123, updated: 345}, {id: 83, name: "device2", created: 678, updated: 901}],
+                result: [
+                    {id: 35, name: "device1", created: 123, updated: 345},
+                    {id: 83, name: "device2", created: 678, updated: 901},
+                ],
             };
             (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(Future.of(deviceListResult));
 

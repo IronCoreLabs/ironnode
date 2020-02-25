@@ -50,6 +50,22 @@ export function publicKeyLookup(IronNode: SDK) {
 }
 
 /**
+ * Ask for the users escrow password and use it to rotate the users master private key.
+ */
+export function rotateMasterKey(IronNode: SDK) {
+    return inquirer
+        .prompt<{escrowPassword: string}>([
+            {
+                name: "escrowPassword",
+                type: "password",
+                message: "Enter accounts escrow password:",
+            },
+        ])
+        .then(({escrowPassword}) => IronNode.user.rotateMasterKey(escrowPassword))
+        .then(log);
+}
+
+/**
  * Get a users devices and display the results
  */
 export function deviceList(IronNode: SDK) {

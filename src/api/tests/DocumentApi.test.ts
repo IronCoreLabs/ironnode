@@ -1,9 +1,9 @@
-import DocumentApi from "../DocumentApi";
-import * as ApiRequest from "../ApiRequest";
-import * as TestUtils from "../../tests/TestUtils";
 import Future from "futurejs";
+import {EncryptedAccessKey} from "../../commonTypes";
 import ApiState from "../../lib/ApiState";
-import {EncryptedAccessKey} from '../../commonTypes';
+import * as TestUtils from "../../tests/TestUtils";
+import * as ApiRequest from "../ApiRequest";
+import DocumentApi from "../DocumentApi";
 
 describe("DocumentApi", () => {
     beforeEach(() => {
@@ -12,13 +12,7 @@ describe("DocumentApi", () => {
                 foo: "bar",
             })
         );
-        return ApiState.setAccountContext(
-            TestUtils.testAccountID,
-            TestUtils.testSegmentID,
-            TestUtils.accountPublicBytes,
-            TestUtils.devicePrivateBytes,
-            TestUtils.signingPrivateBytes
-        );
+        return ApiState.setAccountContext(...TestUtils.getTestApiState());
     });
 
     afterEach(() => {
@@ -368,7 +362,11 @@ describe("DocumentApi", () => {
                     const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
                     expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
                     expect(JSON.parse(request.body)).toEqual({
-                        userOrGroups: [{id: "user-1", type: "user"}, {id: "user-2", type: "user"}, {id: "group-1", type: "group"}],
+                        userOrGroups: [
+                            {id: "user-1", type: "user"},
+                            {id: "user-2", type: "user"},
+                            {id: "group-1", type: "group"},
+                        ],
                     });
                     done();
                 }

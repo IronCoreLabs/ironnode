@@ -1,8 +1,8 @@
 import * as crypto from "crypto";
 import * as fs from "fs";
-import * as AES from "../AES";
 import * as Constants from "../../Constants";
-import {StreamingEncryption, StreamingDecryption} from "../StreamingAES";
+import * as AES from "../AES";
+import {StreamingDecryption, StreamingEncryption} from "../StreamingAES";
 jest.mock("fs", () => ({
     realpathSync: () => "realpath",
     renameSync: jest.fn(),
@@ -51,11 +51,43 @@ describe("AES", () => {
         });
     });
 
+    describe("encryptUserMasterKeyWithExistingDerivedKey", () => {
+        test("should encrypt using provided derived key and salt", (done) => {
+            const fixedSalt = Buffer.alloc(Constants.PBKDF2_SALT_LENGTH);
+            const hardcodedIV = Buffer.alloc(Constants.AES_IV_LENGTH);
+            (crypto as any).__setMockImplementation((size: number) => {
+                if (size === Constants.AES_IV_LENGTH) {
+                    return hardcodedIV;
+                }
+                return fixedSalt;
+            });
+
+            const userMasterKey = Buffer.alloc(32);
+            const existingDerivedKey = Buffer.alloc(32);
+            const existingDerivedKeySalt = Buffer.alloc(32);
+            const encryptedKey = AES.encryptUserMasterKeyWithExistingDerivedKey(userMasterKey, existingDerivedKey, existingDerivedKeySalt);
+
+            expect(encryptedKey).toHaveLength(92);
+
+            const salt = encryptedKey.slice(0, Constants.PBKDF2_SALT_LENGTH);
+            const iv = encryptedKey.slice(Constants.PBKDF2_SALT_LENGTH, Constants.PBKDF2_SALT_LENGTH + Constants.AES_IV_LENGTH);
+            const rest = encryptedKey.slice(Constants.PBKDF2_SALT_LENGTH + Constants.AES_IV_LENGTH);
+
+            expect(salt).toEqual(fixedSalt);
+            expect(iv).toEqual(hardcodedIV);
+
+            // prettier-ignore
+            expect(rest).toEqual(Buffer.from([206, 167, 64, 61, 77, 96, 107, 110, 7, 78, 197, 211, 186, 243, 157, 24, 114, 96, 3, 202, 55, 166, 42, 116, 209, 162, 245, 142, 117, 6, 53, 142, 209, 211, 8, 76, 153, 170, 138, 159, 218, 187, 62, 131, 235, 40, 193, 93]));
+
+            (crypto as any).__clearMockImplementation();
+            done();
+        });
+    });
+
     describe("decryptUserMasterKey", () => {
         test("should decrypt with expected bytes", (done) => {
             //Shorten PBKDF2 iterations to prevent long run tests
-            const spy = jest.spyOn(Constants, "PBKDF2_ITERATIONS");
-            spy.mockImplementation(() => 10);
+            jest.spyOn(Constants, "PBKDF2_ITERATIONS").mockImplementation(() => 10);
 
             const fixedSalt = Buffer.alloc(Constants.PBKDF2_SALT_LENGTH);
             const hardcodedIV = Buffer.alloc(Constants.AES_IV_LENGTH);
@@ -65,7 +97,9 @@ describe("AES", () => {
             AES.decryptUserMasterKey("password", Buffer.concat([fixedSalt, hardcodedIV, rest])).engage(
                 (e) => fail(e),
                 (decrypted) => {
-                    expect(decrypted).toEqual(Buffer.alloc(32));
+                    expect(decrypted.decryptedPrivateKey).toEqual(expect.any(Buffer));
+                    expect(decrypted.derivedKey).toEqual(expect.any(Buffer));
+                    expect(decrypted.derivedKeySalt).toEqual(Buffer.alloc(32));
                     done();
                 }
             );
