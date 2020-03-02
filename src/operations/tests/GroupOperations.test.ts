@@ -1,6 +1,7 @@
 import Future from "futurejs";
 import GroupApi from "../../api/GroupApi";
 import UserApi from "../../api/UserApi";
+import {ErrorCodes} from "../../Constants";
 import ApiState from "../../lib/ApiState";
 import * as TestUtils from "../../tests/TestUtils";
 import * as GroupCrypto from "../GroupCrypto";
@@ -80,6 +81,7 @@ describe("GroupOperations", () => {
                     permissions: ["member", "admin"],
                     created: "1",
                     updated: "2",
+                    needsRotation: false,
                 }) as any
             );
 
@@ -131,6 +133,43 @@ describe("GroupOperations", () => {
                 }
             );
         });
+
+        test("returns full group response with rotation if user is admin", () => {
+            const groupGet = jest.spyOn(GroupApi, "callGroupGetApi");
+            groupGet.mockReturnValue(
+                Future.of({
+                    groupPublicKey: "bar",
+                    name: "private group",
+                    encryptedPrivateKey: "aaa=",
+                    id: "87",
+                    adminIds: ["2"],
+                    memberIds: ["2", "53"],
+                    permissions: ["member", "admin"],
+                    created: "1",
+                    updated: "2",
+                    needsRotation: true,
+                }) as any
+            );
+
+            GroupOperations.get("87").engage(
+                (e) => fail(e),
+                (result: any) => {
+                    expect(result).toEqual({
+                        groupID: "87",
+                        groupName: "private group",
+                        groupAdmins: ["2"],
+                        groupMembers: ["2", "53"],
+                        isAdmin: true,
+                        isMember: true,
+                        created: "1",
+                        updated: "2",
+                        needsRotation: true,
+                    });
+
+                    expect(GroupApi.callGroupGetApi).toHaveBeenCalledWith("87");
+                }
+            );
+        });
     });
 
     describe("create", () => {
@@ -158,7 +197,7 @@ describe("GroupOperations", () => {
                 }) as any
             );
 
-            GroupOperations.create("23", "private group", false).engage(
+            GroupOperations.create("23", "private group", false, false).engage(
                 (e) => fail(e),
                 (result: any) => {
                     expect(result).toEqual({
@@ -172,7 +211,7 @@ describe("GroupOperations", () => {
                         updated: "2",
                     });
 
-                    expect(GroupApi.callGroupCreateApi).toHaveBeenCalledWith("23", "pub", "encGroupKey", "private group", undefined);
+                    expect(GroupApi.callGroupCreateApi).toHaveBeenCalledWith("23", "pub", "encGroupKey", "private group", undefined, false);
                     expect(GroupCrypto.createGroup).toHaveBeenCalledWith(TestUtils.accountPublicBytes, ApiState.signingKeys().privateKey, false);
                 }
             );
@@ -202,7 +241,7 @@ describe("GroupOperations", () => {
                 }) as any
             );
 
-            GroupOperations.create("", "private group", true).engage(
+            GroupOperations.create("", "private group", true, true).engage(
                 (e) => fail(e),
                 (result: any) => {
                     expect(result).toEqual({
@@ -216,7 +255,7 @@ describe("GroupOperations", () => {
                         updated: "2",
                     });
 
-                    expect(GroupApi.callGroupCreateApi).toHaveBeenCalledWith("", "pub", "encGroupKey", "private group", TestUtils.getTransformKey());
+                    expect(GroupApi.callGroupCreateApi).toHaveBeenCalledWith("", "pub", "encGroupKey", "private group", TestUtils.getTransformKey(), true);
                     expect(GroupCrypto.createGroup).toHaveBeenCalledWith(TestUtils.accountPublicBytes, ApiState.signingKeys().privateKey, true);
                 }
             );
@@ -239,6 +278,85 @@ describe("GroupOperations", () => {
                         created: "1",
                         updated: "2",
                     });
+                }
+            );
+        });
+    });
+
+    describe("rotateGroupPrivateKey", () => {
+        test("rejects if user is not an admin of the group", () => {
+            jest.spyOn(GroupApi, "callGroupGetApi").mockReturnValue(
+                Future.of({
+                    groupPublicKey: "bar",
+                    name: "private group",
+                    id: "87",
+                    adminIds: ["2"],
+                    memberIds: ["2", "53"],
+                }) as any
+            );
+
+            GroupOperations.rotateGroupPrivateKey("33").engage(
+                (e) => {
+                    expect(e.code).toEqual(ErrorCodes.GROUP_ROTATE_PRIVATE_KEY_NOT_ADMIN_FAILURE);
+                },
+                () => fail("Should not allow rotation if caller is not an admin.")
+            );
+        });
+
+        test("rotates key, updates key to API and returns result of new rotation", () => {
+            jest.spyOn(GroupApi, "callGroupGetApi").mockReturnValue(
+                Future.of({
+                    groupPublicKey: "bar",
+                    encryptedPrivateKey: "encGroupKey",
+                    name: "private group",
+                    id: "87",
+                    currentKeyId: 3352,
+                    adminIds: ["2", "387"],
+                    memberIds: ["2", "53"],
+                }) as any
+            );
+            jest.spyOn(UserApi, "callUserKeyListApi").mockReturnValue(
+                Future.of({
+                    result: [
+                        {id: "883", userMasterPublicKey: {x: "xxxx", y: "yyyy"}},
+                        {id: "222", userMasterPublicKey: {x: "x2x2", y: "y2y2"}},
+                    ],
+                })
+            );
+            jest.spyOn(GroupCrypto, "rotateGroupKey").mockReturnValue(
+                Future.of({
+                    encryptedAccessKeys: ["encryptedAccessKey1", "encryptedAccessKey2"] as any,
+                    augmentationFactor: Buffer.from([32, 97, 77]),
+                })
+            );
+            jest.spyOn(GroupApi, "callGroupUpdateKeyApi").mockReturnValue(
+                Future.of({
+                    needsRotation: false,
+                    id: 87,
+                    groupKeyId: 83,
+                })
+            );
+
+            GroupOperations.rotateGroupPrivateKey("335").engage(
+                (e) => fail(e),
+                (res) => {
+                    expect(res).toEqual({needsRotation: false});
+                    expect(UserApi.callUserKeyListApi).toHaveBeenLastCalledWith(["2", "387"]);
+                    expect(GroupCrypto.rotateGroupKey).toHaveBeenCalledWith(
+                        "encGroupKey",
+                        [
+                            {id: "883", masterPublicKey: {x: "xxxx", y: "yyyy"}},
+                            {id: "222", masterPublicKey: {x: "x2x2", y: "y2y2"}},
+                        ],
+                        TestUtils.devicePrivateBytes,
+                        expect.any(Object)
+                    );
+                    expect(GroupApi.callGroupUpdateKeyApi).toHaveBeenCalledWith(
+                        "335",
+                        3352,
+                        ["encryptedAccessKey1", "encryptedAccessKey2"],
+                        Buffer.from([32, 97, 77])
+                    );
                 }
             );
         });

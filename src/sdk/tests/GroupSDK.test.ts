@@ -1,6 +1,6 @@
 import Future from "futurejs";
-import * as GroupSDK from "../GroupSDK";
 import * as GroupOperations from "../../operations/GroupOperations";
+import * as GroupSDK from "../GroupSDK";
 
 describe("GroupSDK", () => {
     describe("list", () => {
@@ -51,7 +51,7 @@ describe("GroupSDK", () => {
             GroupSDK.create()
                 .then((result: any) => {
                     expect(result).toEqual("create");
-                    expect(GroupOperations.create).toHaveBeenCalledWith("", "", true);
+                    expect(GroupOperations.create).toHaveBeenCalledWith("", "", true, false);
                     done();
                 })
                 .catch((e) => fail(e));
@@ -63,7 +63,7 @@ describe("GroupSDK", () => {
             GroupSDK.create({groupID: "providedGroupID"})
                 .then((result: any) => {
                     expect(result).toEqual("create");
-                    expect(GroupOperations.create).toHaveBeenCalledWith("providedGroupID", "", true);
+                    expect(GroupOperations.create).toHaveBeenCalledWith("providedGroupID", "", true, false);
                     done();
                 })
                 .catch((e) => fail(e));
@@ -75,7 +75,7 @@ describe("GroupSDK", () => {
             GroupSDK.create({addAsMember: false})
                 .then((result: any) => {
                     expect(result).toEqual("create");
-                    expect(GroupOperations.create).toHaveBeenCalledWith("", "", false);
+                    expect(GroupOperations.create).toHaveBeenCalledWith("", "", false, false);
                     done();
                 })
                 .catch((e) => fail(e));
@@ -87,7 +87,7 @@ describe("GroupSDK", () => {
             GroupSDK.create({groupName: "abc"})
                 .then((result: any) => {
                     expect(result).toEqual("create");
-                    expect(GroupOperations.create).toHaveBeenCalledWith("", "abc", true);
+                    expect(GroupOperations.create).toHaveBeenCalledWith("", "abc", true, false);
                     done();
                 })
                 .catch((e) => fail(e));
@@ -99,7 +99,19 @@ describe("GroupSDK", () => {
             GroupSDK.create({groupID: "providedID", groupName: "abc", addAsMember: true})
                 .then((result: any) => {
                     expect(result).toEqual("create");
-                    expect(GroupOperations.create).toHaveBeenCalledWith("providedID", "abc", true);
+                    expect(GroupOperations.create).toHaveBeenCalledWith("providedID", "abc", true, false);
+                    done();
+                })
+                .catch((e) => fail(e));
+        });
+
+        test("calls group create operation with rotation arg", (done) => {
+            const spy = jest.spyOn(GroupOperations, "create");
+            spy.mockReturnValue(Future.of("create") as any);
+            GroupSDK.create({groupID: "providedID", groupName: "abc", addAsMember: true, needsRotation: true})
+                .then((result: any) => {
+                    expect(result).toEqual("create");
+                    expect(GroupOperations.create).toHaveBeenCalledWith("providedID", "abc", true, true);
                     done();
                 })
                 .catch((e) => fail(e));
@@ -139,6 +151,23 @@ describe("GroupSDK", () => {
                 .then((group) => {
                     expect(group).toEqual("cleared name");
                     expect(GroupOperations.update).toHaveBeenLastCalledWith("groupID", null);
+                })
+                .catch((e) => fail(e));
+        });
+    });
+
+    describe("rotatePrivateKey", () => {
+        test("fails when group ID is not valid", () => {
+            expect(() => GroupSDK.rotatePrivateKey("")).toThrow();
+        });
+
+        test("calls group private key rotate operation", (done) => {
+            jest.spyOn(GroupOperations, "rotateGroupPrivateKey").mockReturnValue(Future.of("rotateGroupPrivateKey") as any);
+            GroupSDK.rotatePrivateKey("6")
+                .then((result: any) => {
+                    expect(result).toEqual("rotateGroupPrivateKey");
+                    expect(GroupOperations.rotateGroupPrivateKey).toHaveBeenCalledWith("6");
+                    done();
                 })
                 .catch((e) => fail(e));
         });

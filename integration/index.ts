@@ -1,7 +1,7 @@
 /* tslint:disable no-console*/
 import * as fs from "fs";
-import * as path from "path";
 import * as inquirer from "inquirer";
+import * as path from "path";
 import {initializeSDKWithLocalDevice} from "./sdkOperation";
 import {askForUserOperation} from "./userOperation";
 
@@ -22,14 +22,20 @@ if (hasLocalDevice) {
             type: "list",
             name: "useDevice",
             message: "Local device keys found, use them?",
-            choices: [{name: "Yes", value: true}, {name: "No", value: false}],
+            choices: [
+                {name: "Yes", value: true},
+                {name: "No", value: false},
+            ],
         })
         .then(({useDevice}) => {
             if (useDevice) {
                 return initializeSDKWithLocalDevice();
             }
             return askForUserOperation("Pick a user operation to run.").then(initializeSDKWithLocalDevice);
-        });
+        })
+        .catch((e) => console.error(e));
 } else {
-    askForUserOperation("No local device found, pick a user operation to run.").then(initializeSDKWithLocalDevice);
+    askForUserOperation("No local device found, pick a user operation to run.")
+        .then(initializeSDKWithLocalDevice)
+        .catch((e) => console.error(e));
 }

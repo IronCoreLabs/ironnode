@@ -1,6 +1,6 @@
-import * as GroupOperations from "../operations/GroupOperations";
-import * as Utils from "../lib/Utils";
 import {GroupCreateOptions, GroupUpdateOptions} from "../../ironnode";
+import * as Utils from "../lib/Utils";
+import * as GroupOperations from "../operations/GroupOperations";
 
 /**
  * List all groups that the current user is either an admin or member of.
@@ -22,11 +22,11 @@ export function get(groupID: string) {
  * Create a new group. Takes an options object which allow for specifying an optional, unencrypted ID and name for the group.
  * @param {GroupCreateOptions} options Group creation options
  */
-export function create(options: GroupCreateOptions = {groupName: "", addAsMember: true}) {
+export function create(options: GroupCreateOptions = {groupName: "", addAsMember: true, needsRotation: false}) {
     if (options.groupID) {
         Utils.validateID(options.groupID);
     }
-    return GroupOperations.create(options.groupID || "", options.groupName || "", options.addAsMember !== false).toPromise();
+    return GroupOperations.create(options.groupID || "", options.groupName || "", options.addAsMember !== false, options.needsRotation === true).toPromise();
 }
 
 /**
@@ -40,6 +40,17 @@ export function update(groupID: string, options: GroupUpdateOptions) {
         return GroupOperations.update(groupID, options.groupName).toPromise();
     }
     throw new Error("Group update must provide a new name which is either a non-zero length string or null.");
+}
+
+/**
+ * Rotate a groups private key. This allows for changing the private key of a group without having to re-encrypt any of the documents
+ * encrypted to the group. This operation will re-add every existing admin of the group so depending on the number of admins this
+ * operation can take a long time to complete.
+ * @param {string} groupId ID of the group to rotate
+ */
+export function rotatePrivateKey(groupId: string) {
+    Utils.validateID(groupId);
+    return GroupOperations.rotateGroupPrivateKey(groupId).toPromise();
 }
 
 /**
