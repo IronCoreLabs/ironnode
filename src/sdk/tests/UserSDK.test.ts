@@ -78,4 +78,16 @@ describe("UserSDK", () => {
                 .catch((e) => fail(e));
         });
     });
+
+    describe("changePassword", () => {
+        test("should call into UserOperations", () => {
+            const spy = jest.spyOn(UserOperations, "changeUsersPassword");
+            spy.mockReturnValue(Future.of("resp") as any);
+            UserSDK.changePassword("password", "newPassword")
+                .then((resp) => {
+                    expect(resp).toEqual("resp");
+                })
+                .catch((e) => fail(e));
+        });
+    });
 });

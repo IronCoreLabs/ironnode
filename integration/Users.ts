@@ -80,3 +80,24 @@ export function deviceDelete(IronNode: SDK) {
         .then(({id}) => IronNode.user.deleteDevice(id))
         .then(log);
 }
+
+/**
+ * Ask user for the current and a new password and call into the SDK to change their password.
+ */
+export function changePassword(IronNode: SDK) {
+    return inquirer
+        .prompt<{currentPassword: string; newPassword: string}>([
+            {
+                name: "currentPassword",
+                type: "password",
+                message: "Enter current escrow password:",
+            },
+            {
+                name: "newPassword",
+                type: "password",
+                message: "Enter new escrow password:",
+            },
+        ])
+        .then(({currentPassword, newPassword}) => IronNode.user.changePassword(currentPassword, newPassword))
+        .then(() => log("Password successfully changed"));
+}

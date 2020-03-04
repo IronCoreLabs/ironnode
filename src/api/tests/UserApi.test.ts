@@ -265,6 +265,23 @@ describe("UserApi", () => {
         });
     });
 
+    describe("callUserUpdatePrivateKey", () => {
+        test("calls API with newly encrypted key", () => {
+            UserApi.callUserUpdatePrivateKey(Buffer.from([95, 97, 92, 83])).engage(
+                (e) => fail(e),
+                (res) => {
+                    expect(res).toEqual({foo: "bar"});
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("users/10", jasmine.any(Number), jasmine.any(Object));
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+                    expect(JSON.parse(request.body)).toEqual({
+                        userPrivateKey: "X2FcUw==",
+                    });
+                }
+            );
+        });
+    });
+
     describe("callUserDeviceListApi", () => {
         test("calls API and returns response", (done) => {
             const deviceListResult = {

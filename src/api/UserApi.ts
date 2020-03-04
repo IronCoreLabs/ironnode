@@ -9,12 +9,14 @@ import SDKError from "../lib/SDKError";
 import {Codec, transformKeyToBase64} from "../lib/Utils";
 import * as ApiRequest from "./ApiRequest";
 
-interface ApiUserResponse {
+interface UserUpdateApiResponse {
     id: string;
-    segmentId: number;
     status: number;
-    userMasterPublicKey: PublicKey<Base64String>;
     userPrivateKey: PrivateKey<Base64String>;
+    userMasterPublicKey: PublicKey<Base64String>;
+}
+interface ApiUserResponse extends UserUpdateApiResponse {
+    segmentId: number;
     needsRotation: boolean;
     currentKeyId: number;
 }
@@ -201,6 +203,24 @@ const userDeviceDelete = (sign: MessageSignature, accountID: string, deviceID?: 
     errorCode: ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE,
 });
 
+/**
+ * Update the encrypted private key for the currently logged in user
+ */
+const userUpdateEncryptedPrivateKey = (sign: MessageSignature, accountId: string, encryptedPrivateKey: PrivateKey<Buffer>) => ({
+    url: `users/${encodeURIComponent(accountId)}`,
+    options: {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: ApiRequest.getAuthHeader(sign),
+        },
+        body: JSON.stringify({
+            userPrivateKey: encryptedPrivateKey.toString("base64"),
+        }),
+    },
+    errorCode: ErrorCodes.USER_UPDATE_REQUEST_FAILURE,
+});
+
 export default {
     /**
      * API method to get the master public key for the user who the SDK is acting as.
@@ -281,11 +301,19 @@ export default {
     },
 
     /**
+     * Make a request to the API to update the current users encrypted private master key.
+     */
+    callUserUpdatePrivateKey(userEncryptedPrivateKey: PrivateKey<Buffer>) {
+        const {accountID} = ApiState.accountAndSegmentIDs();
+        const {url, options, errorCode} = userUpdateEncryptedPrivateKey(getSignatureHeader(), accountID, userEncryptedPrivateKey);
+        return ApiRequest.fetchJSON<UserUpdateApiResponse>(url, errorCode, options);
+    },
+
+    /**
      * Make request to get a list of a users devices. Only ever works when acting as the currently authenticated user of the SDK.
      */
     callUserDeviceListApi(): Future<SDKError, UserDeviceListResponse> {
-        const {accountID} = ApiState.accountAndSegmentIDs();
-        const {url, options, errorCode} = userDeviceList(getSignatureHeader(), accountID);
+        const {url, options, errorCode} = userDeviceList(getSignatureHeader(), ApiState.accountAndSegmentIDs().accountID);
         return ApiRequest.fetchJSON<UserDeviceListResponse>(url, errorCode, options);
     },
 

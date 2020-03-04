@@ -60,4 +60,31 @@ describe("UserCrypto", () => {
             );
         });
     });
+
+    describe("reencryptUserMasterPrivateKey", () => {
+        test("decrypts, reencrypts provided key", () => {
+            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(Future.of({decryptedPrivateKey: Buffer.from("decryptedPrivateKey")}) as any);
+            jest.spyOn(AES, "encryptUserMasterKey").mockReturnValue(Future.of(Buffer.from("newEncryptedKey")));
+
+            UserCrypto.reencryptUserMasterPrivateKey(Buffer.from("curEncKey"), "myOldPassword", "newShinyPassword").engage(
+                (e) => fail(e),
+                (res) => {
+                    expect(res).toEqual(Buffer.from("newEncryptedKey"));
+                    expect(AES.decryptUserMasterKey).toHaveBeenCalledWith("myOldPassword", Buffer.from("curEncKey"));
+                    expect(AES.encryptUserMasterKey).toHaveBeenCalledWith("newShinyPassword", Buffer.from("decryptedPrivateKey"));
+                }
+            );
+        });
+
+        test("maps error to proper SDK error", () => {
+            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(Future.reject(new SDKError(new Error("fake"), 222)));
+
+            UserCrypto.reencryptUserMasterPrivateKey(Buffer.from("curEncKey"), "myOldPassword", "newShinyPassword").engage(
+                (e) => {
+                    expect(e.code).toEqual(ErrorCodes.USER_PASSCODE_CHANGE_FAILURE);
+                },
+                () => fail("Should not resolve when decryption fails")
+            );
+        });
+    });
 });

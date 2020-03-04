@@ -152,6 +152,7 @@ export interface User {
     listDevices(): Promise<UserDeviceListResponse>;
     deleteDevice(id?: number): Promise<{id: number}>;
     rotateMasterKey(password: string): Promise<{needsRotation: boolean}>;
+    changePassword(currentPassword: string, newPassword: string): Promise<void>;
 }
 
 export interface SDK {

@@ -38,7 +38,8 @@ const topLevelPrompt: inquirer.ListQuestion<{operation: string}> = {
         {name: "User Public Key Lookup", value: "userKeyLookup"},
         {name: "User Device List", value: "userDeviceList"},
         {name: "User Device Delete", value: "userDeviceDelete"},
-        {name: "User Rotate Master Private Key", value: "rotateUserKey"},
+        {name: "Rotate User Master Private Key", value: "rotateUserKey"},
+        {name: "Change Escrow Password", value: "changePassword"},
         new inquirer.Separator(),
         {name: "Quit", value: "quit"},
         new inquirer.Separator(),
@@ -96,6 +97,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Users.deviceDelete(IronNode);
         case "rotateUserKey":
             return Users.rotateMasterKey(IronNode);
+        case "changePassword":
+            return Users.changePassword(IronNode);
         case "quit":
             return process.exit();
         default:
