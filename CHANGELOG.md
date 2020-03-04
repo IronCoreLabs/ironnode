@@ -1,3 +1,25 @@
+## 0.8.0
+
+### Breaking Changes
+
++ Removed Node 8 support
+
+### Changed
+
+-   Added Windows support.
+-   Added `grantToAuthor` option to `DocumentCreateOptions`. This allows creating a document without encrypting it to the currently initialized user. Defaults to true. If false, caller must provide a value within either the user or group access lists, as every document must be encrypted to at least one user or group.
+-   Key Rotation
+    -   User Key Rotation: Added the ability to rotate a users private key while keeping their public key the same. This is accomplished via multi-party computation with the IronCore webservice. The main use case for this is a workflow that requires that the users account be generated prior to the user logging in for the first time.
+        -   Users can be created with a flag marking their account as needing rotation when using the `IronNode.User.create()` call.
+        -   User private keys can be rotated using the new `SDK.user.rotateMasterKey(password: string)` method.
+    -   Group Key Rotation. Added the ability to rotate a groups private key while keeping the group public key the same. This works the same way as user key rotation and supports the use case where the group is generated prior to the admins logging in for the first time.
+        -   Groups can be created with a flag marking their need for rotation a `needsRotation` flag to the `GroupCreateOptions`
+        -   Group private key scan be rotated using the new `SDK.group.rotatePrivateKey(groupId: string)` method. The calling user must be an administrator of the group in order to rotate its private key.
+    -   Initialization return type: After initializing the IronNode SDK, the resulting SDK object will now also contain a `userContext` field which contains key rotation information for the currently initialized user.
+        -   `needsRotation`: If `true`, denotes that the current users private key should be rotated.
+        -   `groupsNeedingRotation`: Contains a list of group IDs that the current user is an administrator of that are marked as needing their private key rotated.
+- Added a method to allow the currently initialized user to change their private key escrow password. The `SDK.user.changePassword(currentPassword: string, newPassword: string)` method decrypts and re-encrypts the users master private key using the provided current and new passwords.
+
 ## 0.7.3
 
 ### Breaking Changes
