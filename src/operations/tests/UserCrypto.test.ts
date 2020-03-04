@@ -1,4 +1,6 @@
 import Future from "futurejs";
+import {SDKError} from "../..";
+import {ErrorCodes} from "../../Constants";
 import * as AES from "../../crypto/AES";
 import * as Recrypt from "../../crypto/Recrypt";
 import * as UserCrypto from "../UserCrypto";
@@ -39,6 +41,23 @@ describe("UserCrypto", () => {
             );
         });
 
-        test("maps failure to expected SDK error", () => {});
+        test("maps failure to expected SDK error", () => {
+            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(
+                Future.of({
+                    decryptedPrivateKey: Buffer.from("decryptedPrivateKey"),
+                    derivedKey: Buffer.from("derivedKey"),
+                    derivedKeySalt: Buffer.from("derivedKeySalt"),
+                })
+            );
+            jest.spyOn(AES, "encryptUserMasterKeyWithExistingDerivedKey").mockReturnValue(Buffer.from("encryptedPrivateKey"));
+            jest.spyOn(Recrypt, "rotateUsersPrivateKeyWithRetry").mockReturnValue(Future.reject(new SDKError(new Error("forced failure"), 0)));
+
+            UserCrypto.rotateUsersPrivateKey("password", Buffer.from("key")).engage(
+                (e) => {
+                    expect(e.code).toEqual(ErrorCodes.USER_PRIVATE_KEY_ROTATION_FAILURE);
+                },
+                () => fail("Should not succeed when test fails")
+            );
+        });
     });
 });
