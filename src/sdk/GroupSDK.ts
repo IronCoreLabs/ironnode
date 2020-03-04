@@ -43,9 +43,9 @@ export function update(groupID: string, options: GroupUpdateOptions) {
 }
 
 /**
- * Rotate a groups private key. This allows for changing the private key of a group without having to re-encrypt any of the documents
- * encrypted to the group. This operation will re-add every existing admin of the group so depending on the number of admins this
- * operation can take a long time to complete.
+ * Rotate a groups private key without modifying its public key. This allows for changing the private key of a group without having
+ * to re-encrypt any of the documents encrypted to the group. This operation will re-add every existing admin of the group so depending
+ * on the number of admins this operation can take a long time to complete.
  * @param {string} groupId ID of the group to rotate
  */
 export function rotatePrivateKey(groupId: string) {
