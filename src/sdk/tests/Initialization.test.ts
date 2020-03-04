@@ -25,6 +25,8 @@ describe("Initialization", () => {
                     userMasterPublicKey: Codec.PublicKey.toBase64({x: Buffer.from([78, 98, 38]), y: Buffer.from([83, 93, 103, 111])}),
                     currentKeyId: 68,
                     userPrivateKey: Buffer.from([1, 2, 3]).toString("base64"),
+                    needsRotation: true,
+                    groupsNeedingRotation: ["one"],
                 })
             );
 
@@ -37,6 +39,10 @@ describe("Initialization", () => {
                 (e) => fail(e),
                 (result) => {
                     expect(result).toBeObject();
+                    expect(result.userContext).toEqual({
+                        userNeedsRotation: true,
+                        groupsNeedingRotation: ["one"],
+                    });
                     expect(apiSpy).toHaveBeenCalledWith("user-10", 3, "I2JC");
                     expect(stateSpy).toHaveBeenCalledWith(
                         "user-10",

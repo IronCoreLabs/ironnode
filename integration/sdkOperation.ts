@@ -5,6 +5,7 @@ import {SDK} from "../ironnode";
 import {initialize} from "../src/index";
 import * as Documents from "./Documents";
 import * as Groups from "./Groups";
+import {log} from "./Logger";
 import * as Users from "./Users";
 
 const topLevelPrompt: inquirer.ListQuestion<{operation: string}> = {
@@ -27,6 +28,7 @@ const topLevelPrompt: inquirer.ListQuestion<{operation: string}> = {
         {name: "Group Get", value: "groupGet"},
         {name: "Group Create", value: "groupCreate"},
         {name: "Group Update", value: "groupUpdate"},
+        {name: "Group Private Key Rotate", value: "groupRotate"},
         {name: "Group Add Admins", value: "groupAddAdmins"},
         {name: "Group Remove Admins", value: "groupRemoveAdmins"},
         {name: "Group Add Members", value: "groupAddMembers"},
@@ -74,6 +76,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Groups.create(IronNode);
         case "groupUpdate":
             return Groups.update(IronNode);
+        case "groupRotate":
+            return Groups.rotatePrivateKey(IronNode);
         case "groupAddAdmins":
             return Groups.addAdmins(IronNode);
         case "groupRemoveAdmins":
@@ -124,6 +128,9 @@ function askForOperation(IronNode: SDK): Promise<void> {
 export function initializeSDKWithLocalDevice() {
     const Config = require(path.join(__dirname, "./.device.json"));
     return initialize(Config.accountID, Config.segmentID, Config.deviceKeys.privateKey, Config.signingKeys.privateKey)
-        .then((IronNode) => askForOperation(IronNode))
+        .then((IronNode) => {
+            log(IronNode.userContext);
+            return askForOperation(IronNode);
+        })
         .catch((error) => console.error(`SDK Initialization Error: ${error.message}`));
 }

@@ -1,8 +1,8 @@
 import Future from "futurejs";
+import {EncryptedAccessKey, PrivateKey, PublicKey, SigningKeyPair, TransformedEncryptedMessage, UserOrGroupPublicKey} from "../commonTypes";
+import {ErrorCodes} from "../Constants";
 import * as Recrypt from "../crypto/Recrypt";
 import SDKError from "../lib/SDKError";
-import {ErrorCodes} from "../Constants";
-import {PublicKey, TransformedEncryptedMessage, UserOrGroupPublicKey, PrivateKey, EncryptedAccessKey} from "../commonTypes";
 
 /**
  * Create the keys for a new group. Generates a new keypair for the group and encrypts the value used to generate the
@@ -21,6 +21,27 @@ export function createGroup(userPublicKey: PublicKey<Buffer>, privateSigningKey:
             }));
         })
         .errorMap((error) => new SDKError(error, ErrorCodes.GROUP_KEY_GENERATION_FAILURE));
+}
+
+/**
+ * Decrypt the provided encrypted group key, then calculate a new private key using key rotation. Once we have a new group private key
+ * re-encrypt it to each of the provided admins that are inthe group.
+ */
+export function rotateGroupKey(
+    encryptedGroupKey: TransformedEncryptedMessage,
+    adminList: UserOrGroupPublicKey[],
+    userPrivateKey: PrivateKey<Buffer>,
+    signingKeys: SigningKeyPair
+) {
+    return Recrypt.decryptPlaintext(encryptedGroupKey, userPrivateKey)
+        .flatMap(([, groupKey]) => Recrypt.rotateGroupPrivateKeyWithRetry(groupKey))
+        .flatMap(({plaintext, augmentationFactor}) =>
+            Recrypt.encryptPlaintextToList(plaintext, adminList, signingKeys.privateKey).map((encryptedAccessKeys) => ({
+                encryptedAccessKeys,
+                augmentationFactor,
+            }))
+        )
+        .errorMap((error) => new SDKError(error, ErrorCodes.GROUP_PRIVATE_KEY_ROTATION_FAILURE));
 }
 
 /**

@@ -30,6 +30,41 @@ type Plaintext = Buffer;
 const isBufferAllZero = (bytes: Buffer) => bytes.every((val) => val === 0);
 
 /**
+ * Augments the provided user private key and return both the augmented private key and the augmentation factor.
+ */
+const rotateUsersPrivateKey = (userPrivateKey: Buffer): Future<Error, {newPrivateKey: Buffer; augmentationFactor: Buffer}> => {
+    return generateKeyPair().flatMap(({privateKey}) => {
+        if (isBufferAllZero(privateKey)) {
+            return Future.reject(new Error("Key rotation failed."));
+        }
+        const newPrivateKey = Recrypt.subtractPrivateKeys(userPrivateKey, privateKey);
+        if (isBufferAllZero(newPrivateKey)) {
+            return Future.reject(new Error("Key rotation failed."));
+        }
+        return Future.of({
+            newPrivateKey,
+            augmentationFactor: privateKey,
+        });
+    });
+};
+
+/**
+ * Augment the provided group private key and return both the augmented private key and the augmentation factor.
+ */
+const rotateGroupPrivateKey = (existingGroupPrivateKey: Buffer): Future<Error, {plaintext: Buffer; augmentationFactor: Buffer}> => {
+    const plaintext = RecryptApi.generatePlaintext();
+    const newPrivateKey = RecryptApi.deriveSymmetricKey(plaintext);
+    const augmentationFactor = Recrypt.subtractPrivateKeys(existingGroupPrivateKey, newPrivateKey);
+    if (isBufferAllZero(newPrivateKey) || isBufferAllZero(augmentationFactor)) {
+        return Future.reject(new Error("Key rotation failed."));
+    }
+    return Future.of({
+        plaintext,
+        augmentationFactor,
+    });
+};
+
+/**
  * Convert the components of an encrypted symmetric key into base64 strings for submission to the API
  * @param {EncryptedValue} encryptedValue Encrypted value to transform
  */
@@ -242,27 +277,15 @@ export function generateDeviceAddSignature(jwtToken: string, userMasterKeyPair: 
 }
 
 /**
- * Augments the provided user private key and return both the augmented private key and the augmentation factor.
- */
-const rotateUsersPrivateKey = (userPrivateKey: Buffer): Future<Error, {newPrivateKey: Buffer; augmentationFactor: Buffer}> => {
-    return generateKeyPair().flatMap(({privateKey}) => {
-        if (isBufferAllZero(privateKey)) {
-            return Future.reject(new Error("Key rotation failed."));
-        }
-        const newPrivateKey = Recrypt.subtractPrivateKeys(userPrivateKey, privateKey);
-        if (isBufferAllZero(newPrivateKey)) {
-            return Future.reject(new Error("Key rotation failed."));
-        }
-        return Future.of({
-            newPrivateKey,
-            augmentationFactor: privateKey,
-        });
-    });
-};
-
-/**
  * Attempts to rotate the provided user private key and if that fails, attempts a single retry in case the augmentation failed.
  */
 export const rotateUsersPrivateKeyWithRetry = (userPrivateKey: Buffer): Future<Error, {newPrivateKey: Buffer; augmentationFactor: Buffer}> => {
     return rotateUsersPrivateKey(userPrivateKey).handleWith(() => rotateUsersPrivateKey(userPrivateKey));
+};
+
+/**
+ * Attempts to rotate the provided group private key and if that fails, attempts a single retry in case the augmentation failed.
+ */
+export const rotateGroupPrivateKeyWithRetry = (groupPrivateKey: Buffer): Future<Error, {plaintext: Buffer; augmentationFactor: Buffer}> => {
+    return rotateGroupPrivateKey(groupPrivateKey).handleWith(() => rotateGroupPrivateKey(groupPrivateKey));
 };

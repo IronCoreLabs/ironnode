@@ -1,5 +1,5 @@
 import Future from "futurejs";
-import {DeviceCreateOptions, DeviceDetails, UserCreateOptions} from "../../ironnode";
+import {DeviceCreateOptions, DeviceDetails, SDK, UserCreateOptions} from "../../ironnode";
 import UserApi from "../api/UserApi";
 import {Base64String, KeyPair} from "../commonTypes";
 import {ErrorCodes} from "../Constants";
@@ -63,8 +63,8 @@ function generateDeviceAndTransformKeys(jwt: string, userMasterKeyPair: KeyPair)
  * Initizlize the Node SDK. Retrieves the public key for the provided account ID and sets all other provided data into the API state
  * library for future requests.
  */
-export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String) {
-    return UserApi.getAccountContextPublicKey(accountID, segmentID, privateSigningKey).flatMap<typeof SDK>((user) => {
+export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Future<SDKError, SDK> {
+    return UserApi.getAccountContextPublicKey(accountID, segmentID, privateSigningKey).flatMap((user) => {
         ApiState.setAccountContext(
             user.id,
             segmentID,
@@ -74,7 +74,13 @@ export function initialize(accountID: string, segmentID: number, privateDeviceKe
             Codec.Buffer.fromBase64(privateSigningKey),
             user.currentKeyId
         );
-        return Future.of(SDK);
+        return Future.of({
+            ...SDK,
+            userContext: {
+                userNeedsRotation: user.needsRotation,
+                groupsNeedingRotation: user.groupsNeedingRotation,
+            },
+        });
     });
 }
 

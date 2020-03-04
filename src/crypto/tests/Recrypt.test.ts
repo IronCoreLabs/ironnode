@@ -1,4 +1,3 @@
-import Future from "futurejs";
 import * as TestUtils from "../../tests/TestUtils";
 import * as Recrypt from "../Recrypt";
 
@@ -456,16 +455,9 @@ describe("Recrypt", () => {
     });
 
     describe("rotateUsersPrivateKeyWithRetry", () => {
-        xtest("generates new key and augmentation factor", () => {
+        test("generates new key and augmentation factor", () => {
             //prettier-ignore
             const currentKey = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
-            const aug = Buffer.from([32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
-            jest.spyOn(Recrypt, "generateKeyPair").mockReturnValue(
-                Future.of({
-                    privateKey: aug,
-                    publicKey: TestUtils.getEmptyPublicKey(),
-                })
-            );
 
             Recrypt.rotateUsersPrivateKeyWithRetry(currentKey).engage(
                 (e) => fail(e),
@@ -475,50 +467,18 @@ describe("Recrypt", () => {
                 }
             );
         });
+    });
 
-        test("fails if the newly generated key is all zeroes", (done) => {
-            jest.spyOn(Recrypt, "generateKeyPair").mockReturnValue(
-                Future.of({
-                    privateKey: Buffer.alloc(32),
-                    publicKey: TestUtils.getEmptyPublicKey(),
-                })
-            );
-
-            Recrypt.rotateUsersPrivateKeyWithRetry(Buffer.from([1, 2, 3, 4, 5])).engage(
-                (e) => {
-                    expect(e.message.includes("Key rotation failed"));
-                    done();
-                },
-                () => fail("should not succeed when generating all zero bytes")
-            );
-        });
-
-        test("retries rotation if first call fails ", () => {
+    describe("rotateGroupPrivateKeyWithRetry", () => {
+        test("generates new plaintext key and augmentation factor", () => {
             //prettier-ignore
             const currentKey = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
-            const aug = Buffer.from([32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
-            jest.spyOn(Recrypt, "generateKeyPair")
-                //Return all zeros the first time
-                .mockImplementationOnce(() =>
-                    Future.of({
-                        privateKey: Buffer.alloc(32),
-                        publicKey: TestUtils.getEmptyPublicKey(),
-                    })
-                )
-                //Then return a valid value on the retry
-                .mockImplementationOnce(() =>
-                    Future.of({
-                        //prettier-ignore
-                        privateKey: aug,
-                        publicKey: TestUtils.getEmptyPublicKey(),
-                    })
-                );
 
-            Recrypt.rotateUsersPrivateKeyWithRetry(currentKey).engage(
+            Recrypt.rotateGroupPrivateKeyWithRetry(currentKey).engage(
                 (e) => fail(e),
-                ({newPrivateKey, augmentationFactor}) => {
-                    expect(newPrivateKey).toEqual(expect.any(Buffer));
+                ({plaintext, augmentationFactor}) => {
                     expect(augmentationFactor).toEqual(expect.any(Buffer));
+                    expect(plaintext).toEqual(expect.any(Buffer));
                 }
             );
         });

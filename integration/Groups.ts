@@ -1,5 +1,5 @@
 import * as inquirer from "inquirer";
-import {SDK, GroupDetailResponse} from "../ironnode";
+import {GroupDetailResponse, SDK} from "../ironnode";
 import {log} from "./Logger";
 
 /**
@@ -73,7 +73,7 @@ export function get(IronNode: SDK) {
  */
 export function create(IronNode: SDK) {
     return inquirer
-        .prompt<{id: string; name: string; addAsMember: boolean}>([
+        .prompt<{id: string; name: string; addAsMember: boolean; needsRotation: boolean}>([
             {
                 name: "id",
                 type: "input",
@@ -89,12 +89,19 @@ export function create(IronNode: SDK) {
                 type: "confirm",
                 message: "Add yourself as a member? ",
             },
+            {
+                name: "needsRotation",
+                type: "confirm",
+                message: "Create with needs rotation?",
+                default: false,
+            },
         ])
-        .then(({id, name, addAsMember}) => {
+        .then(({id, name, addAsMember, needsRotation}) => {
             const options = {
                 groupID: id || undefined,
                 groupName: name || undefined,
                 addAsMember,
+                needsRotation,
             };
             return IronNode.group.create(options);
         })
@@ -115,6 +122,15 @@ export function update(IronNode: SDK) {
                 })
                 .then(({newName}) => IronNode.group.update(id, {groupName: newName || null}));
         })
+        .then(log);
+}
+
+/**
+ * Rotate an existing groups private key
+ */
+export function rotatePrivateKey(IronNode: SDK) {
+    return getFormattedGroupList(IronNode, true)
+        .then(({id}) => IronNode.group.rotatePrivateKey(id))
         .then(log);
 }
 
