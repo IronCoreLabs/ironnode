@@ -36,3 +36,10 @@ export function deleteDevice(deviceID?: number) {
 export function rotateMasterKey(password: string) {
     return UserOperations.rotateMasterKey(password).toPromise();
 }
+
+/**
+ * Change the users escrow password.
+ */
+export function changePassword(currentPassword: string, newPassword: string) {
+    return UserOperations.changeUsersPassword(currentPassword, newPassword).toPromise();
+}

@@ -53,3 +53,16 @@ export function rotateMasterKey(password: string): Future<SDKError, {needsRotati
         })
     );
 }
+
+/**
+ * Decrypt and reencrypt the users master private key using the provided passwords. Then make a call to the API to store their newly encrypted master private
+ * key and save it to state for future session use.
+ */
+export function changeUsersPassword(currentPassword: string, newPassword: string): Future<SDKError, void> {
+    return UserCrypto.reencryptUserMasterPrivateKey(ApiState.accountEncryptedPrivateKey(), currentPassword, newPassword).flatMap((newEncryptedPrivateKey) =>
+        UserApi.callUserUpdatePrivateKey(newEncryptedPrivateKey).map(() => {
+            ApiState.setEncryptedPrivateUserKey(newEncryptedPrivateKey);
+            return undefined;
+        })
+    );
+}

@@ -126,4 +126,22 @@ describe("UserOperations", () => {
             );
         });
     });
+
+    describe("changeUsersPassword", () => {
+        test("changes encrypted key and saves it to the API", (done) => {
+            jest.spyOn(UserCrypto, "reencryptUserMasterPrivateKey").mockReturnValue(Future.of(Buffer.from("newKey!")));
+            jest.spyOn(UserApi, "callUserUpdatePrivateKey").mockReturnValue(Future.of(undefined) as any);
+
+            expect(ApiState.accountEncryptedPrivateKey()).toEqual(TestUtils.accountEncryptedPrivateKeyBytes);
+
+            UserOperations.changeUsersPassword("currentPass", "newPass").engage(
+                (e) => fail(e),
+                (res) => {
+                    expect(res).toBeUndefined();
+                    expect(ApiState.accountEncryptedPrivateKey()).toEqual(Buffer.from("newKey!"));
+                    done();
+                }
+            );
+        });
+    });
 });
