@@ -69,5 +69,5 @@ To run a subset of the tests you can use the `-t` option of Jest to only run tes
 
 `yarn run unit -t group`
 
-Copyright (c) 2019 IronCore Labs, Inc.
+Copyright (c) 2018-present IronCore Labs, Inc.
 All rights reserved.
