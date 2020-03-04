@@ -1,10 +1,10 @@
 /* tslint:disable no-console*/
 import * as fs from "fs";
-import * as path from "path";
 import * as inquirer from "inquirer";
 import * as jwt from "jsonwebtoken";
+import * as path from "path";
 import {User} from "../src/index";
-import {logWithMessage, log} from "./Logger";
+import {log, logWithMessage} from "./Logger";
 // tslint:disable-next-line
 const Config = require("./project.json");
 const keyFile = path.join(__dirname, "./private.key");
@@ -49,7 +49,7 @@ function verifyUser() {
  */
 function createUser() {
     return inquirer
-        .prompt<{userID: string; password: string}>([
+        .prompt<{userID: string; password: string; needsRotation: boolean}>([
             {
                 type: "input",
                 name: "userID",
@@ -60,10 +60,14 @@ function createUser() {
                 name: "password",
                 message: "Input password to escrow users private key: ",
             },
+            {
+                type: "confirm",
+                default: false,
+                name: "needsRotation",
+                message: "Create user with needs rotation?",
+            },
         ])
-        .then(({userID, password}) => {
-            return User.create(generateJWT(userID), password);
-        })
+        .then(({userID, password, needsRotation}) => User.create(generateJWT(userID), password, {needsRotation}))
         .then((userInfo) => {
             logWithMessage("User Created!", userInfo);
             return Promise.resolve(false);

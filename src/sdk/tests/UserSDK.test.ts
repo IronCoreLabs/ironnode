@@ -1,6 +1,6 @@
 import Future from "futurejs";
-import * as UserSDK from "../UserSDK";
 import * as UserOperations from "../../operations/UserOperations";
+import * as UserSDK from "../UserSDK";
 
 describe("UserSDK", () => {
     describe("getPublicKey", () => {
@@ -61,6 +61,19 @@ describe("UserSDK", () => {
                 .then((resp) => {
                     expect(resp).toEqual("resp");
                     expect(UserOperations.deleteUserDevice).toHaveBeenCalledWith(34);
+                })
+                .catch((e) => fail(e));
+        });
+    });
+
+    describe("rotateMasterKey", () => {
+        test("should call into UserOperations", () => {
+            const spy = jest.spyOn(UserOperations, "rotateMasterKey");
+            spy.mockReturnValue(Future.of("resp") as any);
+            UserSDK.rotateMasterKey("password")
+                .then((resp) => {
+                    expect(resp).toEqual("resp");
+                    expect(UserOperations.rotateMasterKey).toHaveBeenCalledWith("password");
                 })
                 .catch((e) => fail(e));
         });

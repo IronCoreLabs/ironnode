@@ -1,12 +1,12 @@
 import Future from "futurejs";
-import {GroupListResponse, GroupMetaResponse, GroupDetailResponse, GroupCreateOptions, GroupUserEditResponse} from "../../ironnode";
-import {GroupApiBasicResponse, GroupApiFullDetailResponse} from "../commonTypes";
-import ApiState from "../lib/ApiState";
-import * as GroupCrypto from "./GroupCrypto";
+import {GroupCreateOptions, GroupDetailResponse, GroupListResponse, GroupMetaResponse, GroupUserEditResponse} from "../../ironnode";
 import GroupApi from "../api/GroupApi";
 import UserApi from "../api/UserApi";
-import {GroupPermissions, ErrorCodes} from "../Constants";
+import {GroupApiAdminResponse, GroupApiBasicResponse, GroupApiMemberOrAdminResponse} from "../commonTypes";
+import {ErrorCodes, GroupPermissions} from "../Constants";
+import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
+import * as GroupCrypto from "./GroupCrypto";
 
 export interface InteralGroupCreateOptions extends GroupCreateOptions {
     groupID: string;
@@ -17,9 +17,14 @@ export interface InteralGroupCreateOptions extends GroupCreateOptions {
 /**
  * Type guard to determine if provided group contains the full response of admin and member IDs.
  */
-function isFullGroupResponse(group: GroupApiBasicResponse | GroupApiFullDetailResponse): group is GroupApiFullDetailResponse {
-    return Array.isArray((group as GroupApiFullDetailResponse).adminIds);
-}
+const isFullGroupResponse = (group: GroupApiBasicResponse | GroupApiMemberOrAdminResponse): group is GroupApiMemberOrAdminResponse =>
+    Array.isArray((group as GroupApiMemberOrAdminResponse).adminIds);
+
+/**
+ * Type guard to determine if provided group represents the group that the user is an admin of.
+ */
+const isGroupAdminResponse = (group: GroupApiBasicResponse | GroupApiMemberOrAdminResponse | GroupApiAdminResponse): group is GroupApiAdminResponse =>
+    (group as GroupApiAdminResponse).encryptedPrivateKey !== undefined;
 
 /**
  * Map the results of a group operation which involes multiple IDs into the expected success/failure lists. This method takes the original list of user IDs that were
@@ -46,26 +51,27 @@ function mapOperationToSuccessAndFailureList(
 
 /**
  * Convert the internal detailed group representation into the external group representation that we expose out to clients.
- * @param {GroupResponse} group Detailed internal group representation returned from create or get
  */
-function formatDetailedGroupResponse(group: GroupApiBasicResponse | GroupApiFullDetailResponse): GroupMetaResponse | GroupDetailResponse {
-    const groupBase = {
+function formatDetailedGroupResponse(
+    group: GroupApiBasicResponse | GroupApiMemberOrAdminResponse | GroupApiAdminResponse
+): GroupMetaResponse | GroupDetailResponse {
+    const groupResponse: GroupMetaResponse | GroupDetailResponse = {
         groupID: group.id,
         groupName: group.name,
         isAdmin: group.permissions.indexOf(GroupPermissions.ADMIN) !== -1,
         isMember: group.permissions.indexOf(GroupPermissions.MEMBER) !== -1,
         created: group.created,
-        updated: group.updated
+        updated: group.updated,
     };
 
     if (isFullGroupResponse(group)) {
-        return {
-            ...groupBase,
-            groupAdmins: group.adminIds,
-            groupMembers: group.memberIds,
-        };
+        (groupResponse as GroupDetailResponse).groupAdmins = group.adminIds;
+        (groupResponse as GroupDetailResponse).groupMembers = group.memberIds;
     }
-    return groupBase;
+    if (isGroupAdminResponse(group)) {
+        (groupResponse as GroupDetailResponse).needsRotation = group.needsRotation;
+    }
+    return groupResponse;
 }
 
 /**
@@ -87,14 +93,11 @@ export function get(groupID: string) {
 
 /**
  * Create a new group with the provided ID and options
- * @param {string}  groupID Client provided optional group ID
- * @param {string}  groupName Client provided optional group name
- * @param {boolean} addAsMember Whether the group creator should be added as a member upon create
  */
-export function create(groupID: string, groupName: string, addAsMember: boolean) {
+export function create(groupID: string, groupName: string, addAsMember: boolean, needsRotation: boolean) {
     return GroupCrypto.createGroup(ApiState.accountPublicKey(), ApiState.signingKeys().privateKey, addAsMember)
         .flatMap(({encryptedGroupKey, groupPublicKey, transformKey}) =>
-            GroupApi.callGroupCreateApi(groupID, groupPublicKey, encryptedGroupKey, groupName, transformKey)
+            GroupApi.callGroupCreateApi(groupID, groupPublicKey, encryptedGroupKey, groupName, transformKey, needsRotation)
         )
         .map((createdGroup) => formatDetailedGroupResponse(createdGroup) as GroupDetailResponse);
 }
@@ -109,6 +112,30 @@ export function update(groupID: string, groupName: string | null) {
 }
 
 /**
+ * Rotate the provided groups private key. Get the group to verify that the calling user is an admin of the group, then rotate the key
+ * and save the new encrypted key back to the API.
+ */
+export function rotateGroupPrivateKey(groupId: string) {
+    return GroupApi.callGroupGetApi(groupId).flatMap((group) => {
+        if (!isGroupAdminResponse(group)) {
+            return Future.reject(
+                new SDKError(
+                    new Error("Current user is not authorized to rotate this group's private key as they are not a group administrator."),
+                    ErrorCodes.GROUP_ROTATE_PRIVATE_KEY_NOT_ADMIN_FAILURE
+                )
+            );
+        }
+        return UserApi.callUserKeyListApi(group.adminIds)
+            .map((adminKeys) => adminKeys.result.map((user) => ({id: user.id, masterPublicKey: user.userMasterPublicKey})))
+            .flatMap((adminKeys) => GroupCrypto.rotateGroupKey(group.encryptedPrivateKey, adminKeys, ApiState.devicePrivateKey(), ApiState.signingKeys()))
+            .flatMap(({encryptedAccessKeys, augmentationFactor}) =>
+                GroupApi.callGroupUpdateKeyApi(groupId, group.currentKeyId, encryptedAccessKeys, augmentationFactor)
+            )
+            .map(({needsRotation}) => ({needsRotation}));
+    });
+}
+
+/**
  * Add the provided list of user IDs as admins to the group ID provided. Ensures that the calling user is an admin before allowing additional admins
  * to be added.
  * @param {string}   groupID  ID of the group to add admins to
@@ -120,7 +147,7 @@ export function addAdmins(groupID: string, userList: string[]) {
         if (userKeys.result.length === 0) {
             return Future.of(mapOperationToSuccessAndFailureList(userList, [], []));
         }
-        if (!isFullGroupResponse(group) || !group.encryptedPrivateKey) {
+        if (!isGroupAdminResponse(group)) {
             return Future.reject(
                 new SDKError(
                     new Error("Current user not allowed to add admins as they are not an admin of the group."),
@@ -158,7 +185,7 @@ export function addMembers(groupID: string, userList: string[]) {
         if (userKeys.result.length === 0) {
             return Future.of(mapOperationToSuccessAndFailureList(userList, [], []));
         }
-        if (!isFullGroupResponse(group) || !group.encryptedPrivateKey) {
+        if (!isGroupAdminResponse(group)) {
             return Future.reject(
                 new SDKError(
                     new Error("Current user not allowed to add members as they are not an admin of the group."),

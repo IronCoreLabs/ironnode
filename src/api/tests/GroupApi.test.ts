@@ -11,13 +11,7 @@ describe("GroupApi", () => {
                 foo: "bar",
             })
         );
-        return ApiState.setAccountContext(
-            TestUtils.testAccountID,
-            TestUtils.testSegmentID,
-            TestUtils.accountPublicBytes,
-            TestUtils.devicePrivateBytes,
-            TestUtils.signingPrivateBytes
-        );
+        return ApiState.setAccountContext(...TestUtils.getTestApiState());
     });
 
     afterEach(() => {
@@ -102,7 +96,7 @@ describe("GroupApi", () => {
 
             const transformKey = TestUtils.getTransformKey();
 
-            GroupApi.callGroupCreateApi("35", groupPublicKey, groupEncryptedPrivateKey, "group name", transformKey).engage(
+            GroupApi.callGroupCreateApi("35", groupPublicKey, groupEncryptedPrivateKey, "group name", transformKey, false).engage(
                 (e) => fail(e),
                 (group: any) => {
                     expect(group).toEqual({foo: "bar"});
@@ -146,6 +140,7 @@ describe("GroupApi", () => {
                                 },
                             },
                         ],
+                        needsRotation: false,
                     });
                 }
             );
@@ -159,7 +154,7 @@ describe("GroupApi", () => {
             const groupEncryptedPrivateKey = TestUtils.getEncryptedSymmetricKey();
             const transformKey = TestUtils.getTransformKey();
 
-            GroupApi.callGroupCreateApi("", groupPublicKey, groupEncryptedPrivateKey, "", transformKey).engage(
+            GroupApi.callGroupCreateApi("", groupPublicKey, groupEncryptedPrivateKey, "", transformKey, true).engage(
                 (e) => fail(e),
                 (group: any) => {
                     expect(group).toEqual({foo: "bar"});
@@ -195,6 +190,7 @@ describe("GroupApi", () => {
                                 },
                             },
                         ],
+                        needsRotation: true,
                     });
                 }
             );
@@ -213,7 +209,7 @@ describe("GroupApi", () => {
 
             const transformKey = undefined;
 
-            GroupApi.callGroupCreateApi("", groupPublicKey, groupEncryptedPrivateKey, "group name", transformKey).engage(
+            GroupApi.callGroupCreateApi("", groupPublicKey, groupEncryptedPrivateKey, "group name", transformKey, true).engage(
                 (e) => fail(e),
                 (group: any) => {
                     expect(group).toEqual({foo: "bar"});
@@ -238,6 +234,7 @@ describe("GroupApi", () => {
                                 },
                             },
                         ],
+                        needsRotation: true,
                     });
                 }
             );
@@ -271,6 +268,54 @@ describe("GroupApi", () => {
 
                     expect(JSON.parse(request.body)).toEqual({
                         name: null,
+                    });
+                }
+            );
+        });
+    });
+
+    describe("callGroupUpdateKeyApi", () => {
+        test("invokes API with group key information to update", () => {
+            const groupEncryptedPrivateKey = TestUtils.getEncryptedSymmetricKey();
+            const userKeys = [
+                {
+                    encryptedPlaintext: groupEncryptedPrivateKey,
+                    id: "33",
+                    publicKey: {x: "firstpublickeyx", y: "firstpublickeyy"},
+                },
+                {
+                    encryptedPlaintext: groupEncryptedPrivateKey,
+                    id: "93",
+                    publicKey: {x: "secondpublickey", y: "secondpublickeyy"},
+                },
+            ];
+
+            GroupApi.callGroupUpdateKeyApi("353", 335, userKeys, Buffer.from("augFactor")).engage(
+                (e) => fail(e),
+                (res) => {
+                    expect(res).toEqual({foo: "bar"});
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("groups/353/keys/335", jasmine.any(Number), jasmine.any(Object));
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+
+                    expect(JSON.parse(request.body)).toEqual({
+                        admins: [
+                            {
+                                user: {
+                                    userId: "33",
+                                    userMasterPublicKey: {x: "firstpublickeyx", y: "firstpublickeyy"},
+                                },
+                                ...groupEncryptedPrivateKey,
+                            },
+                            {
+                                user: {
+                                    userId: "93",
+                                    userMasterPublicKey: {x: "secondpublickey", y: "secondpublickeyy"},
+                                },
+                                ...groupEncryptedPrivateKey,
+                            },
+                        ],
+                        augmentationFactor: "YXVnRmFjdG9y",
                     });
                 }
             );

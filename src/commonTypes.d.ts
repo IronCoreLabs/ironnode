@@ -3,6 +3,7 @@
  */
 export type Base64String = string;
 export type PrivateKey<T> = T;
+export type AugmentationFactor = Buffer;
 export type SigningPublicKey<T> = T;
 
 export interface PublicKey<T> {
@@ -69,14 +70,16 @@ export interface GroupApiBasicResponse {
     name: string | null;
     status: number;
     permissions: string[];
+    groupMasterPublicKey: PublicKey<string>;
+    currentKeyId: number;
     created: string;
     updated: string;
 }
-export interface GroupApiFullResponse extends GroupApiBasicResponse {
-    groupMasterPublicKey: PublicKey<string>;
-    encryptedPrivateKey?: TransformedEncryptedMessage;
-}
-export interface GroupApiFullDetailResponse extends GroupApiFullResponse {
+export interface GroupApiMemberOrAdminResponse extends GroupApiBasicResponse {
     adminIds: string[];
     memberIds: string[];
+}
+export interface GroupApiAdminResponse extends GroupApiMemberOrAdminResponse {
+    encryptedPrivateKey: TransformedEncryptedMessage;
+    needsRotation: boolean;
 }

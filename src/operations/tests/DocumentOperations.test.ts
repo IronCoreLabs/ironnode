@@ -11,13 +11,7 @@ import * as DocumentOperations from "../DocumentOperations";
 
 describe("DocumentOperations", () => {
     beforeEach(() => {
-        ApiState.setAccountContext(
-            TestUtils.testAccountID,
-            TestUtils.testSegmentID,
-            TestUtils.accountPublicBytes,
-            TestUtils.devicePrivateBytes,
-            TestUtils.signingPrivateBytes
-        );
+        ApiState.setAccountContext(...TestUtils.getTestApiState());
     });
 
     describe("list", () => {

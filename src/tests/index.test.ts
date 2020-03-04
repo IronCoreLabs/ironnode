@@ -26,7 +26,7 @@ describe("IronNode", () => {
     });
 
     describe("User", () => {
-        describe("verify", () => {
+        test("verify", () => {
             const verifySpy = jest.spyOn(Initialization, "userVerify");
             verifySpy.mockReturnValue(Future.of("verify") as any);
             IronNode.User.verify("jwt")
@@ -36,17 +36,27 @@ describe("IronNode", () => {
                 .catch((e) => fail(e));
         });
 
-        describe("create", () => {
-            const createSpy = jest.spyOn(Initialization, "createUser");
-            createSpy.mockReturnValue(Future.of("create") as any);
+        test("create with no options", () => {
+            const createSpy = jest.spyOn(Initialization, "createUser").mockReturnValue(Future.of("create") as any);
             IronNode.User.create("jwt", "password")
                 .then((res) => {
                     expect(res).toEqual("create");
+                    expect(createSpy).toHaveBeenCalledWith("jwt", "password", {needsRotation: false});
                 })
                 .catch((e) => fail(e));
         });
 
-        describe("generateDeviceKeys", () => {
+        test("create with provided options", () => {
+            const createSpy = jest.spyOn(Initialization, "createUser").mockReturnValue(Future.of("create") as any);
+            IronNode.User.create("jwt", "password", {needsRotation: true})
+                .then((res) => {
+                    expect(res).toEqual("create");
+                    expect(createSpy).toHaveBeenCalledWith("jwt", "password", {needsRotation: true});
+                })
+                .catch((e) => fail(e));
+        });
+
+        test("generateDeviceKeys", () => {
             const genDeviceSpy = jest.spyOn(Initialization, "generateDevice");
             genDeviceSpy.mockReturnValue(Future.of("genDevice") as any);
             IronNode.User.generateDeviceKeys("jwt", "password")

@@ -1,5 +1,5 @@
-import * as Recrypt from "../Recrypt";
 import * as TestUtils from "../../tests/TestUtils";
+import * as Recrypt from "../Recrypt";
 
 describe("Recrypt", () => {
     describe("generateKeyPair", () => {
@@ -407,54 +407,80 @@ describe("Recrypt", () => {
     });
 
     describe("generateDeviceAddSignature", () => {
-        test(
-            "generates the expected signature",
-            (done) => {
-                const fixedTS = 1234567890123;
-                jest.spyOn(Date, "now").mockReturnValue(fixedTS);
+        test("generates the expected signature", (done) => {
+            const fixedTS = 1234567890123;
+            jest.spyOn(Date, "now").mockReturnValue(fixedTS);
 
-                const userKeys = {
-                    publicKey: {
-                        x: Buffer.from("iofzenON27PeYqmCcCTxxZxKWsH1DBWpb04Brsa6GDo=", "base64"),
-                        y: Buffer.from("O918eBCWdImkkA7jIcHk3dPhf08TudRmgODFgdXJzHk=", "base64"),
-                    },
-                    privateKey: Buffer.from("VeGnAnn6ShDPTR9iHEy0hIX09EAIwqGo5GUZee7PqwU=", "base64"),
-                };
-                const transformKey = {
-                    ephemeralPublicKey: {
-                        x: Buffer.from("Ft3BGLPh8FvTsuHGUt+lOYQ5kVPJXeEgP/OHq+T0ijM=", "base64"),
-                        y: Buffer.from("RLsEaIquAnODxB5O6j6I64uDZ0OZsfnbaimovIOLiH0=", "base64"),
-                    },
-                    toPublicKey: {
-                        x: Buffer.from("HAq+UwydnbKWinz8zN3G450habvUXGObpHj+eHRSpk8=", "base64"),
-                        y: Buffer.from("cuiW6xby5ftFfFQbsbAk+K9UivIA665/JUkH4XJzL0o=", "base64"),
-                    },
-                    encryptedTempKey: Buffer.from(
-                        "edPkkzVjPVQlKdCGQAtx2nVugbqy1sJ6MNufPyeIAb0HgF9LTiRO9LMOCs9wfY4etPR7R5bvc39nOcF9wiElijc6jbm8LuW4YUtNf4MnZEzlb1mV8yvG9w1da6gSBsZwIWc6H874m9+n2N3xHGsf6SnOzIcgC2L/nGP2rnzHCx8dVsNiXMROHcwULtpSzFnUgGOcQMiAL6dm6sIOCU/XClw6p78Ia8TN6XqjFmVMoSsJF18l5aJDgInhMW8acozVI6b/mLtx1jZoTn5QFnW0zGG/jcZgKHTqckpCM2bBm60X6QH6dZ+oWIeKv9ncI/tOA2w7EwkgP4wPJuAGf1cYrioEDCJmN81SxtiURPHK1VS85iUOBLv5N++C7Hu0KyHbLqxsfLoIjtwNIn8E2S1p+FJu6T0XywtC8xaW03i5X3QyDi46PTYWGA65DTZ+izylctaYwWSWODcsFZbEGVzBT4GJYgJb3fUGRBzWqpWyfS2p78MNpXNGAKc6xTt4uGyF",
-                        "base64"
-                    ),
-                    hashedTempKey: Buffer.from(
-                        "W00HUTpinwT6Fq/S22nLc07cemjf+1KOGxxe7WrtalROQsrT2WCURC1KZBwL3s3wZPpW6bSHzux7FUxtHYSNSjjo2xHyb+q5SNB3q16pU9GGKQMBlLvCwLgVBm/UvoAUaGlLplILlUEzkt4McWbWS38HxPfr2tjGYvEXnljA2A4=",
-                        "base64"
-                    ),
-                    publicSigningKey: Buffer.from("O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=", "base64"),
-                    signature: Buffer.from("509HLURLeCTBC8C4PLkHEHQT/WA8GNZjhKTdCqm4WSJtgEdLSG7Mvk86OYbqQYVjEZu6eg2w8dMWZkIUulLcCg==", "base64"),
-                };
+            const userKeys = {
+                publicKey: {
+                    x: Buffer.from("iofzenON27PeYqmCcCTxxZxKWsH1DBWpb04Brsa6GDo=", "base64"),
+                    y: Buffer.from("O918eBCWdImkkA7jIcHk3dPhf08TudRmgODFgdXJzHk=", "base64"),
+                },
+                privateKey: Buffer.from("VeGnAnn6ShDPTR9iHEy0hIX09EAIwqGo5GUZee7PqwU=", "base64"),
+            };
+            const transformKey = {
+                ephemeralPublicKey: {
+                    x: Buffer.from("Ft3BGLPh8FvTsuHGUt+lOYQ5kVPJXeEgP/OHq+T0ijM=", "base64"),
+                    y: Buffer.from("RLsEaIquAnODxB5O6j6I64uDZ0OZsfnbaimovIOLiH0=", "base64"),
+                },
+                toPublicKey: {
+                    x: Buffer.from("HAq+UwydnbKWinz8zN3G450habvUXGObpHj+eHRSpk8=", "base64"),
+                    y: Buffer.from("cuiW6xby5ftFfFQbsbAk+K9UivIA665/JUkH4XJzL0o=", "base64"),
+                },
+                encryptedTempKey: Buffer.from(
+                    "edPkkzVjPVQlKdCGQAtx2nVugbqy1sJ6MNufPyeIAb0HgF9LTiRO9LMOCs9wfY4etPR7R5bvc39nOcF9wiElijc6jbm8LuW4YUtNf4MnZEzlb1mV8yvG9w1da6gSBsZwIWc6H874m9+n2N3xHGsf6SnOzIcgC2L/nGP2rnzHCx8dVsNiXMROHcwULtpSzFnUgGOcQMiAL6dm6sIOCU/XClw6p78Ia8TN6XqjFmVMoSsJF18l5aJDgInhMW8acozVI6b/mLtx1jZoTn5QFnW0zGG/jcZgKHTqckpCM2bBm60X6QH6dZ+oWIeKv9ncI/tOA2w7EwkgP4wPJuAGf1cYrioEDCJmN81SxtiURPHK1VS85iUOBLv5N++C7Hu0KyHbLqxsfLoIjtwNIn8E2S1p+FJu6T0XywtC8xaW03i5X3QyDi46PTYWGA65DTZ+izylctaYwWSWODcsFZbEGVzBT4GJYgJb3fUGRBzWqpWyfS2p78MNpXNGAKc6xTt4uGyF",
+                    "base64"
+                ),
+                hashedTempKey: Buffer.from(
+                    "W00HUTpinwT6Fq/S22nLc07cemjf+1KOGxxe7WrtalROQsrT2WCURC1KZBwL3s3wZPpW6bSHzux7FUxtHYSNSjjo2xHyb+q5SNB3q16pU9GGKQMBlLvCwLgVBm/UvoAUaGlLplILlUEzkt4McWbWS38HxPfr2tjGYvEXnljA2A4=",
+                    "base64"
+                ),
+                publicSigningKey: Buffer.from("O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik=", "base64"),
+                signature: Buffer.from("509HLURLeCTBC8C4PLkHEHQT/WA8GNZjhKTdCqm4WSJtgEdLSG7Mvk86OYbqQYVjEZu6eg2w8dMWZkIUulLcCg==", "base64"),
+            };
 
-                Recrypt.generateDeviceAddSignature("jwt", userKeys, transformKey).engage(
-                    (e) => fail(e.message),
-                    (signature) => {
-                        expect(Object.keys(signature)).toHaveLength(2);
-                        expect(signature.ts).toEqual(fixedTS);
-                        //We can't do anything else to verify the value of this signature because the value relies on random bytes which we can't
-                        //mock out since the randomness is coming from the binary node-binding file.
-                        expect(signature.signature).toBeInstanceOf(Buffer);
-                        expect(signature.signature).toHaveLength(64);
-                        done();
-                    }
-                );
-            },
-            15000
-        );
+            Recrypt.generateDeviceAddSignature("jwt", userKeys, transformKey).engage(
+                (e) => fail(e.message),
+                (signature) => {
+                    expect(Object.keys(signature)).toHaveLength(2);
+                    expect(signature.ts).toEqual(fixedTS);
+                    //We can't do anything else to verify the value of this signature because the value relies on random bytes which we can't
+                    //mock out since the randomness is coming from the binary node-binding file.
+                    expect(signature.signature).toBeInstanceOf(Buffer);
+                    expect(signature.signature).toHaveLength(64);
+                    done();
+                }
+            );
+        }, 15000);
+    });
+
+    describe("rotateUsersPrivateKeyWithRetry", () => {
+        test("generates new key and augmentation factor", () => {
+            //prettier-ignore
+            const currentKey = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+
+            Recrypt.rotateUsersPrivateKeyWithRetry(currentKey).engage(
+                (e) => fail(e),
+                ({newPrivateKey, augmentationFactor}) => {
+                    expect(augmentationFactor).toEqual(expect.any(Buffer));
+                    expect(newPrivateKey).toEqual(expect.any(Buffer));
+                }
+            );
+        });
+    });
+
+    describe("rotateGroupPrivateKeyWithRetry", () => {
+        test("generates new plaintext key and augmentation factor", () => {
+            //prettier-ignore
+            const currentKey = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+
+            Recrypt.rotateGroupPrivateKeyWithRetry(currentKey).engage(
+                (e) => fail(e),
+                ({plaintext, augmentationFactor}) => {
+                    expect(augmentationFactor).toEqual(expect.any(Buffer));
+                    expect(plaintext).toEqual(expect.any(Buffer));
+                }
+            );
+        });
     });
 });

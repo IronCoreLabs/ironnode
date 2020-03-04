@@ -10,7 +10,9 @@ export interface DocumentAccessList {
     users?: Array<{id: string}>;
     groups?: Array<{id: string}>;
 }
-
+export interface UserCreateOptions {
+    needsRotation: boolean;
+}
 export interface DeviceCreateOptions {
     deviceName: string;
 }
@@ -24,6 +26,7 @@ export interface GroupCreateOptions {
     groupID?: string;
     groupName?: string;
     addAsMember?: boolean;
+    needsRotation?: boolean;
 }
 export interface GroupUpdateOptions {
     groupName: string | null;
@@ -93,6 +96,7 @@ export interface GroupListResponse {
 export interface GroupDetailResponse extends GroupMetaResponse {
     groupAdmins: string[];
     groupMembers: string[];
+    needsRotation: boolean;
 }
 export interface GroupUserEditResponse {
     succeeded: string[];
@@ -135,6 +139,7 @@ export interface Group {
     get(groupID: string): Promise<GroupMetaResponse | GroupDetailResponse>;
     create(options?: GroupCreateOptions): Promise<GroupDetailResponse>;
     update(groupID: string, options: GroupUpdateOptions): Promise<GroupMetaResponse>;
+    rotatePrivateKey(groupID: string): Promise<{needsRotation: boolean}>;
     deleteGroup(groupID: string): Promise<{id: string}>;
     addAdmins(groupID: string, adminList: string[]): Promise<GroupUserEditResponse>;
     removeAdmins(groupID: string, adminList: string[]): Promise<GroupUserEditResponse>;
@@ -146,12 +151,17 @@ export interface User {
     getPublicKey(users: string | string[]): Promise<UserPublicKeyGetResponse>;
     listDevices(): Promise<UserDeviceListResponse>;
     deleteDevice(id?: number): Promise<{id: number}>;
+    rotateMasterKey(password: string): Promise<{needsRotation: boolean}>;
 }
 
 export interface SDK {
     document: Document;
     group: Group;
     user: User;
+    userContext: {
+        userNeedsRotation: boolean;
+        groupsNeedingRotation: string[];
+    };
 }
 
 export class SDKError extends Error {
@@ -179,6 +189,6 @@ export interface DeviceDetails {
 
 export namespace User {
     export function verify(jwt: string): Promise<ApiUserResponse | undefined>;
-    export function create(jwt: string, password: string): Promise<ApiUserResponse>;
+    export function create(jwt: string, password: string, options?: UserCreateOptions): Promise<ApiUserResponse>;
     export function generateDeviceKeys(jwt: string, password: string, options?: DeviceCreateOptions): Promise<DeviceDetails>;
 }

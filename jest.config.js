@@ -7,7 +7,7 @@ module.exports = {
             branches: 95,
             functions: 95,
             lines: 95,
-            statements: -5,
+            statements: -10,
         },
     },
     //Use ts-jest for all .ts files

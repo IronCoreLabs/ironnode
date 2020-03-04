@@ -1,10 +1,11 @@
 import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
 import Future from "futurejs";
 import {
+    AugmentationFactor,
     EncryptedAccessKey,
+    GroupApiAdminResponse,
     GroupApiBasicResponse,
-    GroupApiFullDetailResponse,
-    GroupApiFullResponse,
+    GroupApiMemberOrAdminResponse,
     MessageSignature,
     PublicKey,
     RecryptEncryptedMessage,
@@ -17,10 +18,10 @@ import {Codec, transformKeyToBase64} from "../lib/Utils";
 import * as ApiRequest from "./ApiRequest";
 
 export interface GroupListResponseType {
-    result: GroupApiFullResponse[];
+    result: GroupApiMemberOrAdminResponse[];
 }
-type GroupGetResponseType = GroupApiBasicResponse | GroupApiFullDetailResponse;
-type GroupCreateResponseType = GroupApiFullDetailResponse;
+type GroupGetResponseType = GroupApiBasicResponse | GroupApiMemberOrAdminResponse | GroupApiAdminResponse;
+type GroupCreateResponseType = GroupApiAdminResponse;
 interface GroupCreatePayload {
     userID: string;
     groupPublicKey: PublicKey<Buffer>;
@@ -28,26 +29,31 @@ interface GroupCreatePayload {
     userPublicKey: PublicKey<Buffer>;
     name?: string;
     transformKey?: TransformKey;
+    needsRotation: boolean;
 }
 export interface GroupMemberModifyResponseType {
     succeededIds: Array<{userId: string}>;
     failedIds: Array<{userId: string; errorMessage: string}>;
 }
+interface GroupKeyIdUpdateResponse {
+    groupKeyId: number;
+    needsRotation: boolean;
+}
 
 /**
  * Generate signature message from current user state
  */
-function getSignatureHeader() {
+const getSignatureHeader = () => {
     const {segmentID, accountID} = ApiState.accountAndSegmentIDs();
     return ApiRequest.createSignature(segmentID, accountID, ApiState.signingKeys());
-}
+};
 
 /**
  * Get API request details for group list
  * @param {MessageSignature} sign        Signature for request validation
  * @param {string[]}         groupIDList Optional list of group IDs to retrieve. If omitted all groups will be returned.
  */
-function groupList(sign: MessageSignature, groupIDList: string[] = []) {
+const groupList = (sign: MessageSignature, groupIDList: string[] = []) => {
     const groupFilter = groupIDList.length ? `?id=${encodeURIComponent(groupIDList.join(","))}` : "";
     return {
         url: `groups${groupFilter}`,
@@ -59,25 +65,23 @@ function groupList(sign: MessageSignature, groupIDList: string[] = []) {
         },
         errorCode: ErrorCodes.GROUP_LIST_REQUEST_FAILURE,
     };
-}
+};
 
 /**
  * Get a specific group by ID
  * @param {MessageSignature} sign    Signature for request validation
  * @param {string}           groupID ID of group
  */
-function groupGet(sign: MessageSignature, groupID: string) {
-    return {
-        url: `groups/${encodeURIComponent(groupID)}`,
-        options: {
-            method: "GET",
-            headers: {
-                Authorization: ApiRequest.getAuthHeader(sign),
-            },
+const groupGet = (sign: MessageSignature, groupID: string) => ({
+    url: `groups/${encodeURIComponent(groupID)}`,
+    options: {
+        method: "GET",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
         },
-        errorCode: ErrorCodes.GROUP_GET_REQUEST_FAILURE,
-    };
-}
+    },
+    errorCode: ErrorCodes.GROUP_GET_REQUEST_FAILURE,
+});
 
 /**
  * Create a new group
@@ -85,7 +89,7 @@ function groupGet(sign: MessageSignature, groupID: string) {
  * @param {string}             groupID       Client provided ID for group
  * @param {GroupCreatePayload} createPayload Group content including keys, optional group name, and current user info to be added as group admin
  */
-function groupCreate(sign: MessageSignature, groupID: string, createPayload: GroupCreatePayload) {
+const groupCreate = (sign: MessageSignature, groupID: string, createPayload: GroupCreatePayload) => {
     const userPublicKeyString = Codec.PublicKey.toBase64(createPayload.userPublicKey);
     let memberList;
     if (createPayload.transformKey) {
@@ -120,31 +124,55 @@ function groupCreate(sign: MessageSignature, groupID: string, createPayload: Gro
                     },
                 ],
                 members: memberList,
+                needsRotation: createPayload.needsRotation,
             }),
         },
         errorCode: ErrorCodes.GROUP_CREATE_REQUEST_FAILURE,
     };
-}
+};
 
 /**
  * Update a group. Currently only supports updating the groups name to a new value or clearing it via null.
  */
-function groupUpdate(sign: MessageSignature, groupID: string, groupName: string | null) {
-    return {
-        url: `groups/${encodeURIComponent(groupID)}`,
-        options: {
-            method: "PUT",
-            headers: {
-                Authorization: ApiRequest.getAuthHeader(sign),
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                name: groupName,
-            }),
+const groupUpdate = (sign: MessageSignature, groupID: string, groupName: string | null) => ({
+    url: `groups/${encodeURIComponent(groupID)}`,
+    options: {
+        method: "PUT",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
+            "Content-Type": "application/json",
         },
-        errorCode: ErrorCodes.GROUP_UPDATE_REQUEST_FAILURE,
-    };
-}
+        body: JSON.stringify({
+            name: groupName,
+        }),
+    },
+    errorCode: ErrorCodes.GROUP_UPDATE_REQUEST_FAILURE,
+});
+
+/**
+ * Update the private key of a group. Passes along the keys for each admin of the group along with the augmentation factor used during update.
+ */
+const groupUpdateKey = (sign: MessageSignature, groupId: string, groupKeyId: number, admins: EncryptedAccessKey[], augmentationFactor: AugmentationFactor) => ({
+    url: `groups/${encodeURIComponent(groupId)}/keys/${groupKeyId}`,
+    options: {
+        method: "PUT",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            admins: admins.map((admin) => ({
+                user: {
+                    userId: admin.id,
+                    userMasterPublicKey: admin.publicKey,
+                },
+                ...admin.encryptedPlaintext,
+            })),
+            augmentationFactor: augmentationFactor.toString("base64"),
+        }),
+    },
+    errorCode: ErrorCodes.GROUP_UPDATE_KEY_REQUEST_FAILURE,
+});
 
 /**
  * Add the list of admins to the group by sending in their encrypted access keys
@@ -152,28 +180,26 @@ function groupUpdate(sign: MessageSignature, groupID: string, groupName: string 
  * @param {string}               groupID     ID of the group to add admins
  * @param {EncryptedAccessKey[]} addedAdmins List of admin encrypted access keys to add
  */
-function addAdmins(sign: MessageSignature, groupID: string, addedAdmins: EncryptedAccessKey[]) {
-    return {
-        url: `groups/${encodeURIComponent(groupID)}/admins`,
-        options: {
-            method: "POST",
-            headers: {
-                Authorization: ApiRequest.getAuthHeader(sign),
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                admins: addedAdmins.map((admin) => ({
-                    user: {
-                        userId: admin.id,
-                        userMasterPublicKey: admin.publicKey,
-                    },
-                    ...admin.encryptedPlaintext,
-                })),
-            }),
+const addAdmins = (sign: MessageSignature, groupID: string, addedAdmins: EncryptedAccessKey[]) => ({
+    url: `groups/${encodeURIComponent(groupID)}/admins`,
+    options: {
+        method: "POST",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
+            "Content-Type": "application/json",
         },
-        errorCode: ErrorCodes.GROUP_ADD_ADMINS_REQUEST_FAILURE,
-    };
-}
+        body: JSON.stringify({
+            admins: addedAdmins.map((admin) => ({
+                user: {
+                    userId: admin.id,
+                    userMasterPublicKey: admin.publicKey,
+                },
+                ...admin.encryptedPlaintext,
+            })),
+        }),
+    },
+    errorCode: ErrorCodes.GROUP_ADD_ADMINS_REQUEST_FAILURE,
+});
 
 /**
  * Remove the provided list of user IDs as admins from the group.
@@ -181,22 +207,20 @@ function addAdmins(sign: MessageSignature, groupID: string, addedAdmins: Encrypt
  * @param {string}           groupID       ID of the group to remove admins from
  * @param {string[]}         removedAdmins List of admins to remove from the group
  */
-function removeAdmins(sign: MessageSignature, groupID: string, removedAdmins: string[]) {
-    return {
-        url: `groups/${encodeURIComponent(groupID)}/admins`,
-        options: {
-            method: "DELETE",
-            headers: {
-                Authorization: ApiRequest.getAuthHeader(sign),
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                users: removedAdmins.map((userId) => ({userId})),
-            }),
+const removeAdmins = (sign: MessageSignature, groupID: string, removedAdmins: string[]) => ({
+    url: `groups/${encodeURIComponent(groupID)}/admins`,
+    options: {
+        method: "DELETE",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
+            "Content-Type": "application/json",
         },
-        errorCode: ErrorCodes.GROUP_REMOVE_ADMINS_REQUEST_FAILURE,
-    };
-}
+        body: JSON.stringify({
+            users: removedAdmins.map((userId) => ({userId})),
+        }),
+    },
+    errorCode: ErrorCodes.GROUP_REMOVE_ADMINS_REQUEST_FAILURE,
+});
 
 /**
  * Add the list of members to the group by sending in their transformed keys
@@ -204,26 +228,24 @@ function removeAdmins(sign: MessageSignature, groupID: string, removedAdmins: st
  * @param {string}              groupID      ID of group to add members to
  * @param {TransformKeyGrant[]} addedMembers List of member transform keys to add
  */
-function addMembers(sign: MessageSignature, groupID: string, addedMembers: TransformKeyGrant[]) {
-    return {
-        url: `groups/${encodeURIComponent(groupID)}/users`,
-        options: {
-            method: "POST",
-            headers: {
-                Authorization: ApiRequest.getAuthHeader(sign),
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                users: addedMembers.map((member) => ({
-                    userId: member.id,
-                    userMasterPublicKey: member.publicKey,
-                    transformKey: transformKeyToBase64(member.transformKey),
-                })),
-            }),
+const addMembers = (sign: MessageSignature, groupID: string, addedMembers: TransformKeyGrant[]) => ({
+    url: `groups/${encodeURIComponent(groupID)}/users`,
+    options: {
+        method: "POST",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
+            "Content-Type": "application/json",
         },
-        errorCode: ErrorCodes.GROUP_ADD_MEMBERS_REQUEST_FAILURE,
-    };
-}
+        body: JSON.stringify({
+            users: addedMembers.map((member) => ({
+                userId: member.id,
+                userMasterPublicKey: member.publicKey,
+                transformKey: transformKeyToBase64(member.transformKey),
+            })),
+        }),
+    },
+    errorCode: ErrorCodes.GROUP_ADD_MEMBERS_REQUEST_FAILURE,
+});
 
 /**
  * Remove the list of members from the group by sending in all their IDs.
@@ -231,39 +253,35 @@ function addMembers(sign: MessageSignature, groupID: string, addedMembers: Trans
  * @param {string}           groupID        ID of group to remove members from
  * @param {string[]}         removedMembers List of user IDs to remove from group
  */
-function removeMembers(sign: MessageSignature, groupID: string, removedMembers: string[]) {
-    return {
-        url: `groups/${encodeURIComponent(groupID)}/users`,
-        options: {
-            method: "DELETE",
-            headers: {
-                Authorization: ApiRequest.getAuthHeader(sign),
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                users: removedMembers.map((userId) => ({userId})),
-            }),
+const removeMembers = (sign: MessageSignature, groupID: string, removedMembers: string[]) => ({
+    url: `groups/${encodeURIComponent(groupID)}/users`,
+    options: {
+        method: "DELETE",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
+            "Content-Type": "application/json",
         },
-        errorCode: ErrorCodes.GROUP_REMOVE_MEMBERS_REQUEST_FAILURE,
-    };
-}
+        body: JSON.stringify({
+            users: removedMembers.map((userId) => ({userId})),
+        }),
+    },
+    errorCode: ErrorCodes.GROUP_REMOVE_MEMBERS_REQUEST_FAILURE,
+});
 
 /**
  * Delete a group given its ID
  */
-function groupDelete(sign: MessageSignature, groupID: string) {
-    return {
-        url: `groups/${encodeURIComponent(groupID)}`,
-        options: {
-            method: "DELETE",
-            headers: {
-                Authorization: ApiRequest.getAuthHeader(sign),
-                "Content-Type": "application/json",
-            },
+const groupDelete = (sign: MessageSignature, groupID: string) => ({
+    url: `groups/${encodeURIComponent(groupID)}`,
+    options: {
+        method: "DELETE",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
+            "Content-Type": "application/json",
         },
-        errorCode: ErrorCodes.GROUP_DELETE_REQUEST_FAILURE,
-    };
-}
+    },
+    errorCode: ErrorCodes.GROUP_DELETE_REQUEST_FAILURE,
+});
 
 export default {
     /**
@@ -307,8 +325,9 @@ export default {
         groupID: string,
         groupPublicKey: PublicKey<Buffer>,
         groupEncryptedPrivateKey: RecryptEncryptedMessage,
-        groupName?: string,
-        transformKey?: TransformKey
+        groupName: string,
+        transformKey: TransformKey | undefined,
+        needsRotation: boolean
     ) {
         const {url, options, errorCode} = groupCreate(getSignatureHeader(), groupID, {
             userID: ApiState.accountAndSegmentIDs().accountID,
@@ -317,6 +336,7 @@ export default {
             userPublicKey: ApiState.accountPublicKey(),
             name: groupName,
             transformKey,
+            needsRotation,
         });
         return ApiRequest.fetchJSON<GroupCreateResponseType>(url, errorCode, options);
     },
@@ -327,6 +347,14 @@ export default {
     callGroupUpdateApi(groupID: string, groupName: string | null) {
         const {url, options, errorCode} = groupUpdate(getSignatureHeader(), groupID, groupName);
         return ApiRequest.fetchJSON<GroupApiBasicResponse>(url, errorCode, options);
+    },
+
+    /**
+     * Update the private key for the provided group and provide the list of admin keys that have been re-encrypted to.
+     */
+    callGroupUpdateKeyApi(groupId: string, groupKeyId: number, adminList: EncryptedAccessKey[], augmentationFactor: AugmentationFactor) {
+        const {url, options, errorCode} = groupUpdateKey(getSignatureHeader(), groupId, groupKeyId, adminList, augmentationFactor);
+        return ApiRequest.fetchJSON<GroupKeyIdUpdateResponse>(url, errorCode, options);
     },
 
     /**

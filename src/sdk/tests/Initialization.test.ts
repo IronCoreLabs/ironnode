@@ -1,12 +1,12 @@
 import Future from "futurejs";
-import * as Initialization from "../Initialization";
-import ApiState from "../../lib/ApiState";
 import UserApi from "../../api/UserApi";
 import {ErrorCodes} from "../../Constants";
-import {Codec} from "../../lib/Utils";
 import * as AES from "../../crypto/AES";
 import * as Recrypt from "../../crypto/Recrypt";
+import ApiState from "../../lib/ApiState";
+import {Codec} from "../../lib/Utils";
 import * as TestUtils from "../../tests/TestUtils";
+import * as Initialization from "../Initialization";
 
 describe("Initialization", () => {
     describe("initialize", () => {
@@ -18,31 +18,15 @@ describe("Initialization", () => {
             stateSpy.mockImplementation(() => Future.of(undefined));
         });
 
-        test("should fail if no results are returned from API", () => {
-            apiSpy.mockReturnValue(
-                Future.of({
-                    result: [],
-                })
-            );
-
-            Initialization.initialize("user-10", 3, "base64", "base64").engage(
-                (e) => {
-                    expect(e.code).toEqual(ErrorCodes.INITIALIZE_INVALID_ACCOUNT_ID);
-                    expect(stateSpy).not.toHaveBeenCalled();
-                },
-                () => fail("Future should not resolve when no user ID was found")
-            );
-        });
-
         test("should resolve successfully and set api state context", () => {
             apiSpy.mockReturnValue(
                 Future.of({
-                    result: [
-                        {
-                            id: "user-10",
-                            userMasterPublicKey: Codec.PublicKey.toBase64({x: Buffer.from([78, 98, 38]), y: Buffer.from([83, 93, 103, 111])}),
-                        },
-                    ],
+                    id: "user-10",
+                    userMasterPublicKey: Codec.PublicKey.toBase64({x: Buffer.from([78, 98, 38]), y: Buffer.from([83, 93, 103, 111])}),
+                    currentKeyId: 68,
+                    userPrivateKey: Buffer.from([1, 2, 3]).toString("base64"),
+                    needsRotation: true,
+                    groupsNeedingRotation: ["one"],
                 })
             );
 
@@ -55,13 +39,19 @@ describe("Initialization", () => {
                 (e) => fail(e),
                 (result) => {
                     expect(result).toBeObject();
+                    expect(result.userContext).toEqual({
+                        userNeedsRotation: true,
+                        groupsNeedingRotation: ["one"],
+                    });
                     expect(apiSpy).toHaveBeenCalledWith("user-10", 3, "I2JC");
                     expect(stateSpy).toHaveBeenCalledWith(
                         "user-10",
                         3,
                         {x: Buffer.from([78, 98, 38]), y: Buffer.from([83, 93, 103, 111])},
+                        Buffer.from([1, 2, 3]),
                         Buffer.from([72, 34, 115, 12]),
-                        Buffer.from([35, 98, 66])
+                        Buffer.from([35, 98, 66]),
+                        68
                     );
                 }
             );
@@ -83,12 +73,15 @@ describe("Initialization", () => {
 
         test("invokes user verify result and returns user fields if they exist", () => {
             const verifySpy = jest.spyOn(UserApi, "callUserVerifyApi");
-            verifySpy.mockReturnValue(Future.of({
-                id: "353",
-                segmentId: 3,
-                status: 232,
-                userMasterPublicKey: "abc",
-            }) as any);
+            verifySpy.mockReturnValue(
+                Future.of({
+                    id: "353",
+                    segmentId: 3,
+                    status: 232,
+                    userMasterPublicKey: "abc",
+                    needsRotation: false,
+                }) as any
+            );
 
             Initialization.userVerify("jwt").engage(
                 (e) => fail(e),
@@ -97,6 +90,7 @@ describe("Initialization", () => {
                         accountID: "353",
                         segmentID: 3,
                         userMasterPublicKey: "abc",
+                        needsRotation: false,
                     });
                 }
             );
@@ -108,7 +102,7 @@ describe("Initialization", () => {
             jest.spyOn(Recrypt, "generateKeyPair").mockReturnValue(Future.reject(new Error("forced failure")));
             jest.spyOn(UserApi, "callUserVerifyApi").mockReturnValue(Future.of(undefined));
 
-            Initialization.createUser("jwt", "password").engage(
+            Initialization.createUser("jwt", "password", {needsRotation: false}).engage(
                 (e) => {
                     expect(e.code).toEqual(ErrorCodes.USER_MASTER_KEY_GENERATION_FAILURE);
                     done();
@@ -119,20 +113,24 @@ describe("Initialization", () => {
 
         test("returns existing user is they already exists from verify", () => {
             const verifySpy = jest.spyOn(UserApi, "callUserVerifyApi");
-            verifySpy.mockReturnValue(Future.of({
-                id: "353",
-                segmentId: 3,
-                status: 232,
-                userMasterPublicKey: "abc",
-            }) as any);
+            verifySpy.mockReturnValue(
+                Future.of({
+                    id: "353",
+                    segmentId: 3,
+                    status: 232,
+                    userMasterPublicKey: "abc",
+                    needsRotation: false,
+                }) as any
+            );
 
-            Initialization.createUser("jwt", "password").engage(
+            Initialization.createUser("jwt", "password", {needsRotation: false}).engage(
                 (e) => fail(e),
                 (result) => {
                     expect(result).toEqual({
                         accountID: "353",
                         segmentID: 3,
                         userMasterPublicKey: "abc",
+                        needsRotation: false,
                     });
                 }
             );
@@ -140,22 +138,26 @@ describe("Initialization", () => {
 
         test("creates new user with jwt and provided password", (done) => {
             jest.spyOn(UserApi, "callUserVerifyApi").mockReturnValue(Future.of(undefined));
-            const createSpy = jest.spyOn(UserApi, "callUserCreateApi").mockReturnValue(Future.of({
-                id: "353",
-                segmentId: 3,
-                status: 232,
-                userMasterPublicKey: "abc",
-            }) as any);
+            const createSpy = jest.spyOn(UserApi, "callUserCreateApi").mockReturnValue(
+                Future.of({
+                    id: "353",
+                    segmentId: 3,
+                    status: 232,
+                    userMasterPublicKey: "abc",
+                    needsRotation: true,
+                }) as any
+            );
 
-            Initialization.createUser("jwt", "password").engage(
+            Initialization.createUser("jwt", "password", {needsRotation: true}).engage(
                 (e) => fail(e),
                 (result) => {
                     expect(result).toEqual({
                         accountID: "353",
                         segmentID: 3,
                         userMasterPublicKey: "abc",
+                        needsRotation: true,
                     });
-                    expect(createSpy).toHaveBeenCalledWith("jwt", {x: expect.any(Buffer), y: expect.any(Buffer)}, expect.any(Buffer));
+                    expect(createSpy).toHaveBeenCalledWith("jwt", {x: expect.any(Buffer), y: expect.any(Buffer)}, expect.any(Buffer), true);
                     done();
                 }
             );
@@ -176,9 +178,14 @@ describe("Initialization", () => {
 
         test("maps failures to expected error code", (done) => {
             jest.spyOn(Recrypt, "generateKeyPair").mockReturnValue(Future.reject(new Error("forced failure")));
-            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(Future.of(Buffer.alloc(32)));
+            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(
+                Future.of({decryptedPrivateKey: Buffer.alloc(32), derivedKey: Buffer.alloc(24), derivedKeySalt: Buffer.alloc(12)})
+            );
             jest.spyOn(UserApi, "callUserVerifyApi").mockReturnValue(
                 Future.of({
+                    currentKeyId: 77,
+                    needsRotation: false,
+                    groupsNeedingRotation: [],
                     id: "353",
                     segmentId: 3,
                     status: 232,
@@ -199,6 +206,9 @@ describe("Initialization", () => {
         test("generates new user keypair and returns expected structure", (done) => {
             jest.spyOn(UserApi, "callUserVerifyApi").mockReturnValue(
                 Future.of({
+                    currentKeyId: 77,
+                    needsRotation: false,
+                    groupsNeedingRotation: [],
                     id: "353",
                     segmentId: 3,
                     status: 232,
@@ -206,17 +216,20 @@ describe("Initialization", () => {
                     userPrivateKey: Buffer.alloc(96).toString("base64"),
                 })
             );
-            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(Future.of(Buffer.alloc(32)));
+            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(
+                Future.of({decryptedPrivateKey: Buffer.alloc(32), derivedKey: Buffer.alloc(24), derivedKeySalt: Buffer.alloc(12)})
+            );
             const deviceAddSpy = jest.spyOn(UserApi, "callUserDeviceAdd");
-            deviceAddSpy.mockReturnValue(Future.of({
-                devicePublicKey: TestUtils.getEmptyPublicKey(),
-            }) as any);
+            deviceAddSpy.mockReturnValue(
+                Future.of({
+                    devicePublicKey: TestUtils.getEmptyPublicKey(),
+                }) as any
+            );
 
             Initialization.generateDevice("jwt", "password", {deviceName: ""}).engage(
                 (e) => fail(e),
                 (result: any) => {
                     expect(result.accountID).toEqual("353");
-                    expect(result.segmentID).toEqual(3);
                     expect(result.deviceKeys).toEqual({
                         publicKey: {
                             x: expect.any(String),
@@ -246,16 +259,23 @@ describe("Initialization", () => {
                 Future.of({
                     id: "353",
                     segmentId: 3,
+                    currentKeyId: 77,
+                    needsRotation: false,
+                    groupsNeedingRotation: [],
                     status: 232,
                     userMasterPublicKey: TestUtils.accountPublicBytesBase64,
                     userPrivateKey: Buffer.alloc(96).toString("base64"),
                 })
             );
-            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(Future.of(Buffer.alloc(32)));
+            jest.spyOn(AES, "decryptUserMasterKey").mockReturnValue(
+                Future.of({decryptedPrivateKey: Buffer.alloc(32), derivedKey: Buffer.alloc(24), derivedKeySalt: Buffer.alloc(12)})
+            );
             const deviceAddSpy = jest.spyOn(UserApi, "callUserDeviceAdd");
-            deviceAddSpy.mockReturnValue(Future.of({
-                devicePublicKey: TestUtils.getEmptyPublicKey(),
-            }) as any);
+            deviceAddSpy.mockReturnValue(
+                Future.of({
+                    devicePublicKey: TestUtils.getEmptyPublicKey(),
+                }) as any
+            );
 
             Initialization.generateDevice("jwt", "password", {deviceName: "OSX"}).engage(
                 (e) => fail(e),

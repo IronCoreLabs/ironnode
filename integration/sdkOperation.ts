@@ -1,11 +1,12 @@
 /* tslint:disable no-console cyclomatic-complexity*/
-import * as path from "path";
 import * as inquirer from "inquirer";
+import * as path from "path";
+import {SDK} from "../ironnode";
 import {initialize} from "../src/index";
 import * as Documents from "./Documents";
 import * as Groups from "./Groups";
+import {log} from "./Logger";
 import * as Users from "./Users";
-import {SDK} from "../ironnode";
 
 const topLevelPrompt: inquirer.ListQuestion<{operation: string}> = {
     type: "list",
@@ -27,6 +28,7 @@ const topLevelPrompt: inquirer.ListQuestion<{operation: string}> = {
         {name: "Group Get", value: "groupGet"},
         {name: "Group Create", value: "groupCreate"},
         {name: "Group Update", value: "groupUpdate"},
+        {name: "Group Private Key Rotate", value: "groupRotate"},
         {name: "Group Add Admins", value: "groupAddAdmins"},
         {name: "Group Remove Admins", value: "groupRemoveAdmins"},
         {name: "Group Add Members", value: "groupAddMembers"},
@@ -36,6 +38,7 @@ const topLevelPrompt: inquirer.ListQuestion<{operation: string}> = {
         {name: "User Public Key Lookup", value: "userKeyLookup"},
         {name: "User Device List", value: "userDeviceList"},
         {name: "User Device Delete", value: "userDeviceDelete"},
+        {name: "User Rotate Master Private Key", value: "rotateUserKey"},
         new inquirer.Separator(),
         {name: "Quit", value: "quit"},
         new inquirer.Separator(),
@@ -73,6 +76,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Groups.create(IronNode);
         case "groupUpdate":
             return Groups.update(IronNode);
+        case "groupRotate":
+            return Groups.rotatePrivateKey(IronNode);
         case "groupAddAdmins":
             return Groups.addAdmins(IronNode);
         case "groupRemoveAdmins":
@@ -89,6 +94,8 @@ function routeAnswerToOperation(IronNode: SDK, answer: string) {
             return Users.deviceList(IronNode);
         case "userDeviceDelete":
             return Users.deviceDelete(IronNode);
+        case "rotateUserKey":
+            return Users.rotateMasterKey(IronNode);
         case "quit":
             return process.exit();
         default:
@@ -107,7 +114,7 @@ function askForOperation(IronNode: SDK): Promise<void> {
         .then(({operation}) => {
             return routeAnswerToOperation(IronNode, operation).catch((error) => {
                 console.log("\x1Bc");
-                console.error(`${error.message}\n\n`);
+                console.error(`${error}\n\n`);
                 //Even if an error occurs, recover and go back to the operation list
                 return Promise.resolve();
             });
@@ -121,6 +128,9 @@ function askForOperation(IronNode: SDK): Promise<void> {
 export function initializeSDKWithLocalDevice() {
     const Config = require(path.join(__dirname, "./.device.json"));
     return initialize(Config.accountID, Config.segmentID, Config.deviceKeys.privateKey, Config.signingKeys.privateKey)
-        .then((IronNode) => askForOperation(IronNode))
+        .then((IronNode) => {
+            log(IronNode.userContext);
+            return askForOperation(IronNode);
+        })
         .catch((error) => console.error(`SDK Initialization Error: ${error.message}`));
 }

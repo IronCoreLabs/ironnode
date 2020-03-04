@@ -1,16 +1,16 @@
 import * as Recrypt from "@ironcorelabs/recrypt-node-binding";
 import Future from "futurejs";
-import {Codec} from "../lib/Utils";
 import {
-    RecryptEncryptedMessage,
-    TransformedEncryptedMessage,
+    EncryptedAccessKey,
+    KeyPair,
     PrivateKey,
     PublicKey,
-    KeyPair,
-    UserOrGroupPublicKey,
-    EncryptedAccessKey,
+    RecryptEncryptedMessage,
     SigningPublicKey,
+    TransformedEncryptedMessage,
+    UserOrGroupPublicKey,
 } from "../commonTypes";
+import {Codec} from "../lib/Utils";
 
 /**
  * Recrypt API Instance
@@ -25,39 +25,75 @@ export interface TransformKeyGrant {
 type Plaintext = Buffer;
 
 /**
+ * Will return true if the provided contains only zeros.
+ */
+const isBufferAllZero = (bytes: Buffer) => bytes.every((val) => val === 0);
+
+/**
+ * Augments the provided user private key and return both the augmented private key and the augmentation factor.
+ */
+const rotateUsersPrivateKey = (userPrivateKey: Buffer): Future<Error, {newPrivateKey: Buffer; augmentationFactor: Buffer}> => {
+    return generateKeyPair().flatMap(({privateKey}) => {
+        if (isBufferAllZero(privateKey)) {
+            return Future.reject(new Error("Key rotation failed."));
+        }
+        const newPrivateKey = Recrypt.subtractPrivateKeys(userPrivateKey, privateKey);
+        if (isBufferAllZero(newPrivateKey)) {
+            return Future.reject(new Error("Key rotation failed."));
+        }
+        return Future.of({
+            newPrivateKey,
+            augmentationFactor: privateKey,
+        });
+    });
+};
+
+/**
+ * Augment the provided group private key and return both the augmented private key and the augmentation factor.
+ */
+const rotateGroupPrivateKey = (existingGroupPrivateKey: Buffer): Future<Error, {plaintext: Buffer; augmentationFactor: Buffer}> => {
+    const plaintext = RecryptApi.generatePlaintext();
+    const newPrivateKey = RecryptApi.deriveSymmetricKey(plaintext);
+    const augmentationFactor = Recrypt.subtractPrivateKeys(existingGroupPrivateKey, newPrivateKey);
+    if (isBufferAllZero(newPrivateKey) || isBufferAllZero(augmentationFactor)) {
+        return Future.reject(new Error("Key rotation failed."));
+    }
+    return Future.of({
+        plaintext,
+        augmentationFactor,
+    });
+};
+
+/**
  * Convert the components of an encrypted symmetric key into base64 strings for submission to the API
  * @param {EncryptedValue} encryptedValue Encrypted value to transform
  */
-function encryptedValueToBase64(encryptedValue: Recrypt.EncryptedValue): RecryptEncryptedMessage {
-    return {
-        encryptedMessage: Codec.Buffer.toBase64(encryptedValue.encryptedMessage),
-        ephemeralPublicKey: Codec.PublicKey.toBase64(encryptedValue.ephemeralPublicKey),
-        authHash: Codec.Buffer.toBase64(encryptedValue.authHash),
-        publicSigningKey: Codec.Buffer.toBase64(encryptedValue.publicSigningKey),
-        signature: Codec.Buffer.toBase64(encryptedValue.signature),
-    };
-}
+const encryptedValueToBase64 = (encryptedValue: Recrypt.EncryptedValue): RecryptEncryptedMessage => ({
+    encryptedMessage: Codec.Buffer.toBase64(encryptedValue.encryptedMessage),
+    ephemeralPublicKey: Codec.PublicKey.toBase64(encryptedValue.ephemeralPublicKey),
+    authHash: Codec.Buffer.toBase64(encryptedValue.authHash),
+    publicSigningKey: Codec.Buffer.toBase64(encryptedValue.publicSigningKey),
+    signature: Codec.Buffer.toBase64(encryptedValue.signature),
+});
 
 /**
  * Convert the parts of an encrypted plaintext string representation into a EncryptedValue that is expected
  * by the Recrypt library.
  * @param {TransformedEncryptedMessage} encryptedKey Symmetric key object to convert from string to bytes
  */
-function transformedPlaintextToEncryptedValue(encryptedKey: TransformedEncryptedMessage): Recrypt.EncryptedValue {
-    return {
-        encryptedMessage: Codec.Buffer.fromBase64(encryptedKey.encryptedMessage),
-        ephemeralPublicKey: Codec.PublicKey.fromBase64(encryptedKey.ephemeralPublicKey),
-        publicSigningKey: Codec.Buffer.fromBase64(encryptedKey.publicSigningKey),
-        authHash: Codec.Buffer.fromBase64(encryptedKey.authHash),
-        signature: Codec.Buffer.fromBase64(encryptedKey.signature),
-        transformBlocks: encryptedKey.transformBlocks.map((transformBlock) => ({
-            encryptedTempKey: Codec.Buffer.fromBase64(transformBlock.encryptedTempKey),
-            publicKey: Codec.PublicKey.fromBase64(transformBlock.publicKey),
-            randomTransformEncryptedTempKey: Codec.Buffer.fromBase64(transformBlock.randomTransformEncryptedTempKey),
-            randomTransformPublicKey: Codec.PublicKey.fromBase64(transformBlock.randomTransformPublicKey),
-        })),
-    };
-}
+const transformedPlaintextToEncryptedValue = (encryptedKey: TransformedEncryptedMessage): Recrypt.EncryptedValue => ({
+    encryptedMessage: Codec.Buffer.fromBase64(encryptedKey.encryptedMessage),
+    ephemeralPublicKey: Codec.PublicKey.fromBase64(encryptedKey.ephemeralPublicKey),
+    publicSigningKey: Codec.Buffer.fromBase64(encryptedKey.publicSigningKey),
+    authHash: Codec.Buffer.fromBase64(encryptedKey.authHash),
+    signature: Codec.Buffer.fromBase64(encryptedKey.signature),
+    transformBlocks: encryptedKey.transformBlocks.map((transformBlock) => ({
+        encryptedTempKey: Codec.Buffer.fromBase64(transformBlock.encryptedTempKey),
+        publicKey: Codec.PublicKey.fromBase64(transformBlock.publicKey),
+        randomTransformEncryptedTempKey: Codec.Buffer.fromBase64(transformBlock.randomTransformEncryptedTempKey),
+        randomTransformPublicKey: Codec.PublicKey.fromBase64(transformBlock.randomTransformPublicKey),
+    })),
+});
 
 /**
  * Generate a new Recrypt key pair and do some post processing to convert structure.
@@ -239,3 +275,17 @@ export function generateDeviceAddSignature(jwtToken: string, userMasterKeyPair: 
         };
     });
 }
+
+/**
+ * Attempts to rotate the provided user private key and if that fails, attempts a single retry in case the augmentation failed.
+ */
+export const rotateUsersPrivateKeyWithRetry = (userPrivateKey: Buffer): Future<Error, {newPrivateKey: Buffer; augmentationFactor: Buffer}> => {
+    return rotateUsersPrivateKey(userPrivateKey).handleWith(() => rotateUsersPrivateKey(userPrivateKey));
+};
+
+/**
+ * Attempts to rotate the provided group private key and if that fails, attempts a single retry in case the augmentation failed.
+ */
+export const rotateGroupPrivateKeyWithRetry = (groupPrivateKey: Buffer): Future<Error, {plaintext: Buffer; augmentationFactor: Buffer}> => {
+    return rotateGroupPrivateKey(groupPrivateKey).handleWith(() => rotateGroupPrivateKey(groupPrivateKey));
+};

@@ -1,8 +1,8 @@
 import Future from "futurejs";
-import * as GroupCrypto from "../GroupCrypto";
+import {ErrorCodes} from "../../Constants";
 import * as Recrypt from "../../crypto/Recrypt";
 import * as TestUtils from "../../tests/TestUtils";
-import {ErrorCodes} from "../../Constants";
+import * as GroupCrypto from "../GroupCrypto";
 
 describe("GroupCrypto", () => {
     describe("createGroup", () => {
@@ -11,22 +11,28 @@ describe("GroupCrypto", () => {
             const signingKeys = TestUtils.getSigningKeyPair();
 
             const genKey = jest.spyOn(Recrypt, "generateGroupKeyPair");
-            genKey.mockReturnValue(Future.of({
-                publicKey: Buffer.alloc(32),
-                plaintext: Buffer.alloc(12),
-                privateKey: Buffer.alloc(29),
-            }) as any);
+            genKey.mockReturnValue(
+                Future.of({
+                    publicKey: Buffer.alloc(32),
+                    plaintext: Buffer.alloc(12),
+                    privateKey: Buffer.alloc(29),
+                }) as any
+            );
 
             const encrypt = jest.spyOn(Recrypt, "encryptPlaintext");
-            encrypt.mockReturnValue(Future.of({
-                encryptedMessage: "stuff",
-            }) as any);
+            encrypt.mockReturnValue(
+                Future.of({
+                    encryptedMessage: "stuff",
+                }) as any
+            );
 
             const transform = jest.spyOn(Recrypt, "generateTransformKey");
-            transform.mockReturnValue(Future.of({
-                fromPrivateKey: Buffer.alloc(29),
-                toPublicKey: TestUtils.getEmptyPublicKey(),
-            }) as any);
+            transform.mockReturnValue(
+                Future.of({
+                    fromPrivateKey: Buffer.alloc(29),
+                    toPublicKey: TestUtils.getEmptyPublicKey(),
+                }) as any
+            );
 
             GroupCrypto.createGroup(userKey, signingKeys.privateKey, true).engage(
                 (e) => fail(e),
@@ -47,22 +53,28 @@ describe("GroupCrypto", () => {
             const signingKeys = TestUtils.getSigningKeyPair();
 
             const keyGen = jest.spyOn(Recrypt, "generateGroupKeyPair");
-            keyGen.mockReturnValue(Future.of({
-                publicKey: Buffer.alloc(32),
-                plaintext: Buffer.alloc(12),
-                privateKey: Buffer.alloc(29),
-            }) as any);
+            keyGen.mockReturnValue(
+                Future.of({
+                    publicKey: Buffer.alloc(32),
+                    plaintext: Buffer.alloc(12),
+                    privateKey: Buffer.alloc(29),
+                }) as any
+            );
 
             const encrypt = jest.spyOn(Recrypt, "encryptPlaintext");
-            encrypt.mockReturnValue(Future.of({
-                encryptedMessage: "stuff",
-            }) as any);
+            encrypt.mockReturnValue(
+                Future.of({
+                    encryptedMessage: "stuff",
+                }) as any
+            );
 
             const transform = jest.spyOn(Recrypt, "generateTransformKey");
-            transform.mockReturnValue(Future.of({
-                fromPrivateKey: Buffer.alloc(29),
-                toPublicKey: TestUtils.getEmptyPublicKey(),
-            }) as any);
+            transform.mockReturnValue(
+                Future.of({
+                    fromPrivateKey: Buffer.alloc(29),
+                    toPublicKey: TestUtils.getEmptyPublicKey(),
+                }) as any
+            );
 
             GroupCrypto.createGroup(userKey, signingKeys.privateKey, false).engage(
                 (e) => fail(e),
@@ -89,6 +101,58 @@ describe("GroupCrypto", () => {
                     expect(error.code).toEqual(ErrorCodes.GROUP_KEY_GENERATION_FAILURE);
                 },
                 () => fail("Success should not be invoked when operations fail")
+            );
+        });
+    });
+
+    describe("rotateGroupKey", () => {
+        test("decrypts groups private key, rotates it, and re-encrypts it to the provided list of users ", () => {
+            jest.spyOn(Recrypt, "decryptPlaintext").mockReturnValue(Future.of([Buffer.from([]), Buffer.from("groupSymmetricKey")]));
+            jest.spyOn(Recrypt, "rotateGroupPrivateKeyWithRetry").mockReturnValue(
+                Future.of({
+                    plaintext: Buffer.from("groupPlaintext"),
+                    augmentationFactor: Buffer.from("augFactor"),
+                })
+            );
+            jest.spyOn(Recrypt, "encryptPlaintextToList").mockReturnValue(Future.of(["accessKey1", "accessKey2"] as any));
+
+            GroupCrypto.rotateGroupKey(
+                TestUtils.getTransformedSymmetricKey(),
+                [{id: "11", masterPublicKey: TestUtils.accountPublicBytesBase64}],
+                TestUtils.devicePrivateBytes,
+                TestUtils.getSigningKeyPair()
+            ).engage(
+                (e) => fail(e),
+                (res) => {
+                    expect(res).toEqual({
+                        encryptedAccessKeys: ["accessKey1", "accessKey2"],
+                        augmentationFactor: Buffer.from("augFactor"),
+                    });
+
+                    expect(Recrypt.decryptPlaintext).toHaveBeenCalledWith(TestUtils.getTransformedSymmetricKey(), TestUtils.devicePrivateBytes);
+                    expect(Recrypt.rotateGroupPrivateKeyWithRetry).toHaveBeenCalledWith(Buffer.from("groupSymmetricKey"));
+                    expect(Recrypt.encryptPlaintextToList).toHaveBeenCalledWith(
+                        Buffer.from("groupPlaintext"),
+                        [{id: "11", masterPublicKey: TestUtils.accountPublicBytesBase64}],
+                        expect.any(Buffer)
+                    );
+                }
+            );
+        });
+
+        test("maps error to proper error code", () => {
+            jest.spyOn(Recrypt, "decryptPlaintext").mockReturnValue(Future.reject(new Error("failed to decrypt")));
+
+            GroupCrypto.rotateGroupKey(
+                TestUtils.getTransformedSymmetricKey(),
+                [{id: "11", masterPublicKey: TestUtils.accountPublicBytesBase64}],
+                TestUtils.devicePrivateBytes,
+                TestUtils.getSigningKeyPair()
+            ).engage(
+                (e) => {
+                    expect(e.code).toEqual(ErrorCodes.GROUP_PRIVATE_KEY_ROTATION_FAILURE);
+                },
+                () => fail("Should reject when cannot decrypt")
             );
         });
     });
