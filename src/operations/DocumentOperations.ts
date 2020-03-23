@@ -320,6 +320,8 @@ export function decryptBytes(documentID: string, encryptedDocument: Buffer): Fut
         );
     }
     return DocumentApi.callDocumentMetadataGetApi(documentID).flatMap((documentResponse) => {
+        // tslint:disable-next-line:no-console
+        console.log(`DocumentGet response: ${JSON.stringify(documentResponse)}`);
         return DocumentCrypto.decryptBytes(encryptedDocument, documentResponse.encryptedSymmetricKey, ApiState.devicePrivateKey()).map((decryptedDocument) => ({
             documentID,
             documentName: documentResponse.name,
