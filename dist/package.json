@@ -3,7 +3,7 @@
     "version": "0.8.0",
     "description": "IronCore Labs SDK for NodeJS Applications",
     "homepage": "https://docs.ironcorelabs.com",
-    "main": "dist/index.js",
+    "main": "index.js",
     "repository": "git@github.com:IronCoreLabs/ironnode.git",
     "author": "IronCore Labs",
     "license": "AGPL-3.0-only",

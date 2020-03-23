@@ -1,0 +1,87 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const futurejs_1 = require("futurejs");
+const UserOperations = require("../../operations/UserOperations");
+const UserSDK = require("../UserSDK");
+describe("UserSDK", () => {
+    describe("getPublicKey", () => {
+        test("fails if no value provided ", () => {
+            expect(() => UserSDK.getPublicKey("")).toThrow();
+            expect(() => UserSDK.getPublicKey([])).toThrow();
+        });
+        test("converts single ID to array and returns value from UserOperations call", (done) => {
+            const spy = jest.spyOn(UserOperations, "getUserPublicKeys");
+            spy.mockReturnValue(futurejs_1.default.of("resp"));
+            UserSDK.getPublicKey("userID")
+                .then((resp) => {
+                expect(resp).toEqual("resp");
+                expect(UserOperations.getUserPublicKeys).toHaveBeenCalledWith(["userID"]);
+                done();
+            })
+                .catch((e) => fail(e));
+        });
+        test("leaves provided arrays alone", (done) => {
+            const spy = jest.spyOn(UserOperations, "getUserPublicKeys");
+            spy.mockReturnValue(futurejs_1.default.of("resp"));
+            UserSDK.getPublicKey(["userID1", "userID2"])
+                .then((resp) => {
+                expect(resp).toEqual("resp");
+                expect(UserOperations.getUserPublicKeys).toHaveBeenCalledWith(["userID1", "userID2"]);
+                done();
+            })
+                .catch((e) => fail(e));
+        });
+    });
+    describe("listDevices", () => {
+        test("calls user operations", () => {
+            const spy = jest.spyOn(UserOperations, "getUserDevices");
+            spy.mockReturnValue(futurejs_1.default.of("resp"));
+            UserSDK.listDevices()
+                .then((resp) => {
+                expect(resp).toEqual("resp");
+                expect(UserOperations.getUserDevices).toHaveBeenCalledWith();
+            })
+                .catch((e) => fail(e));
+        });
+    });
+    describe("deleteDevice", () => {
+        test("fails when device ID isnt provided or isnt a number", () => {
+            expect(() => UserSDK.deleteDevice()).toThrow();
+            expect(() => UserSDK.deleteDevice("35")).toThrow();
+            expect(() => UserSDK.deleteDevice([])).toThrow();
+        });
+        test("calls user operations method with device ID", () => {
+            const spy = jest.spyOn(UserOperations, "deleteUserDevice");
+            spy.mockReturnValue(futurejs_1.default.of("resp"));
+            UserSDK.deleteDevice(34)
+                .then((resp) => {
+                expect(resp).toEqual("resp");
+                expect(UserOperations.deleteUserDevice).toHaveBeenCalledWith(34);
+            })
+                .catch((e) => fail(e));
+        });
+    });
+    describe("rotateMasterKey", () => {
+        test("should call into UserOperations", () => {
+            const spy = jest.spyOn(UserOperations, "rotateMasterKey");
+            spy.mockReturnValue(futurejs_1.default.of("resp"));
+            UserSDK.rotateMasterKey("password")
+                .then((resp) => {
+                expect(resp).toEqual("resp");
+                expect(UserOperations.rotateMasterKey).toHaveBeenCalledWith("password");
+            })
+                .catch((e) => fail(e));
+        });
+    });
+    describe("changePassword", () => {
+        test("should call into UserOperations", () => {
+            const spy = jest.spyOn(UserOperations, "changeUsersPassword");
+            spy.mockReturnValue(futurejs_1.default.of("resp"));
+            UserSDK.changePassword("password", "newPassword")
+                .then((resp) => {
+                expect(resp).toEqual("resp");
+            })
+                .catch((e) => fail(e));
+        });
+    });
+});

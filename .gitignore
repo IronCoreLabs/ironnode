@@ -4,7 +4,6 @@ yarn-error.log
 .DS_Store
 .awcache
 bin/
-dist/
 coverage/*
 integration/private.key
 integration/.device.json
