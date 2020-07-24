@@ -4,7 +4,7 @@
  * the randomBytes method while leaving all other methods on the module intact.
  */
 
-const crypto = require.requireActual("crypto");
+const crypto = jest.requireActual("crypto");
 
 let mockRandomBuffer = Buffer.alloc(0);
 let mockImplementation;
