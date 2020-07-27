@@ -32,6 +32,7 @@
         "no-var-keyword": true,
         "ban": [true, "fdescribe"],
         "cyclomatic-complexity": [true, 10],
-        "prefer-const": true
+        "prefer-const": true,
+        "array-type": [true, "array-simple"]
     }
 }
