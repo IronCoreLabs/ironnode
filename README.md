@@ -1,6 +1,6 @@
 # IronCore Labs NodeJS SDK
 
-[![Build Status](https://travis-ci.org/IronCoreLabs/ironnode.svg?branch=master)](https://travis-ci.org/IronCoreLabs/ironnode)
+[![Build Status](https://travis-ci.org/IronCoreLabs/ironnode.svg?branch=main)](https://travis-ci.org/IronCoreLabs/ironnode)
 [![NPM Version](https://badge.fury.io/js/%40ironcorelabs%2Fironnode.svg)](https://www.npmjs.com/package/@ironcorelabs/ironnode)
 
 SDK for using IronCore Labs from your NodeJS server side applications. Read [our documentation](https://docs.ironcorelabs.com) for further information about how to integrate this library into your server side application. Also check out the [`integration` directory](integration) for an example of consuming this library.

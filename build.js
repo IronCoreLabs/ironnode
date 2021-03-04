@@ -57,10 +57,10 @@ function tagRepo(version) {
 }
 
 /**
- * Ensure that we're in a pristine, up-to-date repo and on the master branch before allowing user to continue. Only does
+ * Ensure that we're in a pristine, up-to-date repo and on the main branch before allowing user to continue. Only does
  * verification if user is actually trying to perform an NPM publish
  */
-function ensureNoChangesOnMasterBeforePublish() {
+function ensureNoChangesOnMainBeforePublish() {
     //Let users try the build script as long as they're not doing an actual publish
     if (!SHOULD_PUBLISH) {
         return true;
@@ -69,12 +69,12 @@ function ensureNoChangesOnMasterBeforePublish() {
     shell.exec("git fetch origin", {silent: true});
 
     const currentBranch = shell.exec("git symbolic-ref --short -q HEAD", {silent: true});
-    if (currentBranch.stdout.trim() !== "master") {
-        shell.echo("Modules can only be deployed off 'master' branch.");
+    if (currentBranch.stdout.trim() !== "main") {
+        shell.echo("Modules can only be deployed off 'main' branch.");
         shell.exit(-1);
     }
 
-    const changesOnBranch = shell.exec("git log HEAD..origin/master --oneline", {silent: true});
+    const changesOnBranch = shell.exec("git log HEAD..origin/main --oneline", {silent: true});
     if (changesOnBranch.stdout.trim() !== "") {
         shell.echo("Local repo and origin are out of sync! Have you pushed all your changes? Have you pulled the latest?");
         shell.exit(-1);
@@ -91,7 +91,7 @@ function ensureNoChangesOnMasterBeforePublish() {
 const buildScriptDirectory = path.dirname(process.argv[1]);
 shell.cd(path.join(buildScriptDirectory));
 
-ensureNoChangesOnMasterBeforePublish();
+ensureNoChangesOnMainBeforePublish();
 
 //Clean up any existing dist directory
 shell.rm("-rf", "./dist");
