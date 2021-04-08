@@ -1,3 +1,13 @@
+## 0.8.2
+
+### Breaking Changes
+
+None
+
+### Changed
+
+Updated all dependencies to their latest version.
+
 ## 0.8.1
 
 ### Breaking Changes
