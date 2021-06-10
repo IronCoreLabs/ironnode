@@ -1,3 +1,13 @@
+## 0.8.3
+
+### Breaking Changes
+
+None
+
+### Changed
+
+Updated dependencies and bumped recrypt-node-binding so we get Node 14 support.
+
 ## 0.8.2
 
 ### Breaking Changes
@@ -22,7 +32,7 @@ Updated all dependencies to their latest version.
 
 ### Breaking Changes
 
-+ Removed Node 8 support
+-   Removed Node 8 support
 
 ### Changed
 
@@ -38,7 +48,7 @@ Updated all dependencies to their latest version.
     -   Initialization return type: After initializing the IronNode SDK, the resulting SDK object will now also contain a `userContext` field which contains key rotation information for the currently initialized user.
         -   `needsRotation`: If `true`, denotes that the current users private key should be rotated.
         -   `groupsNeedingRotation`: Contains a list of group IDs that the current user is an administrator of that are marked as needing their private key rotated.
-- Added a method to allow the currently initialized user to change their private key escrow password. The `SDK.user.changePassword(currentPassword: string, newPassword: string)` method decrypts and re-encrypts the users master private key using the provided current and new passwords.
+-   Added a method to allow the currently initialized user to change their private key escrow password. The `SDK.user.changePassword(currentPassword: string, newPassword: string)` method decrypts and re-encrypts the users master private key using the provided current and new passwords.
 
 ## 0.7.3
 
