@@ -13,7 +13,6 @@ jobs:
   test:
     runs-on: ubuntu-20.04
     strategy:
-      fail-fast: false
       matrix:
         node_version:
         - '10'
@@ -28,10 +27,4 @@ jobs:
     - name: Install modules
       run: yarn
     - name: Run tests
-      run: yarn run test
-    - name: Check test coverage
-      if: github.base_ref != ''
-      uses: anuraag016/Jest-Coverage-Diff@V1.1
-      with:
-        fullCoverageDiff: false
-        delta: 0.2
+      run: yarn test --coverage

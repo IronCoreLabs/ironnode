@@ -1,3 +1,10 @@
 - op: replace
   path: /jobs/test/strategy/matrix/node_version
   value: ["10", "12", "14"]
+
+# Coverage will be above the values in `jest.config.js`
+- op: remove
+  path: /jobs/test/steps/4
+- op: replace
+  path: /jobs/test/steps/3/run
+  value: yarn test --coverage
