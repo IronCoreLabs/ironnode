@@ -1,3 +1,13 @@
+## 0.9.1
+
+### Breaking Changes
+
+None
+
+### Changed
+
+Added `arm64` to supported cpus now that recrypt + node bindings supports it.
+
 ## 0.9.0
 
 ### Breaking Changes
