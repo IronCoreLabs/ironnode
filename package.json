@@ -1,6 +1,6 @@
 {
     "name": "@ironcorelabs/ironnode",
-    "version": "0.8.4-pre",
+    "version": "0.9.0",
     "description": "IronCore Labs SDK for NodeJS Applications",
     "homepage": "https://docs.ironcorelabs.com",
     "main": "index.js",

@@ -1,12 +1,12 @@
-## 0.8.3
+## 0.9.0
 
 ### Breaking Changes
 
-None
+- dropped Node 10 support
 
 ### Changed
 
-Updated dependencies and bumped recrypt-node-binding so we get Node 14 support.
+Updated dependencies and bumped recrypt-node-binding so we get Node 14 and 16 support.
 
 ## 0.8.2
 
