@@ -1,0 +1,16 @@
+{
+    "name": "ironnode-example",
+    "version": "1.0.0",
+    "main": "src/index.js",
+    "license": "MIT",
+    "devDependencies": {
+        "typescript": "^4.0.2"
+    },
+    "dependencies": {
+        "@ironcorelabs/ironnode": "^0.9.1",
+        "@types/node": "^14.6.0"
+    },
+    "scripts": {
+        "start": "yarn tsc --target ES6 --sourceMap false --module CommonJS --outDir ./dist/src src/index.ts && node dist/src/index.js"
+    }
+}
