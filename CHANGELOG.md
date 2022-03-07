@@ -1,3 +1,13 @@
+## 0.9.2
+
+### Breaking Changes
+
+None
+
+### Changed
+
+Updated dependencies and relaxed version requirements for `@ironcorelabs/recrypt-node-binding` and `node-fetch`.
+
 ## 0.9.1
 
 ### Breaking Changes
@@ -6,13 +16,13 @@ None
 
 ### Changed
 
-Added `arm64` to supported cpus now that recrypt + node bindings supports it.
+Added `arm64` to supported CPUs now that recrypt + node bindings supports it.
 
 ## 0.9.0
 
 ### Breaking Changes
 
-- dropped Node 10 support
+Dropped Node 10 support
 
 ### Changed
 
