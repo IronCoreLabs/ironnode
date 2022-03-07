@@ -1,6 +1,6 @@
 {
     "name": "@ironcorelabs/ironnode",
-    "version": "0.9.1",
+    "version": "0.9.2",
     "description": "IronCore Labs SDK for NodeJS Applications",
     "homepage": "https://docs.ironcorelabs.com",
     "main": "index.js",
@@ -9,7 +9,7 @@
     "license": "AGPL-3.0-only",
     "types": "ironnode.d.ts",
     "engines": {
-        "node": ">=10.0.0"
+        "node": ">=12.0.0"
     },
     "os": [
         "darwin",
@@ -28,9 +28,9 @@
         "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\""
     },
     "dependencies": {
-        "@ironcorelabs/recrypt-node-binding": "0.8.2",
+        "@ironcorelabs/recrypt-node-binding": "^0.8.2",
         "futurejs": "2.1.1",
-        "node-fetch": "2.6.7"
+        "node-fetch": "^2.6.7"
     },
     "devDependencies": {
         "@types/inquirer": "^7.3.0",
