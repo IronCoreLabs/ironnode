@@ -3,8 +3,14 @@
   value: ["12", "14", "16"]
 
 # Coverage will be above the values in `jest.config.js`
+- op: test
+  path: /jobs/test/steps/4/name
+  value: Check test coverage
 - op: remove
   path: /jobs/test/steps/4
+- op: test
+  path: /jobs/test/steps/3/name
+  value: Run tests
 - op: replace
   path: /jobs/test/steps/3/run
   value: yarn test --coverage
