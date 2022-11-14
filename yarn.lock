@@ -296,10 +296,10 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@ironcorelabs/recrypt-node-binding@^0.8.2":
-  version "0.8.2"
-  resolved "https://registry.yarnpkg.com/@ironcorelabs/recrypt-node-binding/-/recrypt-node-binding-0.8.2.tgz#0807c5a26b5fc228e42ff07b35e14543839857a6"
-  integrity sha512-7xsnidBsAxr4dIU9IITiAUPlCe+1VqGFwSn4LoPutuaETKts75JDJdFmGjYAJJ/SbRnEzt0kQHWDC2N91SMTDg==
+"@ironcorelabs/recrypt-node-binding@^0.9.1":
+  version "0.9.1"
+  resolved "https://registry.yarnpkg.com/@ironcorelabs/recrypt-node-binding/-/recrypt-node-binding-0.9.1.tgz#03bc3e0f162078a9c5deff79010058f87490f1c6"
+  integrity sha512-8IW6JR7be4d3u/KQ+brnTTwNEaZ8BV+AB9g8NvZAz9qsmNFqBBgpKjfQ/bOO2glORtVpizaSvVKemKX1Qnj+YA==
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.7"
 
