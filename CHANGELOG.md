@@ -1,12 +1,14 @@
-## 0.9.2
+## 0.10.0
 
 ### Breaking Changes
 
-None
+Removed support for node 12.
 
 ### Changed
 
 Updated dependencies and relaxed version requirements for `@ironcorelabs/recrypt-node-binding` and `node-fetch`.
+
+Added support for node 18.
 
 ## 0.9.1
 
