@@ -1,6 +1,6 @@
 - op: replace
   path: /jobs/test/strategy/matrix/node_version
-  value: ["12", "14", "16"]
+  value: ["14", "16", "18"]
 
 # Coverage will be above the values in `jest.config.js`
 - op: test
