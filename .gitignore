@@ -9,3 +9,4 @@ coverage/*
 integration/private.key
 integration/.device.json
 integration/project.json
+.direnv
