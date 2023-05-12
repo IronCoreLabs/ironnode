@@ -9,6 +9,8 @@ jobs:
   typescript-ci:
     uses: IronCoreLabs/workflows/.github/workflows/typescript-ci.yaml@typescript-ci
     with:
-      # temp until https://github.com/nodejs/node/pull/46615 lands in 18. 18.16 breaks our code.
       test_matrix_node_version: '["14", "16", "18"]'
+      # this repo runs coverage in its default test command, which will fail if
+      # under the thresholds defined in jest.config.js, so coverage delta doesn't matter as much
+      run_coverage: false
     secrets: inherit
