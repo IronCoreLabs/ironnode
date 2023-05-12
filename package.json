@@ -24,7 +24,7 @@
         "start": "_ICL_API_DOMAIN_REPLACEMENT_=http://localhost:9090 ts-node -- ./integration/index.ts",
         "build": "./build.js",
         "test": "yarn run lint && yarn run unit",
-        "unit": "jest",
+        "unit": "jest --coverage",
         "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\""
     },
     "dependencies": {
