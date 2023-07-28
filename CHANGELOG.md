@@ -1,4 +1,4 @@
-## 0.10.1
+## 1.0.0
 
 ### Breaking Changes
 
