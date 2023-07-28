@@ -1,3 +1,13 @@
+## 0.10.1
+
+### Breaking Changes
+
+None
+
+### Changed
+
+Updated dependencies, including support for arm64-linux.
+
 ## 0.10.0
 
 ### Breaking Changes
