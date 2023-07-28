@@ -7,13 +7,15 @@ SDK for using IronCore Labs from your NodeJS server side applications. Read [our
 
 ## Supported Platforms
 
-|                     | Node 12 | Node 14 | Node 16 |
-| ------------------- | ------- | ------- | ------- |
-| Linux x64 glibc     | ✓       | ✓       | ✓       |
-| Linux x64 musl-libc | ✓       | ✓       | ✓       |
-| OSX x64             | ✓       | ✓       | ✓       |
-| OSX arm64           | ✓       | ✓       | ✓       |
-| Windows x64         | ✓       | ✓       | ✓       |
+|                       | Node 12 | Node 14 | Node 16 |
+| --------------------- | ------- | ------- | ------- |
+| Linux x64 glibc       | ✓       | ✓       | ✓       |
+| Linux x64 musl-libc   | ✓       | ✓       | ✓       |
+| Linux arm64 glibc     | ✓       | ✓       | ✓       |
+| Linux arm64 musl-libc | ✓       | ✓       | ✓       |
+| OSX x64               | ✓       | ✓       | ✓       |
+| OSX arm64             | ✓       | ✓       | ✓       |
+| Windows x64           | ✓       | ✓       | ✓       |
 
 ## Installation
 
