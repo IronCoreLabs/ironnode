@@ -2,11 +2,11 @@
 
 ### Breaking Changes
 
-None
+Removed support for Node 14.
 
 ### Changed
 
-Updated dependencies, including support for arm64-linux.
+Updated dependencies, including support for arm64-linux and Node 20.
 
 ## 0.10.0
 
