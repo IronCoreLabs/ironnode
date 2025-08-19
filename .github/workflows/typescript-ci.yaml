@@ -9,7 +9,7 @@ jobs:
   typescript-ci:
     uses: IronCoreLabs/workflows/.github/workflows/typescript-ci.yaml@typescript-ci-v0
     with:
-      test_matrix_node_version: '["16", "18", "20"]'
+      test_matrix_node_version: '["18", "20"]'
       # this repo runs coverage in its default test command, which will fail if
       # under the thresholds defined in jest.config.js, so coverage delta doesn't matter as much
       run_coverage: false
