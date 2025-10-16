@@ -1,5 +1,4 @@
 import Future from "futurejs";
-import fetch, {RequestInit, Response} from "node-fetch";
 import {MessageSignature, SigningKeyPair} from "../commonTypes";
 import {ErrorCodes} from "../Constants";
 import {ed25519Sign} from "../crypto/Recrypt";

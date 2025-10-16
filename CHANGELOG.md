@@ -1,3 +1,13 @@
+## 1.1.0
+
+### Breaking Changes
+
+Removed support for Node 16 and 18 (EOL).
+
+### Changed
+
+Added support for Node 20 and 22.
+
 ## 1.0.0
 
 ### Breaking Changes
