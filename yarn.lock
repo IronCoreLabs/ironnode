@@ -656,10 +656,10 @@
   resolved "https://registry.yarnpkg.com/@inquirer/type/-/type-3.0.8.tgz#efc293ba0ed91e90e6267f1aacc1c70d20b8b4e8"
   integrity sha512-lg9Whz8onIHRthWaN1Q9EGLa/0LFJjyM8mEUbL1eTi6yMGvBf8gvyDLtxSXztQsxMvhxxNpJYrwa1YHdq+w4Jw==
 
-"@ironcorelabs/recrypt-node-binding@^0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@ironcorelabs/recrypt-node-binding/-/recrypt-node-binding-0.10.0.tgz#65db0ed6e4d52bc07a19684cd5fa56de8f0c11ff"
-  integrity sha512-nVIOiklTSMnA+pG3PxCYA4J4uua+C9x1a1bz0qEzudCAjF2HH4nrzpaxwQMRideXxMdeX7YWg3zp93LJyFp9cA==
+"@ironcorelabs/recrypt-node-binding@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@ironcorelabs/recrypt-node-binding/-/recrypt-node-binding-0.11.0.tgz#dd1e484fe598a8f8fc03235d2bde6fb778f8da31"
+  integrity sha512-X4J1heksDJzBh5V06FfEOk7N9KcvuERVonLvdMDbzwtMBtD+gnc4KXTX5z8TnR8CqwYpp525pJlVrYWTLItuVA==
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.7"
 
@@ -1074,23 +1074,17 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node-fetch@^2.5.7":
-  version "2.5.10"
-  resolved "https://registry.yarnpkg.com/@types/node-fetch/-/node-fetch-2.5.10.tgz#9b4d4a0425562f9fcea70b12cb3fcdd946ca8132"
-  integrity sha512-IpkX0AasN44hgEad0gEF/V6EgR5n69VEqPEgnmoM8GsIGro3PowbWs4tR6IhxUTyPLpOn+fiGG6nrQhcmoCuIQ==
-  dependencies:
-    "@types/node" "*"
-    form-data "^3.0.0"
-
 "@types/node@*":
   version "14.14.37"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.14.37.tgz#a3dd8da4eb84a996c36e331df98d82abd76b516e"
   integrity sha512-XYmBiy+ohOR4Lh5jE379fV2IU+6Jn4g5qASinhitfyO71b/sCo6MKsMLF5tc7Zf2CE8hViVQyYSobJNke8OvUw==
 
-"@types/node@^12.12.52":
-  version "12.20.7"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.20.7.tgz#1cb61fd0c85cb87e728c43107b5fd82b69bc9ef8"
-  integrity sha512-gWL8VUkg8VRaCAUgG9WmhefMqHmMblxe2rVpMF86nZY/+ZysU+BkAp+3cz03AixWDSSz0ks5WX59yAhv/cDwFA==
+"@types/node@^24.8.0":
+  version "24.8.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-24.8.0.tgz#a98a689a687c31d9c553f603961230333e4b5230"
+  integrity sha512-5x08bUtU8hfboMTrJ7mEO4CpepS9yBwAqcL52y86SWNmbPX8LVbNs3EP4cNrIZgdjk2NAlP2ahNihozpoZIxSg==
+  dependencies:
+    undici-types "~7.14.0"
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.4"
@@ -1960,10 +1954,10 @@ function-bind@^1.1.2:
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.2.tgz#2c02d864d97f3ea6c8830c464cbd11ab6eab7a1c"
   integrity sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==
 
-futurejs@2.1.1:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/futurejs/-/futurejs-2.1.1.tgz#11d4503634b050a7c891ccbbe824c5ffa1bf1de3"
-  integrity sha512-5rSRikHpVNWY55pbQFPF3zUpvAkuVHdIAonwCJ6JRn0jIjxgN6KrMs9e59bH2YiSNCKn+PyIFfMEbVWrha2i0g==
+futurejs@2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/futurejs/-/futurejs-2.2.1.tgz#cf33a34469f64afe34ddb5635bc5734ee7098b3b"
+  integrity sha512-Cu7CcMGi9pGxSgReNo2flwxLmOCKOOc5VZQvusfhtUT2MPeoap42c6ommcl0aqEI1XKO5d5z/w6fM7VyWs0GDA==
 
 gauge@^3.0.0:
   version "3.0.2"
@@ -3065,7 +3059,7 @@ nice-try@^1.0.4:
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
-node-fetch@^2.6.5, node-fetch@^2.6.7:
+node-fetch@^2.6.5:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
@@ -3947,6 +3941,11 @@ typestrict@^1.0.2:
   dependencies:
     tslint-microsoft-contrib "^5.0.3"
     tslint-sonarts "^1.8.0"
+
+undici-types@~7.14.0:
+  version "7.14.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-7.14.0.tgz#4c037b32ca4d7d62fae042174604341588bc0840"
+  integrity sha512-QQiYxHuyZ9gQUIrmPo3IA+hUl4KYk8uSA7cHrcKd/l3p1OTpZcM0Tbp9x7FAtXdAYhlasd60ncPpgu6ihG6TOA==
 
 universalify@^0.1.2:
   version "0.1.2"
