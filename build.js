@@ -15,7 +15,6 @@
  * the published version of this SDK will only work against a production environment.
  */
 
-const fs = require("fs");
 const path = require("path");
 const shell = require("shelljs");
 const package = require("./package.json");

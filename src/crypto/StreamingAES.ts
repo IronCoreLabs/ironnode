@@ -71,7 +71,7 @@ export class StreamingEncryption {
 export class StreamingDecryption {
     decipher: crypto.DecipherGCM | undefined;
     aesKey: Buffer;
-    iv = Buffer.alloc(0);
+    iv: Buffer = Buffer.alloc(0);
     hasStrippedOffVersionHeader = false;
     authTagAndLastBlock = Buffer.alloc(0);
 
