@@ -98,7 +98,7 @@ export function encryptBytes(documentHeader: Buffer, document: Buffer, documentS
         const cipher = crypto.createCipheriv(AES_ALGORITHM, documentSymmetricKey, iv);
         return Future.of(Buffer.concat([documentHeader, iv, cipher.update(document), cipher.final(), cipher.getAuthTag()]));
     } catch (e) {
-        return Future.reject(new SDKError(e, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
+        return Future.reject(new SDKError(e as Error, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
     }
 }
 
@@ -121,7 +121,7 @@ export function encryptStream(documentHeader: Buffer, inputStream: NodeJS.Readab
         try {
             inputStream.pipe(encryptionStream.getEncryptionStream()).pipe(outputStream);
         } catch (e) {
-            reject(new SDKError(e, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
+            reject(new SDKError(e as Error, ErrorCodes.DOCUMENT_ENCRYPT_FAILURE));
         }
     });
 }
@@ -129,8 +129,6 @@ export function encryptStream(documentHeader: Buffer, inputStream: NodeJS.Readab
 /**
  * Decrypt the provided encrypted document package (ciphertext, IV, GCM tag) with the provided symmetric key.
  * @param {Buffer} cipherText           Document content to decrypt
- * @param {Buffer} iv                   Document IV
- * @param {Buffer} gcmTag               Document GCM auth tag
  * @param {Buffer} documentSymmetricKey Symmetric key to use to decrypt
  */
 export function decryptBytes(cipherText: Buffer, documentSymmetricKey: Buffer): Future<SDKError, Buffer> {
@@ -146,7 +144,7 @@ export function decryptBytes(cipherText: Buffer, documentSymmetricKey: Buffer): 
         cipher.setAuthTag(gcmTag);
         return Future.of(Buffer.concat([cipher.update(content), cipher.final()]));
     } catch (e) {
-        return Future.reject(new SDKError(e, ErrorCodes.DOCUMENT_DECRYPT_FAILURE));
+        return Future.reject(new SDKError(e as Error, ErrorCodes.DOCUMENT_DECRYPT_FAILURE));
     }
 }
 
@@ -182,14 +180,14 @@ export function decryptStream(inputStream: NodeJS.ReadableStream, outfile: strin
                 fs.rmdirSync(tempDirectoryName);
                 resolve(undefined);
             } catch (e) {
-                reject(new SDKError(e, ErrorCodes.DOCUMENT_DECRYPT_FAILURE));
+                reject(new SDKError(e as Error, ErrorCodes.DOCUMENT_DECRYPT_FAILURE));
             }
         });
 
         try {
             inputStream.pipe(decryptionStream.getDecryptionStream()).pipe(tempWritable);
         } catch (e) {
-            readOrWriteFailure(e);
+            readOrWriteFailure(e as Error);
         }
     });
 }
