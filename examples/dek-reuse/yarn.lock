@@ -2,19 +2,19 @@
 # yarn lockfile v1
 
 
-"@ironcorelabs/ironnode@^0.9.1":
-  version "0.9.1"
-  resolved "https://registry.yarnpkg.com/@ironcorelabs/ironnode/-/ironnode-0.9.1.tgz#f9e7fc8cbbc15b48acd87ffe16e629b12d340d9e"
-  integrity sha512-ohtB8IOV6YULByHAd38l7g5JoGF3MJ7nsBX2vUxpfQ0JwnZnEkp9WpMv1gdwIEnjNacfWHu7usqSH710inCt5w==
+"@ironcorelabs/ironnode@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@ironcorelabs/ironnode/-/ironnode-1.0.0.tgz#af62305d13dc8afd30cfc295b506c19f2936b741"
+  integrity sha512-J04LtpaBK2sV2qhCPrm24t35Se8KD6p1MptkjBWTbv8GfbGYWFslEe18ZlJTe6S8u77mAxnnF/RlY+1V2VZI3A==
   dependencies:
-    "@ironcorelabs/recrypt-node-binding" "0.8.2"
+    "@ironcorelabs/recrypt-node-binding" "^0.10.0"
     futurejs "2.1.1"
-    node-fetch "2.6.1"
+    node-fetch "^2.6.7"
 
-"@ironcorelabs/recrypt-node-binding@0.8.2":
-  version "0.8.2"
-  resolved "https://registry.yarnpkg.com/@ironcorelabs/recrypt-node-binding/-/recrypt-node-binding-0.8.2.tgz#0807c5a26b5fc228e42ff07b35e14543839857a6"
-  integrity sha512-7xsnidBsAxr4dIU9IITiAUPlCe+1VqGFwSn4LoPutuaETKts75JDJdFmGjYAJJ/SbRnEzt0kQHWDC2N91SMTDg==
+"@ironcorelabs/recrypt-node-binding@^0.10.0":
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/@ironcorelabs/recrypt-node-binding/-/recrypt-node-binding-0.10.1.tgz#e04f81295c0fa39e08f9917883ef35488f13fda8"
+  integrity sha512-U0XwyWd0ypp06MJx4MUsqtMUHIvs+IWGrf3yTLNwxmI1RCg7NVP56mo7V+BQqREbIUXmw5s0KPiLCZcswq0+8A==
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.7"
 
@@ -33,10 +33,12 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@types/node@^14.6.0":
-  version "14.18.12"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.12.tgz#0d4557fd3b94497d793efd4e7d92df2f83b4ef24"
-  integrity sha512-q4jlIR71hUpWTnGhXWcakgkZeHa3CCjcQcnuzU8M891BAWA2jHiziiWEPEkdS5pFsz7H9HJiy8BrK7tBRNrY7A==
+"@types/node@^20.14.8":
+  version "20.19.22"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.19.22.tgz#f17e80ee1d1fdd10d50bef449abe23bfc0216780"
+  integrity sha512-hRnu+5qggKDSyWHlnmThnUqg62l29Aj/6vcYgUaSFL9oc7DVjeWEQN3PRgdSc6F8d9QRMWkf36CLMch1Do/+RQ==
+  dependencies:
+    undici-types "~6.21.0"
 
 abbrev@1:
   version "1.1.1"
@@ -249,15 +251,17 @@ ms@2.1.2:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-node-fetch@2.6.1:
-  version "2.6.1"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
-  integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
-
 node-fetch@^2.6.5:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
+  dependencies:
+    whatwg-url "^5.0.0"
+
+node-fetch@^2.6.7:
+  version "2.7.0"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.7.0.tgz#d0f0fa6e3e2dc1d27efcd8ad99d550bda94d187d"
+  integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
   dependencies:
     whatwg-url "^5.0.0"
 
@@ -378,10 +382,15 @@ tr46@~0.0.3:
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha1-gYT9NH2snNwYWZLzpmIuFLnZq2o=
 
-typescript@^4.0.2:
-  version "4.5.5"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.5.5.tgz#d8c953832d28924a9e3d37c73d729c846c5896f3"
-  integrity sha512-TCTIul70LyWe6IJWT8QSYeA54WQe8EjQFU4wY52Fasj5UKx88LNYKCgBEHcOMOrFF1rKGbD8v/xcNWVUq9SymA==
+typescript@^4.9.5:
+  version "4.9.5"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
+  integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
+
+undici-types@~6.21.0:
+  version "6.21.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.21.0.tgz#691d00af3909be93a7faa13be61b3a5b50ef12cb"
+  integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
 
 util-deprecate@^1.0.1:
   version "1.0.2"
