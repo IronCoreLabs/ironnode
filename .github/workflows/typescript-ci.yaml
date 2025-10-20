@@ -13,4 +13,5 @@ jobs:
       # this repo runs coverage in its default test command, which will fail if
       # under the thresholds defined in jest.config.js, so coverage delta doesn't matter as much
       run_coverage: false
+      additional_steps: "./build.js"
     secrets: inherit

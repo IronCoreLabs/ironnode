@@ -15,5 +15,6 @@ jobs:
   bump:
     uses: IronCoreLabs/workflows/.github/workflows/bump-version.yaml@bump-version-v1
     with:
+      release_prereleases: false
       version: ${{ inputs.version }}
     secrets: inherit
