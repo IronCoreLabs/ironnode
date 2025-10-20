@@ -1,61 +1,61 @@
 {
-  "name": "@ironcorelabs/ironnode",
-  "version": "1.0.0",
-  "description": "IronCore Labs SDK for NodeJS Applications",
-  "homepage": "https://docs.ironcorelabs.com",
-  "main": "index.js",
-  "repository": "git@github.com:IronCoreLabs/ironnode.git",
-  "author": "IronCore Labs",
-  "license": "AGPL-3.0-only",
-  "types": "ironnode.d.ts",
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "os": [
-    "darwin",
-    "linux",
-    "win32"
-  ],
-  "cpu": [
-    "x64",
-    "arm64"
-  ],
-  "scripts": {
-    "start": "_ICL_API_DOMAIN_REPLACEMENT_=http://localhost:9090 ts-node -- ./integration/index.ts",
-    "build": "./build.js",
-    "test": "yarn run lint && yarn run unit",
-    "unit": "jest --coverage",
-    "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\""
-  },
-  "dependencies": {
-    "@ironcorelabs/recrypt-node-binding": "^0.11.0",
-    "futurejs": "2.2.1"  
-  },
-  "devDependencies": {
-    "@types/inquirer": "^9.0.9",
-    "@types/jest": "^26.0.7",
-    "@types/jsonwebtoken": "^8.5.0",
-    "@types/node": "^20.14.8",
-    "inquirer": "^12.9.2",
-    "jest": "^26.6.0",
-    "jest-extended": "^0.11.5",
-    "jsonwebtoken": "^9.0.0",
-    "shelljs": "^0.8.4",
-    "ts-jest": "^26.5.0",
-    "ts-node": "^8.10.2",
-    "tslint": "^6.1.2",
-    "typescript": "^4.9.5",
-    "typestrict": "^1.0.2"
-  },
-  "resolutions": {
-    "micromatch": "^4.0.8"
-  },
-  "prettier": {
-    "printWidth": 160,
-    "tabWidth": 4,
-    "trailingComma": "es5",
-    "bracketSpacing": false,
-    "jsxBracketSameLine": true,
-    "arrowParens": "always"
-  }
+    "name": "@ironcorelabs/ironnode",
+    "version": "1.1.0",
+    "description": "IronCore Labs SDK for NodeJS Applications",
+    "homepage": "https://docs.ironcorelabs.com",
+    "main": "index.js",
+    "repository": "git@github.com:IronCoreLabs/ironnode.git",
+    "author": "IronCore Labs",
+    "license": "AGPL-3.0-only",
+    "types": "ironnode.d.ts",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "os": [
+        "darwin",
+        "linux",
+        "win32"
+    ],
+    "cpu": [
+        "x64",
+        "arm64"
+    ],
+    "scripts": {
+        "start": "_ICL_API_DOMAIN_REPLACEMENT_=http://localhost:9090 ts-node -- ./integration/index.ts",
+        "build": "./build.js",
+        "test": "yarn run lint && yarn run unit",
+        "unit": "jest --coverage",
+        "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\""
+    },
+    "dependencies": {
+        "@ironcorelabs/recrypt-node-binding": "^0.11.0",
+        "futurejs": "2.2.1"
+    },
+    "devDependencies": {
+        "@types/inquirer": "^9.0.9",
+        "@types/jest": "^26.0.7",
+        "@types/jsonwebtoken": "^8.5.0",
+        "@types/node": "^20.14.8",
+        "inquirer": "^12.9.2",
+        "jest": "^26.6.0",
+        "jest-extended": "^0.11.5",
+        "jsonwebtoken": "^9.0.0",
+        "shelljs": "^0.8.4",
+        "ts-jest": "^26.5.0",
+        "ts-node": "^8.10.2",
+        "tslint": "^6.1.2",
+        "typescript": "^4.9.5",
+        "typestrict": "^1.0.2"
+    },
+    "resolutions": {
+        "micromatch": "^4.0.8"
+    },
+    "prettier": {
+        "printWidth": 160,
+        "tabWidth": 4,
+        "trailingComma": "es5",
+        "bracketSpacing": false,
+        "jsxBracketSameLine": true,
+        "arrowParens": "always"
+    }
 }
