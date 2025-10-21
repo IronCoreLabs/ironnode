@@ -25,7 +25,8 @@
         "build": "./build.js",
         "test": "yarn run lint && yarn run unit",
         "unit": "jest --coverage",
-        "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\""
+        "lint": "tslint -p \"tsconfig.json\" -e \"**/tests/**\" \"src/**/*.ts\"",
+        "prepublishOnly": "[ -f index.js ] || (echo \"index.js not found. Ensure you're publishing from ./dist.\" && exit 1)"
     },
     "dependencies": {
         "@ironcorelabs/recrypt-node-binding": "^0.11.0",
