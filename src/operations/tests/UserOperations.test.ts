@@ -2,6 +2,7 @@ import Future from "futurejs";
 import UserApi from "../../api/UserApi";
 import {ErrorCodes} from "../../Constants";
 import ApiState from "../../lib/ApiState";
+import * as SDKState from "../../lib/SDKState";
 import * as TestUtils from "../../tests/TestUtils";
 import * as UserCrypto from "../UserCrypto";
 import * as UserOperations from "../UserOperations";
@@ -9,6 +10,11 @@ import * as UserOperations from "../UserOperations";
 describe("UserOperations", () => {
     beforeEach(() => {
         ApiState.setAccountContext(...TestUtils.getTestApiState());
+        SDKState.setSDKInitialized();
+    });
+
+    afterEach(() => {
+        SDKState.clearSDKInitialized();
     });
 
     describe("getUserPublicKeys", () => {
@@ -119,11 +125,12 @@ describe("UserOperations", () => {
             );
         });
 
-        test("clears ApiState when called with no device ID (current-device delete)", (done) => {
+        test("clears ApiState and the init flag when called with no device ID (current-device delete)", (done) => {
             // The server revokes the current device's keys, so leaving them in process
             // memory would let the next SDK call sign with revoked keys and fail with a
             // confusing 401 instead of a clean local error.
             expect(ApiState.accountAndSegmentIDs().accountID).toEqual(TestUtils.testAccountID);
+            expect(SDKState.isSDKInitialized()).toBe(true);
 
             jest.spyOn(UserApi, "callUserDeviceDeleteApi").mockReturnValue(Future.of({id: 99}));
 
@@ -135,6 +142,7 @@ describe("UserOperations", () => {
                     expect(ApiState.accountAndSegmentIDs()).toEqual({accountID: undefined, segmentID: undefined});
                     expect(ApiState.devicePrivateKey()).toBeUndefined();
                     expect(ApiState.signingKeys().privateKey).toBeUndefined();
+                    expect(SDKState.isSDKInitialized()).toBe(false);
                     done();
                 }
             );
@@ -204,12 +212,9 @@ describe("UserOperations", () => {
             );
         });
 
-        test("clears the in-memory account context after a successful disable", (done) => {
-            // Pre-condition: ApiState is populated from the beforeEach. The user's keys are
-            // about to be revoked server-side; leaving them in process memory would let the
-            // next SDK call sign requests with revoked keys and fail with a confusing 401.
-            // Mirror the ironweb v4.4.1 fix (PR #211) by clearing local state on success.
+        test("clears the in-memory account context and init flag after a successful disable", (done) => {
             expect(ApiState.accountAndSegmentIDs().accountID).toEqual(TestUtils.testAccountID);
+            expect(SDKState.isSDKInitialized()).toBe(true);
 
             jest.spyOn(UserApi, "callUserDisableSelfApi").mockReturnValue(
                 Future.of({id: "abc", status: 0, segmentId: 42, userMasterPublicKey: {x: "", y: ""}, needsRotation: false})
@@ -223,6 +228,7 @@ describe("UserOperations", () => {
                     expect(ApiState.signingKeys().privateKey).toBeUndefined();
                     expect(ApiState.accountEncryptedPrivateKey()).toBeUndefined();
                     expect(ApiState.accountPublicKey()).toBeUndefined();
+                    expect(SDKState.isSDKInitialized()).toBe(false);
                     done();
                 }
             );

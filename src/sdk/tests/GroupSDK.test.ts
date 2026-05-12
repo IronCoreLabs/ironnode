@@ -1,8 +1,34 @@
 import Future from "futurejs";
+import * as SDKState from "../../lib/SDKState";
 import * as GroupOperations from "../../operations/GroupOperations";
 import * as GroupSDK from "../GroupSDK";
 
 describe("GroupSDK", () => {
+    beforeEach(() => {
+        SDKState.setSDKInitialized();
+    });
+
+    afterEach(() => {
+        SDKState.clearSDKInitialized();
+    });
+
+    describe("SDK initialization gate", () => {
+        test("throws on every method when the SDK is not initialized", () => {
+            SDKState.clearSDKInitialized();
+            const gid = "group-1";
+            expect(() => GroupSDK.list()).toThrow(/initialize/);
+            expect(() => GroupSDK.get(gid)).toThrow(/initialize/);
+            expect(() => GroupSDK.create()).toThrow(/initialize/);
+            expect(() => GroupSDK.update(gid, {groupName: "n"})).toThrow(/initialize/);
+            expect(() => GroupSDK.rotatePrivateKey(gid)).toThrow(/initialize/);
+            expect(() => GroupSDK.addAdmins(gid, ["u"])).toThrow(/initialize/);
+            expect(() => GroupSDK.removeAdmins(gid, ["u"])).toThrow(/initialize/);
+            expect(() => GroupSDK.addMembers(gid, ["u"])).toThrow(/initialize/);
+            expect(() => GroupSDK.removeMembers(gid, ["u"])).toThrow(/initialize/);
+            expect(() => GroupSDK.deleteGroup(gid)).toThrow(/initialize/);
+        });
+    });
+
     describe("list", () => {
         test("calls list operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "list");

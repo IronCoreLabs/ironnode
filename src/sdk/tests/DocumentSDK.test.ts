@@ -1,8 +1,37 @@
 import Future from "futurejs";
+import * as SDKState from "../../lib/SDKState";
 import * as DocumentOperations from "../../operations/DocumentOperations";
 import * as DocumentSDK from "../DocumentSDK";
 
 describe("DocumentSDK", () => {
+    beforeEach(() => {
+        SDKState.setSDKInitialized();
+    });
+
+    afterEach(() => {
+        SDKState.clearSDKInitialized();
+    });
+
+    describe("SDK initialization gate", () => {
+        test("throws on every method when the SDK is not initialized", () => {
+            SDKState.clearSDKInitialized();
+            const docID = "doc-1";
+            const validBytes = Buffer.alloc(64);
+            expect(() => DocumentSDK.list()).toThrow(/initialize/);
+            expect(() => DocumentSDK.getMetadata(docID)).toThrow(/initialize/);
+            expect(() => DocumentSDK.getDocumentIDFromBytes(validBytes)).toThrow(/initialize/);
+            expect(() => DocumentSDK.getDocumentIDFromStream({} as any)).toThrow(/initialize/);
+            expect(() => DocumentSDK.decryptBytes(docID, validBytes)).toThrow(/initialize/);
+            expect(() => DocumentSDK.encryptBytes(Buffer.from("x"))).toThrow(/initialize/);
+            expect(() => DocumentSDK.encryptStream({} as any, {} as any)).toThrow(/initialize/);
+            expect(() => DocumentSDK.updateEncryptedBytes(docID, Buffer.from("x"))).toThrow(/initialize/);
+            expect(() => DocumentSDK.updateEncryptedStream(docID, {} as any, {} as any)).toThrow(/initialize/);
+            expect(() => DocumentSDK.updateName(docID, "n")).toThrow(/initialize/);
+            expect(() => DocumentSDK.grantAccess(docID, {users: [{id: "u"}]})).toThrow(/initialize/);
+            expect(() => DocumentSDK.revokeAccess(docID, {users: [{id: "u"}]})).toThrow(/initialize/);
+        });
+    });
+
     describe("list", () => {
         test("returns Promise invoking document list", (done) => {
             const spy = jest.spyOn(DocumentOperations, "list");

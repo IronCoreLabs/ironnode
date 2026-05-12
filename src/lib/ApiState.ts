@@ -51,14 +51,15 @@ class ApiState {
      * rather than signing requests with revoked keys.
      */
     clearCurrentUser() {
-        this.accountID = undefined as unknown as string;
-        this.segmentID = undefined as unknown as number;
-        this.currentKeyId = undefined as unknown as number;
-        this.accountPublicKeyBytes = undefined as unknown as PublicKey<Buffer>;
-        this.accountEncryptedPublicKeyBytes = undefined as unknown as PrivateKey<Buffer>;
-        this.publicSigningKey = undefined as unknown as SigningPublicKey<Buffer>;
-        this.privateDeviceKey = undefined as unknown as PrivateKey<Buffer>;
-        this.privateSigningKey = undefined as unknown as PrivateKey<Buffer>;
+        const replacement = new ApiState();
+        this.accountID = replacement.accountID;
+        this.segmentID = replacement.segmentID;
+        this.currentKeyId = replacement.currentKeyId;
+        this.accountPublicKeyBytes = replacement.accountPublicKeyBytes;
+        this.accountEncryptedPublicKeyBytes = replacement.accountEncryptedPublicKeyBytes;
+        this.publicSigningKey = replacement.publicSigningKey;
+        this.privateDeviceKey = replacement.privateDeviceKey;
+        this.privateSigningKey = replacement.privateSigningKey;
     }
 
     /**

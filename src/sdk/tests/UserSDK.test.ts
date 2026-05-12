@@ -1,8 +1,43 @@
 import Future from "futurejs";
+import * as SDKState from "../../lib/SDKState";
 import * as UserOperations from "../../operations/UserOperations";
 import * as UserSDK from "../UserSDK";
 
 describe("UserSDK", () => {
+    beforeEach(() => {
+        SDKState.setSDKInitialized();
+    });
+
+    afterEach(() => {
+        SDKState.clearSDKInitialized();
+    });
+
+    describe("SDK initialization gate", () => {
+        test("throws on every method when the SDK is not initialized", () => {
+            SDKState.clearSDKInitialized();
+            expect(() => UserSDK.getPublicKey("userID")).toThrow(/initialize/);
+            expect(() => UserSDK.listDevices()).toThrow(/initialize/);
+            expect(() => UserSDK.deleteDevice(34)).toThrow(/initialize/);
+            expect(() => UserSDK.rotateMasterKey("password")).toThrow(/initialize/);
+            expect(() => UserSDK.changePassword("a", "b")).toThrow(/initialize/);
+            expect(() => UserSDK.disableSelf()).toThrow(/initialize/);
+        });
+
+        test("disableSelf flips the init flag off on success, so subsequent calls fail locally", (done) => {
+            jest.spyOn(UserOperations, "disableSelf").mockImplementation(() => {
+                SDKState.clearSDKInitialized();
+                return Future.of({} as any);
+            });
+            UserSDK.disableSelf()
+                .then(() => {
+                    expect(SDKState.isSDKInitialized()).toBe(false);
+                    expect(() => UserSDK.listDevices()).toThrow(/initialize/);
+                    done();
+                })
+                .catch((e) => done.fail(e));
+        });
+    });
+
     describe("getPublicKey", () => {
         test("fails if no value provided ", () => {
             expect(() => UserSDK.getPublicKey("")).toThrow();

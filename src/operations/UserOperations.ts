@@ -5,6 +5,7 @@ import {PublicKey} from "../commonTypes";
 import {UserStatus} from "../Constants";
 import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
+import {clearSDKInitialized} from "../lib/SDKState";
 import {getUserIdFromJwt} from "../lib/Utils";
 import * as UserCrypto from "./UserCrypto";
 
@@ -57,6 +58,7 @@ export function deleteUserDevice(deviceID?: number) {
     return UserApi.callUserDeviceDeleteApi(deviceID).map((resp) => {
         if (deviceID === undefined) {
             ApiState.clearCurrentUser();
+            clearSDKInitialized();
         }
         return resp;
     });
@@ -88,6 +90,7 @@ export function rotateMasterKey(password: string): Future<SDKError, {needsRotati
 export function disableSelf(): Future<SDKError, UserUpdateResult> {
     return UserApi.callUserDisableSelfApi().map((resp) => {
         ApiState.clearCurrentUser();
+        clearSDKInitialized();
         return toUserUpdateResult(resp);
     });
 }

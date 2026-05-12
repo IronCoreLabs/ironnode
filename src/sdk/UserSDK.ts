@@ -1,9 +1,11 @@
+import {checkSDKInitialized} from "../lib/SDKState";
 import * as UserOperations from "../operations/UserOperations";
 
 /**
  * Get a list of user public keys given a single user or a list of user IDs.
  */
 export function getPublicKey(users: string | string[]) {
+    checkSDKInitialized();
     if (!users || !users.length) {
         throw new Error("You must provide a user ID or list of users IDs to perform this operation.");
     }
@@ -14,6 +16,7 @@ export function getPublicKey(users: string | string[]) {
  * Get a list of the current users devices. Returns information about the device ID, name, and created/updated times.
  */
 export function listDevices() {
+    checkSDKInitialized();
     return UserOperations.getUserDevices().toPromise();
 }
 
@@ -23,6 +26,7 @@ export function listDevices() {
  * @param {number} deviceID ID of device to delete. Omit to delete the current device.
  */
 export function deleteDevice(deviceID?: number) {
+    checkSDKInitialized();
     if (deviceID && typeof deviceID !== "number") {
         throw new Error(`Invalid device ID provided. Expected a number greater than zero but got ${deviceID}`);
     }
@@ -34,6 +38,7 @@ export function deleteDevice(deviceID?: number) {
  * before performing rotation.
  */
 export function rotateMasterKey(password: string) {
+    checkSDKInitialized();
     return UserOperations.rotateMasterKey(password).toPromise();
 }
 
@@ -41,6 +46,7 @@ export function rotateMasterKey(password: string) {
  * Change the users escrow password.
  */
 export function changePassword(currentPassword: string, newPassword: string) {
+    checkSDKInitialized();
     return UserOperations.changeUsersPassword(currentPassword, newPassword).toPromise();
 }
 
@@ -50,5 +56,6 @@ export function changePassword(currentPassword: string, newPassword: string) {
  * via `User.updateStatus`.
  */
 export function disableSelf() {
+    checkSDKInitialized();
     return UserOperations.disableSelf().toPromise();
 }
