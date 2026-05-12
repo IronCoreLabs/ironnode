@@ -177,8 +177,8 @@ describe("UserOperations", () => {
     });
 
     describe("disableSelf", () => {
-        test("calls status API with Disabled (0) and maps the response", (done) => {
-            jest.spyOn(UserApi, "callUserUpdateStatusApi").mockReturnValue(
+        test("calls status API and maps the response", (done) => {
+            jest.spyOn(UserApi, "callUserDisableSelfApi").mockReturnValue(
                 Future.of({
                     id: "abc",
                     status: 0,
@@ -198,7 +198,7 @@ describe("UserOperations", () => {
                         userMasterPublicKey: {x: "px", y: "py"},
                         needsRotation: false,
                     });
-                    expect(UserApi.callUserUpdateStatusApi).toHaveBeenCalledWith(0);
+                    expect(UserApi.callUserDisableSelfApi).toHaveBeenCalled();
                     done();
                 }
             );
@@ -211,7 +211,7 @@ describe("UserOperations", () => {
             // Mirror the ironweb v4.4.1 fix (PR #211) by clearing local state on success.
             expect(ApiState.accountAndSegmentIDs().accountID).toEqual(TestUtils.testAccountID);
 
-            jest.spyOn(UserApi, "callUserUpdateStatusApi").mockReturnValue(
+            jest.spyOn(UserApi, "callUserDisableSelfApi").mockReturnValue(
                 Future.of({id: "abc", status: 0, segmentId: 42, userMasterPublicKey: {x: "", y: ""}, needsRotation: false})
             );
 
@@ -229,7 +229,7 @@ describe("UserOperations", () => {
         });
 
         test("does not clear the in-memory account context when the API call fails", (done) => {
-            jest.spyOn(UserApi, "callUserUpdateStatusApi").mockReturnValue(Future.reject(new Error("server error")) as any);
+            jest.spyOn(UserApi, "callUserDisableSelfApi").mockReturnValue(Future.reject(new Error("server error")) as any);
 
             UserOperations.disableSelf().engage(
                 () => {

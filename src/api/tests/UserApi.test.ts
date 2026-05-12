@@ -305,9 +305,9 @@ describe("UserApi", () => {
         });
     });
 
-    describe("callUserUpdateStatusApi", () => {
+    describe("callUserDisableSelfApi", () => {
         test("PUTs to users/{accountId} with status body and no private key", (done) => {
-            UserApi.callUserUpdateStatusApi(0).engage(
+            UserApi.callUserDisableSelfApi().engage(
                 (e) => done.fail(e),
                 (res: any) => {
                     expect(res).toEqual({foo: "bar"});

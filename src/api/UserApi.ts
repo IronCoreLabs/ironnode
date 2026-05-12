@@ -2,7 +2,7 @@ import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
 import Future from "futurejs";
 import {DeviceCreateOptions, UserDeviceListResponse} from "../../ironnode";
 import {AugmentationFactor, Base64String, MessageSignature, PrivateKey, PublicKey} from "../commonTypes";
-import {ErrorCodes} from "../Constants";
+import {ErrorCodes, UserStatus} from "../Constants";
 import {computeEd25519PublicKey} from "../crypto/Recrypt";
 import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
@@ -228,38 +228,33 @@ const userUpdateEncryptedPrivateKey = (sign: MessageSignature, accountId: string
     errorCode: ErrorCodes.USER_UPDATE_REQUEST_FAILURE,
 });
 
-/**
- * Update the status of the current user using the SDK's device auth
- */
-const userUpdateStatus = (sign: MessageSignature, accountId: string, status: number) => ({
-    url: `users/${encodeURIComponent(accountId)}`,
-    options: {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: ApiRequest.getAuthHeader(sign),
+const userUpdateInternal = (auth: MessageSignature | string, accountId: string, status: number) => {
+    const authHeader = typeof auth === "string" ? `jwt ${auth}` : ApiRequest.getAuthHeader(auth);
+    return {
+        url: `users/${encodeURIComponent(accountId)}`,
+        options: {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: authHeader,
+            },
+            body: JSON.stringify({status}),
         },
-        body: JSON.stringify({status}),
-    },
-    errorCode: ErrorCodes.USER_UPDATE_STATUS_REQUEST_FAILURE,
-});
+        errorCode: ErrorCodes.USER_UPDATE_STATUS_REQUEST_FAILURE,
+    };
+};
+
+/**
+ * Update the status of the current user using the SDK's device auth. Can only be used
+ * to disable a user. Re-enabling a user must be done with userUpdateStatusByJwt.
+ */
+const userDisableSelf = (sign: MessageSignature, accountId: string) => userUpdateInternal(sign, accountId, UserStatus.Disabled);
 
 /**
  * Update a user's status using JWT auth. Used to enable or disable a user by
  * an admin holding a valid JWT for that user.
  */
-const userUpdateStatusByJwt = (jwt: string, accountId: string, status: number) => ({
-    url: `users/${encodeURIComponent(accountId)}`,
-    options: {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `jwt ${jwt}`,
-        },
-        body: JSON.stringify({status}),
-    },
-    errorCode: ErrorCodes.USER_UPDATE_STATUS_REQUEST_FAILURE,
-});
+const userUpdateStatusByJwt = (jwt: string, accountId: string, status: number) => userUpdateInternal(jwt, accountId, status);
 
 export default {
     /**
@@ -367,11 +362,11 @@ export default {
     },
 
     /**
-     * Update the status of the current SDK user. Used by `disableSelf`.
+     * Update the status of the current SDK user
      */
-    callUserUpdateStatusApi(status: number) {
+    callUserDisableSelfApi() {
         const {accountID} = ApiState.accountAndSegmentIDs();
-        const {url, options, errorCode} = userUpdateStatus(getSignatureHeader(), accountID, status);
+        const {url, options, errorCode} = userDisableSelf(getSignatureHeader(), accountID);
         return ApiRequest.fetchJSON<UserUpdateStatusApiResponse>(url, errorCode, options);
     },
 

@@ -3,14 +3,14 @@ import {UserPublicKeyGetResponse, UserUpdateResult} from "../../ironnode";
 import UserApi, {UserUpdateStatusApiResponse} from "../api/UserApi";
 import {PublicKey} from "../commonTypes";
 import {UserStatus} from "../Constants";
-
-//Narrow write-side type derived from the `UserStatus` constants. Distinct from the public
-//`UserStatus` type in ironnode.d.ts, which is intentionally `number` for forward-compat on reads.
-type UserStatus = typeof UserStatus[keyof typeof UserStatus];
 import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
 import {getUserIdFromJwt} from "../lib/Utils";
 import * as UserCrypto from "./UserCrypto";
+
+// Narrow write-side type derived from the `UserStatus` constants. Distinct from the public
+// `UserStatus` type in ironnode.d.ts, which is intentionally `number` for forward-compat on reads.
+type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
 const toUserUpdateResult = (resp: UserUpdateStatusApiResponse): UserUpdateResult => ({
     accountID: resp.id,
@@ -86,7 +86,7 @@ export function rotateMasterKey(password: string): Future<SDKError, {needsRotati
  * now-revoked keys.
  */
 export function disableSelf(): Future<SDKError, UserUpdateResult> {
-    return UserApi.callUserUpdateStatusApi(UserStatus.Disabled).map((resp) => {
+    return UserApi.callUserDisableSelfApi().map((resp) => {
         ApiState.clearCurrentUser();
         return toUserUpdateResult(resp);
     });
