@@ -6,7 +6,7 @@ import * as Initialization from "./sdk/Initialization";
 import * as UserOperations from "./operations/UserOperations";
 
 // Narrow write-side type derived from the `UserStatus` constants. Distinct from the public
-// `UserStatus` type in ironnode.d.ts, which is intentionally `number` for forward-compatability on reads.
+// `UserStatus` type in ironnode.d.ts, which is intentionally `number` for forward-compatibility on reads.
 type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
 /**
