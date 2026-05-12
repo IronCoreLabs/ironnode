@@ -1,7 +1,13 @@
 import {DeviceCreateOptions, UserCreateOptions} from "../ironnode";
 import {Base64String} from "./commonTypes";
+import {UserStatus} from "./Constants";
 import * as Utils from "./lib/Utils";
 import * as Initialization from "./sdk/Initialization";
+import * as UserOperations from "./operations/UserOperations";
+
+// Narrow write-side type derived from the `UserStatus` constants. Distinct from the public
+// `UserStatus` type in ironnode.d.ts, which is intentionally `number` for forward-compatability on reads.
+type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
 /**
  * Initialize the Node SDK by providing account information necessary to run operations from a server side context. Returns a Promise which
@@ -54,7 +60,28 @@ export const User = {
     generateDeviceKeys(jwt: string, password: string, deviceOptions: DeviceCreateOptions = {deviceName: ""}) {
         return Initialization.generateDevice(jwt, password, deviceOptions).toPromise();
     },
+    /**
+     * Enable or disable a user identified by the provided signed JWT. The user ID is read from the JWT's `sub` claim. The server validates
+     * the JWT signature; clients holding a valid JWT for a user may flip that user's status between `UserStatus.Disabled` and `UserStatus.Enabled`.
+     * @param {string}     jwt    Signed JWT for the user whose status is being updated
+     * @param {UserStatus} status Desired status (`UserStatus.Disabled` or `UserStatus.Enabled`)
+     */
+    updateStatus(jwt: string, status: UserStatus) {
+        if (typeof jwt !== "string" || !jwt.length) {
+            throw new Error("Expected a non-empty JWT string.");
+        }
+        // Runtime guard for callers using `as any` to bypass the literal-union parameter type.
+        if (status !== UserStatus.Disabled && status !== UserStatus.Enabled) {
+            throw new Error(`Invalid user status '${status}'. Expected UserStatus.Disabled (0) or UserStatus.Enabled (1).`);
+        }
+        return UserOperations.updateUserStatus(jwt, status).toPromise();
+    },
 };
+
+/**
+ * User status constants. Used with `User.updateStatus` to enable or disable a user.
+ */
+export {UserStatus};
 
 /**
  * List of SDK Error Codes

@@ -79,6 +79,20 @@ describe("UserSDK", () => {
         });
     });
 
+    describe("disableSelf", () => {
+        test("calls UserOperations.disableSelf and forwards the result", (done) => {
+            const spy = jest.spyOn(UserOperations, "disableSelf");
+            spy.mockReturnValue(Future.of("disabled") as any);
+            UserSDK.disableSelf()
+                .then((resp) => {
+                    expect(resp).toEqual("disabled");
+                    expect(UserOperations.disableSelf).toHaveBeenCalledWith();
+                    done();
+                })
+                .catch((e) => done.fail(e));
+        });
+    });
+
     describe("changePassword", () => {
         test("should call into UserOperations", () => {
             const spy = jest.spyOn(UserOperations, "changeUsersPassword");

@@ -46,6 +46,22 @@ class ApiState {
     }
 
     /**
+     * Wipe the in-memory account context. Used after operations that revoke the current
+     * device (`disableSelf`, current-device delete). Subsequent SDK calls fail locally
+     * rather than signing requests with revoked keys.
+     */
+    clearCurrentUser() {
+        this.accountID = undefined as unknown as string;
+        this.segmentID = undefined as unknown as number;
+        this.currentKeyId = undefined as unknown as number;
+        this.accountPublicKeyBytes = undefined as unknown as PublicKey<Buffer>;
+        this.accountEncryptedPublicKeyBytes = undefined as unknown as PrivateKey<Buffer>;
+        this.publicSigningKey = undefined as unknown as SigningPublicKey<Buffer>;
+        this.privateDeviceKey = undefined as unknown as PrivateKey<Buffer>;
+        this.privateSigningKey = undefined as unknown as PrivateKey<Buffer>;
+    }
+
+    /**
      * Return the public key of the account being used.
      */
     accountPublicKey() {

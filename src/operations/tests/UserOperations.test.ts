@@ -1,5 +1,6 @@
 import Future from "futurejs";
 import UserApi from "../../api/UserApi";
+import {ErrorCodes} from "../../Constants";
 import ApiState from "../../lib/ApiState";
 import * as TestUtils from "../../tests/TestUtils";
 import * as UserCrypto from "../UserCrypto";
@@ -102,6 +103,54 @@ describe("UserOperations", () => {
                 }
             );
         });
+
+        test("does not clear ApiState when deleting an arbitrary device by ID", (done) => {
+            // Deleting a different device must not revoke the current session, so the
+            // local keys remain intact and subsequent SDK calls keep working.
+            jest.spyOn(UserApi, "callUserDeviceDeleteApi").mockReturnValue(Future.of({id: 352}));
+
+            UserOperations.deleteUserDevice(352).engage(
+                (e) => done.fail(e),
+                () => {
+                    expect(ApiState.accountAndSegmentIDs().accountID).toEqual(TestUtils.testAccountID);
+                    expect(ApiState.devicePrivateKey()).toEqual(TestUtils.devicePrivateBytes);
+                    done();
+                }
+            );
+        });
+
+        test("clears ApiState when called with no device ID (current-device delete)", (done) => {
+            // The server revokes the current device's keys, so leaving them in process
+            // memory would let the next SDK call sign with revoked keys and fail with a
+            // confusing 401 instead of a clean local error.
+            expect(ApiState.accountAndSegmentIDs().accountID).toEqual(TestUtils.testAccountID);
+
+            jest.spyOn(UserApi, "callUserDeviceDeleteApi").mockReturnValue(Future.of({id: 99}));
+
+            UserOperations.deleteUserDevice().engage(
+                (e) => done.fail(e),
+                (result: any) => {
+                    expect(result).toEqual({id: 99});
+                    expect(UserApi.callUserDeviceDeleteApi).toHaveBeenCalledWith(undefined);
+                    expect(ApiState.accountAndSegmentIDs()).toEqual({accountID: undefined, segmentID: undefined});
+                    expect(ApiState.devicePrivateKey()).toBeUndefined();
+                    expect(ApiState.signingKeys().privateKey).toBeUndefined();
+                    done();
+                }
+            );
+        });
+
+        test("does not clear ApiState when the current-device delete API call fails", (done) => {
+            jest.spyOn(UserApi, "callUserDeviceDeleteApi").mockReturnValue(Future.reject(new Error("server error")) as any);
+
+            UserOperations.deleteUserDevice().engage(
+                () => {
+                    expect(ApiState.accountAndSegmentIDs().accountID).toEqual(TestUtils.testAccountID);
+                    done();
+                },
+                () => done.fail("Expected deleteUserDevice to fail when the API rejects")
+            );
+        });
     });
 
     describe("rotateMasterKey", () => {
@@ -123,6 +172,130 @@ describe("UserOperations", () => {
                     expect(resp).toEqual({needsRotation: false});
                     expect(ApiState.accountEncryptedPrivateKey()).toEqual(Buffer.from([1, 2, 3]));
                 }
+            );
+        });
+    });
+
+    describe("disableSelf", () => {
+        test("calls status API with Disabled (0) and maps the response", (done) => {
+            jest.spyOn(UserApi, "callUserUpdateStatusApi").mockReturnValue(
+                Future.of({
+                    id: "abc",
+                    status: 0,
+                    segmentId: 42,
+                    userMasterPublicKey: {x: "px", y: "py"},
+                    needsRotation: false,
+                })
+            );
+
+            UserOperations.disableSelf().engage(
+                (e) => done.fail(e),
+                (res) => {
+                    expect(res).toEqual({
+                        accountID: "abc",
+                        segmentID: 42,
+                        status: 0,
+                        userMasterPublicKey: {x: "px", y: "py"},
+                        needsRotation: false,
+                    });
+                    expect(UserApi.callUserUpdateStatusApi).toHaveBeenCalledWith(0);
+                    done();
+                }
+            );
+        });
+
+        test("clears the in-memory account context after a successful disable", (done) => {
+            // Pre-condition: ApiState is populated from the beforeEach. The user's keys are
+            // about to be revoked server-side; leaving them in process memory would let the
+            // next SDK call sign requests with revoked keys and fail with a confusing 401.
+            // Mirror the ironweb v4.4.1 fix (PR #211) by clearing local state on success.
+            expect(ApiState.accountAndSegmentIDs().accountID).toEqual(TestUtils.testAccountID);
+
+            jest.spyOn(UserApi, "callUserUpdateStatusApi").mockReturnValue(
+                Future.of({id: "abc", status: 0, segmentId: 42, userMasterPublicKey: {x: "", y: ""}, needsRotation: false})
+            );
+
+            UserOperations.disableSelf().engage(
+                (e) => done.fail(e),
+                () => {
+                    expect(ApiState.accountAndSegmentIDs()).toEqual({accountID: undefined, segmentID: undefined});
+                    expect(ApiState.devicePrivateKey()).toBeUndefined();
+                    expect(ApiState.signingKeys().privateKey).toBeUndefined();
+                    expect(ApiState.accountEncryptedPrivateKey()).toBeUndefined();
+                    expect(ApiState.accountPublicKey()).toBeUndefined();
+                    done();
+                }
+            );
+        });
+
+        test("does not clear the in-memory account context when the API call fails", (done) => {
+            jest.spyOn(UserApi, "callUserUpdateStatusApi").mockReturnValue(Future.reject(new Error("server error")) as any);
+
+            UserOperations.disableSelf().engage(
+                () => {
+                    expect(ApiState.accountAndSegmentIDs().accountID).toEqual(TestUtils.testAccountID);
+                    done();
+                },
+                () => done.fail("Expected disableSelf to fail when the API rejects")
+            );
+        });
+    });
+
+    describe("updateUserStatus", () => {
+        const buildJwt = (claims: object) => {
+            const header = Buffer.from(JSON.stringify({alg: "ES256", typ: "JWT"})).toString("base64url");
+            const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
+            return `${header}.${payload}.sig`;
+        };
+
+        test("extracts user ID from JWT sub claim and calls API", (done) => {
+            const jwt = buildJwt({sub: "user-from-jwt", pid: 1, sid: "seg"});
+            jest.spyOn(UserApi, "callUserUpdateStatusByJwtApi").mockReturnValue(
+                Future.of({
+                    id: "user-from-jwt",
+                    status: 1,
+                    segmentId: 7,
+                    userMasterPublicKey: {x: "x", y: "y"},
+                    needsRotation: false,
+                })
+            );
+
+            UserOperations.updateUserStatus(jwt, 1).engage(
+                (e) => done.fail(e),
+                (res) => {
+                    expect(res).toEqual({
+                        accountID: "user-from-jwt",
+                        segmentID: 7,
+                        status: 1,
+                        userMasterPublicKey: {x: "x", y: "y"},
+                        needsRotation: false,
+                    });
+                    expect(UserApi.callUserUpdateStatusByJwtApi).toHaveBeenCalledWith(jwt, "user-from-jwt", 1);
+                    done();
+                }
+            );
+        });
+
+        test("rejects with JWT_FORMAT_FAILURE when JWT cannot be parsed", (done) => {
+            UserOperations.updateUserStatus("not-a-jwt", 0).engage(
+                (e) => {
+                    expect(e.message).toMatch(/Invalid JWT/);
+                    expect(e.code).toEqual(ErrorCodes.JWT_FORMAT_FAILURE);
+                    done();
+                },
+                () => done.fail("Expected updateUserStatus to fail for malformed JWT")
+            );
+        });
+
+        test("rejects with JWT_FORMAT_FAILURE when JWT is missing sub claim", (done) => {
+            const jwt = buildJwt({pid: 1});
+            UserOperations.updateUserStatus(jwt, 0).engage(
+                (e) => {
+                    expect(e.message).toMatch(/Invalid JWT/);
+                    expect(e.code).toEqual(ErrorCodes.JWT_FORMAT_FAILURE);
+                    done();
+                },
+                () => done.fail("Expected updateUserStatus to fail when sub is missing")
             );
         });
     });

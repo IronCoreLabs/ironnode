@@ -1,3 +1,5 @@
+import {ErrorCodes} from "../../Constants";
+import SDKError from "../SDKError";
 import * as Utils from "../Utils";
 import * as TestUtils from "../../tests/TestUtils";
 
@@ -91,6 +93,46 @@ describe("Utils", () => {
         test("clears out empty values when asked to", () => {
             expect(Utils.dedupeArray([""], true)).toEqual([]);
             expect(Utils.dedupeArray(["", "", "", ""], true)).toEqual([]);
+        });
+    });
+
+    describe("getUserIdFromJwt", () => {
+        const makeJwt = (claims: object) => {
+            const header = Buffer.from(JSON.stringify({alg: "ES256", typ: "JWT"})).toString("base64url");
+            const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
+            return `${header}.${payload}.sig`;
+        };
+
+        test("returns the sub claim from a well-formed JWT", () => {
+            expect(Utils.getUserIdFromJwt(makeJwt({sub: "user-1", pid: 1, sid: "seg"}))).toEqual("user-1");
+        });
+
+        const expectJwtFormatFailure = (result: string | SDKError) => {
+            expect(result).toBeInstanceOf(SDKError);
+            expect((result as SDKError).code).toEqual(ErrorCodes.JWT_FORMAT_FAILURE);
+        };
+
+        test("returns a JWT_FORMAT_FAILURE SDKError when JWT is empty or not a string", () => {
+            expectJwtFormatFailure(Utils.getUserIdFromJwt(""));
+            expectJwtFormatFailure(Utils.getUserIdFromJwt(null as any));
+        });
+
+        test("returns a JWT_FORMAT_FAILURE SDKError when JWT does not have three segments", () => {
+            expectJwtFormatFailure(Utils.getUserIdFromJwt("only.two"));
+            expectJwtFormatFailure(Utils.getUserIdFromJwt("a.b.c.d"));
+        });
+
+        test("returns a JWT_FORMAT_FAILURE SDKError when JWT payload is not valid JSON", () => {
+            const header = Buffer.from("{}").toString("base64url");
+            const garbage = Buffer.from("not-json").toString("base64url");
+            expectJwtFormatFailure(Utils.getUserIdFromJwt(`${header}.${garbage}.sig`));
+        });
+
+        test("returns a JWT_FORMAT_FAILURE SDKError when sub claim is missing or empty", () => {
+            const missing = Utils.getUserIdFromJwt(makeJwt({pid: 1}));
+            expectJwtFormatFailure(missing);
+            expect((missing as SDKError).message).toMatch(/'sub' claim/);
+            expectJwtFormatFailure(Utils.getUserIdFromJwt(makeJwt({sub: ""})));
         });
     });
 

@@ -15,6 +15,13 @@ interface UserUpdateApiResponse {
     userPrivateKey: PrivateKey<Base64String>;
     userMasterPublicKey: PublicKey<Base64String>;
 }
+export interface UserUpdateStatusApiResponse {
+    id: string;
+    status: number;
+    segmentId: number;
+    userMasterPublicKey: PublicKey<Base64String>;
+    needsRotation: boolean;
+}
 interface ApiUserResponse extends UserUpdateApiResponse {
     segmentId: number;
     needsRotation: boolean;
@@ -221,6 +228,39 @@ const userUpdateEncryptedPrivateKey = (sign: MessageSignature, accountId: string
     errorCode: ErrorCodes.USER_UPDATE_REQUEST_FAILURE,
 });
 
+/**
+ * Update the status of the current user using the SDK's device auth
+ */
+const userUpdateStatus = (sign: MessageSignature, accountId: string, status: number) => ({
+    url: `users/${encodeURIComponent(accountId)}`,
+    options: {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: ApiRequest.getAuthHeader(sign),
+        },
+        body: JSON.stringify({status}),
+    },
+    errorCode: ErrorCodes.USER_UPDATE_STATUS_REQUEST_FAILURE,
+});
+
+/**
+ * Update a user's status using JWT auth. Used to enable or disable a user by
+ * an admin holding a valid JWT for that user.
+ */
+const userUpdateStatusByJwt = (jwt: string, accountId: string, status: number) => ({
+    url: `users/${encodeURIComponent(accountId)}`,
+    options: {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `jwt ${jwt}`,
+        },
+        body: JSON.stringify({status}),
+    },
+    errorCode: ErrorCodes.USER_UPDATE_STATUS_REQUEST_FAILURE,
+});
+
 export default {
     /**
      * API method to get the master public key for the user who the SDK is acting as.
@@ -324,5 +364,23 @@ export default {
         const {accountID} = ApiState.accountAndSegmentIDs();
         const {url, options, errorCode} = userDeviceDelete(getSignatureHeader(), accountID, deviceID);
         return ApiRequest.fetchJSON<{id: number}>(url, errorCode, options);
+    },
+
+    /**
+     * Update the status of the current SDK user. Used by `disableSelf`.
+     */
+    callUserUpdateStatusApi(status: number) {
+        const {accountID} = ApiState.accountAndSegmentIDs();
+        const {url, options, errorCode} = userUpdateStatus(getSignatureHeader(), accountID, status);
+        return ApiRequest.fetchJSON<UserUpdateStatusApiResponse>(url, errorCode, options);
+    },
+
+    /**
+     * Update a user's status using JWT auth. The account ID is derived from
+     * the JWT's `sub` claim and used in the request URL.
+     */
+    callUserUpdateStatusByJwtApi(jwt: string, accountID: string, status: number) {
+        const {url, options, errorCode} = userUpdateStatusByJwt(jwt, accountID, status);
+        return ApiRequest.fetchJSON<UserUpdateStatusApiResponse>(url, errorCode, options);
     },
 };

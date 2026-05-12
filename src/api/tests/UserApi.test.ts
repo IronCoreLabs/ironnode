@@ -305,6 +305,52 @@ describe("UserApi", () => {
         });
     });
 
+    describe("callUserUpdateStatusApi", () => {
+        test("PUTs to users/{accountId} with status body and no private key", (done) => {
+            UserApi.callUserUpdateStatusApi(0).engage(
+                (e) => done.fail(e),
+                (res: any) => {
+                    expect(res).toEqual({foo: "bar"});
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(`users/${TestUtils.testAccountID}`, jasmine.any(Number), jasmine.any(Object));
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.method).toEqual("PUT");
+                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+                    const body = JSON.parse(request.body);
+                    expect(body).toEqual({status: 0});
+                    expect(body).not.toHaveProperty("userPrivateKey");
+                    done();
+                }
+            );
+        });
+    });
+
+    describe("callUserUpdateStatusByJwtApi", () => {
+        test("PUTs to users/{accountId} with status body and JWT auth", (done) => {
+            UserApi.callUserUpdateStatusByJwtApi("the.jwt.token", "target-user", 1).engage(
+                (e) => done.fail(e),
+                (res: any) => {
+                    expect(res).toEqual({foo: "bar"});
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("users/target-user", jasmine.any(Number), jasmine.any(Object));
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.method).toEqual("PUT");
+                    expect(request.headers.Authorization).toEqual("jwt the.jwt.token");
+                    expect(JSON.parse(request.body)).toEqual({status: 1});
+                    done();
+                }
+            );
+        });
+
+        test("URL-encodes the account ID", (done) => {
+            UserApi.callUserUpdateStatusByJwtApi("jwt", "user/with:special#chars", 0).engage(
+                (e) => done.fail(e),
+                () => {
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith("users/user%2Fwith%3Aspecial%23chars", jasmine.any(Number), jasmine.any(Object));
+                    done();
+                }
+            );
+        });
+    });
+
     describe("callUserDeviceDeleteApi", () => {
         test("calls delete API and returns response", (done) => {
             const deviceDeleteResult = {id: 35352};

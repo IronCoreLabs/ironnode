@@ -28,6 +28,11 @@ export const UserAndGroupTypes = {
     GROUP: "group",
 };
 
+export const UserStatus = {
+    Disabled: 0,
+    Enabled: 1,
+} as const;
+
 export const ErrorCodes = {
     INITIALIZE_INVALID_ACCOUNT_ID: 100,
     USER_VERIFY_API_REQUEST_FAILURE: 200,
@@ -43,6 +48,8 @@ export const ErrorCodes = {
     USER_PRIVATE_KEY_ROTATION_FAILURE: 211,
     USER_UPDATE_REQUEST_FAILURE: 212,
     USER_PASSCODE_CHANGE_FAILURE: 213,
+    USER_UPDATE_STATUS_REQUEST_FAILURE: 214,
+    JWT_FORMAT_FAILURE: 215,
     DOCUMENT_LIST_REQUEST_FAILURE: 300,
     DOCUMENT_GET_REQUEST_FAILURE: 301,
     DOCUMENT_CREATE_REQUEST_FAILURE: 302,

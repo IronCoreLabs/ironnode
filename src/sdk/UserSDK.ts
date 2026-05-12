@@ -43,3 +43,12 @@ export function rotateMasterKey(password: string) {
 export function changePassword(currentPassword: string, newPassword: string) {
     return UserOperations.changeUsersPassword(currentPassword, newPassword).toPromise();
 }
+
+/**
+ * Disable the currently authenticated user. The user remains in any groups
+ * they belonged to but cannot call SDK functions until an admin re-enables them
+ * via `User.updateStatus`.
+ */
+export function disableSelf() {
+    return UserOperations.disableSelf().toPromise();
+}
