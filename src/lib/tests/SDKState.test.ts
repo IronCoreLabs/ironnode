@@ -1,3 +1,5 @@
+import {ErrorCodes} from "../../Constants";
+import SDKError from "../SDKError";
 import * as SDKState from "../SDKState";
 
 describe("SDKState", () => {
@@ -26,8 +28,15 @@ describe("SDKState", () => {
             expect(() => SDKState.checkSDKInitialized()).not.toThrow();
         });
 
-        test("throws when not initialized", () => {
-            expect(() => SDKState.checkSDKInitialized()).toThrow(/initialize/);
+        test("throws an SDKError with code SDK_NOT_INITIALIZED when not initialized", () => {
+            try {
+                SDKState.checkSDKInitialized();
+                fail("Expected checkSDKInitialized to throw");
+            } catch (e) {
+                expect(e).toBeInstanceOf(SDKError);
+                expect((e as SDKError).code).toEqual(ErrorCodes.SDK_NOT_INITIALIZED);
+                expect((e as SDKError).message).toMatch(/initialize/);
+            }
         });
     });
 });

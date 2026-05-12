@@ -5,10 +5,6 @@ import * as Utils from "./lib/Utils";
 import * as Initialization from "./sdk/Initialization";
 import * as UserOperations from "./operations/UserOperations";
 
-// Narrow write-side type derived from the `UserStatus` constants. Distinct from the public
-// `UserStatus` type in ironnode.d.ts, which is intentionally `number` for forward-compatibility on reads.
-type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
-
 /**
  * Initialize the Node SDK by providing account information necessary to run operations from a server side context. Returns a Promise which
  * will resolve with the IronWeb Node SDK object.

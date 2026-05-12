@@ -13,20 +13,17 @@ describe("GroupSDK", () => {
     });
 
     describe("SDK initialization gate", () => {
-        test("throws on every method when the SDK is not initialized", () => {
-            SDKState.clearSDKInitialized();
-            const gid = "group-1";
-            expect(() => GroupSDK.list()).toThrow(/initialize/);
-            expect(() => GroupSDK.get(gid)).toThrow(/initialize/);
-            expect(() => GroupSDK.create()).toThrow(/initialize/);
-            expect(() => GroupSDK.update(gid, {groupName: "n"})).toThrow(/initialize/);
-            expect(() => GroupSDK.rotatePrivateKey(gid)).toThrow(/initialize/);
-            expect(() => GroupSDK.addAdmins(gid, ["u"])).toThrow(/initialize/);
-            expect(() => GroupSDK.removeAdmins(gid, ["u"])).toThrow(/initialize/);
-            expect(() => GroupSDK.addMembers(gid, ["u"])).toThrow(/initialize/);
-            expect(() => GroupSDK.removeMembers(gid, ["u"])).toThrow(/initialize/);
-            expect(() => GroupSDK.deleteGroup(gid)).toThrow(/initialize/);
-        });
+        // Iterates over every exported function so new SDK methods are automatically
+        // covered. If a method is added without a `checkSDKInitialized()` guard, this
+        // test fails for that method by name.
+        Object.entries(GroupSDK)
+            .filter(([, fn]) => typeof fn === "function")
+            .forEach(([name, fn]) => {
+                test(`${name} throws when SDK is not initialized`, () => {
+                    SDKState.clearSDKInitialized();
+                    expect(() => (fn as (...args: any[]) => unknown)()).toThrow(/initialize/);
+                });
+            });
     });
 
     describe("list", () => {

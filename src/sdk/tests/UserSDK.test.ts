@@ -13,15 +13,17 @@ describe("UserSDK", () => {
     });
 
     describe("SDK initialization gate", () => {
-        test("throws on every method when the SDK is not initialized", () => {
-            SDKState.clearSDKInitialized();
-            expect(() => UserSDK.getPublicKey("userID")).toThrow(/initialize/);
-            expect(() => UserSDK.listDevices()).toThrow(/initialize/);
-            expect(() => UserSDK.deleteDevice(34)).toThrow(/initialize/);
-            expect(() => UserSDK.rotateMasterKey("password")).toThrow(/initialize/);
-            expect(() => UserSDK.changePassword("a", "b")).toThrow(/initialize/);
-            expect(() => UserSDK.disableSelf()).toThrow(/initialize/);
-        });
+        // Iterates over every exported function so new SDK methods are automatically
+        // covered. If a method is added without a `checkSDKInitialized()` guard, this
+        // test fails for that method by name.
+        Object.entries(UserSDK)
+            .filter(([, fn]) => typeof fn === "function")
+            .forEach(([name, fn]) => {
+                test(`${name} throws when SDK is not initialized`, () => {
+                    SDKState.clearSDKInitialized();
+                    expect(() => (fn as (...args: any[]) => unknown)()).toThrow(/initialize/);
+                });
+            });
 
         test("disableSelf flips the init flag off on success, so subsequent calls fail locally", (done) => {
             jest.spyOn(UserOperations, "disableSelf").mockImplementation(() => {

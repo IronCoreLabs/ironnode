@@ -33,8 +33,13 @@ export const UserStatus = {
     Enabled: 1,
 } as const;
 
+// Narrow write-side type derived from the `UserStatus` constants. Distinct from the public
+// `UserStatus` type in ironnode.d.ts, which is intentionally `number` for forward-compat on reads.
+export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
+
 export const ErrorCodes = {
     INITIALIZE_INVALID_ACCOUNT_ID: 100,
+    SDK_NOT_INITIALIZED: 101,
     USER_VERIFY_API_REQUEST_FAILURE: 200,
     USER_CREATE_REQUEST_FAILURE: 201,
     USER_PASSCODE_INCORRECT: 203,

@@ -1,3 +1,6 @@
+import {ErrorCodes} from "../Constants";
+import SDKError from "./SDKError";
+
 /**
  * Public-surface initialization flag. Kept separate from `ApiState` (which stores the
  * cryptographic context with definite-assignment types) so the lifecycle gate at the
@@ -22,8 +25,11 @@ export function isSDKInitialized(): boolean {
 
 export function checkSDKInitialized(): void {
     if (!hasInitializedSDK) {
-        throw new Error(
-            'SDK is not initialized. Either `initialize()` has not been called, or this session was terminated by `disableSelf()` or by deleting the current device.'
+        throw new SDKError(
+            new Error(
+                "SDK is not initialized. Either `initialize()` has not been called, or this session was terminated by `disableSelf()` or by deleting the current device."
+            ),
+            ErrorCodes.SDK_NOT_INITIALIZED
         );
     }
 }

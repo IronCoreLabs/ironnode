@@ -1,4 +1,5 @@
 import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
+import Future from "futurejs";
 import {PublicKey, Base64String, DocumentHeader} from "../commonTypes";
 import {
     AES_IV_LENGTH,
@@ -79,11 +80,11 @@ export function dedupeArray(list: string[], clearEmptyValues: boolean = false) {
 /**
  * Extract the user/account ID (the `sub` claim) from a signed JWT. Signature
  * verification is left to the IronCore backend; this only parses the payload.
- * Returns the parsed user ID on success, or an `SDKError` (with code
- * `JWT_FORMAT_FAILURE`) on failure.
+ * Resolves with the parsed user ID on success, or rejects with an `SDKError`
+ * (code `JWT_FORMAT_FAILURE`) on failure.
  */
-export function getUserIdFromJwt(jwtToken: string): string | SDKError {
-    const fail = (message: string) => new SDKError(new Error(message), ErrorCodes.JWT_FORMAT_FAILURE);
+export function getUserIdFromJwt(jwtToken: string): Future<SDKError, string> {
+    const fail = (message: string): Future<SDKError, string> => Future.reject(new SDKError(new Error(message), ErrorCodes.JWT_FORMAT_FAILURE));
     if (typeof jwtToken !== "string" || !jwtToken.length) {
         return fail("Invalid JWT provided.");
     }
@@ -100,7 +101,7 @@ export function getUserIdFromJwt(jwtToken: string): string | SDKError {
     if (typeof payload.sub !== "string" || !payload.sub.length) {
         return fail("Invalid JWT provided. Missing 'sub' claim.");
     }
-    return payload.sub;
+    return Future.of(payload.sub);
 }
 
 /**

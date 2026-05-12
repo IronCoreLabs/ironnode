@@ -9,10 +9,6 @@ import {clearSDKInitialized} from "../lib/SDKState";
 import {getUserIdFromJwt} from "../lib/Utils";
 import * as UserCrypto from "./UserCrypto";
 
-// Narrow write-side type derived from the `UserStatus` constants. Distinct from the public
-// `UserStatus` type in ironnode.d.ts, which is intentionally `number` for forward-compat on reads.
-type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
-
 const toUserUpdateResult = (resp: UserUpdateStatusApiResponse): UserUpdateResult => ({
     accountID: resp.id,
     segmentID: resp.segmentId,
@@ -100,11 +96,7 @@ export function disableSelf(): Future<SDKError, UserUpdateResult> {
  * extracted from the JWT's `sub` claim.
  */
 export function updateUserStatus(jwt: string, status: UserStatus): Future<SDKError, UserUpdateResult> {
-    const accountID = getUserIdFromJwt(jwt);
-    if (accountID instanceof SDKError) {
-        return Future.reject(accountID);
-    }
-    return UserApi.callUserUpdateStatusByJwtApi(jwt, accountID, status).map(toUserUpdateResult);
+    return getUserIdFromJwt(jwt).flatMap((accountID) => UserApi.callUserUpdateStatusByJwtApi(jwt, accountID, status).map(toUserUpdateResult));
 }
 
 /**
