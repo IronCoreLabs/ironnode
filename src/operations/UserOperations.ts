@@ -1,10 +1,21 @@
 import Future from "futurejs";
-import {UserPublicKeyGetResponse} from "../../ironnode";
-import UserApi from "../api/UserApi";
+import {UserPublicKeyGetResponse, UserUpdateResult} from "../../ironnode";
+import UserApi, {UserUpdateStatusApiResponse} from "../api/UserApi";
 import {PublicKey} from "../commonTypes";
+import {UserStatus} from "../Constants";
 import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
+import {clearSDKInitialized} from "../lib/SDKState";
+import {getUserIdFromJwt} from "../lib/Utils";
 import * as UserCrypto from "./UserCrypto";
+
+const toUserUpdateResult = (resp: UserUpdateStatusApiResponse): UserUpdateResult => ({
+    accountID: resp.id,
+    segmentID: resp.segmentId,
+    status: resp.status,
+    userMasterPublicKey: resp.userMasterPublicKey,
+    needsRotation: resp.needsRotation,
+});
 
 /**
  * Get a list of all groups that the current user is either a member or admin of.
@@ -12,10 +23,13 @@ import * as UserCrypto from "./UserCrypto";
 export function getUserPublicKeys(userList: string[]): Future<SDKError, UserPublicKeyGetResponse> {
     return UserApi.callUserKeyListApi(userList).map((keyList) => {
         //First convert the API public keys response into a key/value format of userID/public key
-        const publicKeysById = keyList.result.reduce((list, userKey) => {
-            list[userKey.id] = userKey.userMasterPublicKey;
-            return list;
-        }, {} as {[key: string]: PublicKey<string>});
+        const publicKeysById = keyList.result.reduce(
+            (list, userKey) => {
+                list[userKey.id] = userKey.userMasterPublicKey;
+                return list;
+            },
+            {} as {[key: string]: PublicKey<string>}
+        );
         //Then iterate through the requested list of IDs to fill in the ones that didn't exist
         return userList.reduce((fullListResponse: {[key: string]: PublicKey<string> | null}, requestedUserID) => {
             if (!fullListResponse[requestedUserID]) {
@@ -37,7 +51,13 @@ export function getUserDevices() {
  * Delete device keys from the users account given the ID or omit to delete the device used to make the delete request.
  */
 export function deleteUserDevice(deviceID?: number) {
-    return UserApi.callUserDeviceDeleteApi(deviceID);
+    return UserApi.callUserDeviceDeleteApi(deviceID).map((resp) => {
+        if (deviceID === undefined) {
+            ApiState.clearCurrentUser();
+            clearSDKInitialized();
+        }
+        return resp;
+    });
 }
 
 /**
@@ -52,6 +72,31 @@ export function rotateMasterKey(password: string): Future<SDKError, {needsRotati
             return {needsRotation};
         })
     );
+}
+
+/**
+ * Disable the currently authenticated user. The user will remain a member of any
+ * groups but will be unable to call SDK functions. Users cannot re-enable
+ * themselves; an admin must call `updateUserStatus` with a valid JWT.
+ *
+ * The server revokes this device on success, so the local account context is
+ * cleared to prevent subsequent SDK calls from signing requests with the
+ * now-revoked keys.
+ */
+export function disableSelf(): Future<SDKError, UserUpdateResult> {
+    return UserApi.callUserDisableSelfApi().map((resp) => {
+        ApiState.clearCurrentUser();
+        clearSDKInitialized();
+        return toUserUpdateResult(resp);
+    });
+}
+
+/**
+ * Enable or disable a user identified by the provided JWT. The user ID is
+ * extracted from the JWT's `sub` claim.
+ */
+export function updateUserStatus(jwt: string, status: UserStatus): Future<SDKError, UserUpdateResult> {
+    return getUserIdFromJwt(jwt).flatMap((accountID) => UserApi.callUserUpdateStatusByJwtApi(jwt, accountID, status).map(toUserUpdateResult));
 }
 
 /**

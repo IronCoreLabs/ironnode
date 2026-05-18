@@ -1,5 +1,6 @@
 import Future from "futurejs";
 import * as IronNode from "../index";
+import * as UserOperations from "../operations/UserOperations";
 import * as Initialization from "../sdk/Initialization";
 
 describe("IronNode", () => {
@@ -65,6 +66,37 @@ describe("IronNode", () => {
                     expect(Initialization.generateDevice).toHaveBeenCalledWith("jwt", "password", {deviceName: ""});
                 })
                 .catch((e) => fail(e));
+        });
+
+        describe("updateStatus", () => {
+            test("rejects an empty JWT", () => {
+                expect(() => IronNode.User.updateStatus("", 0)).toThrow();
+                expect(() => (IronNode.User as any).updateStatus(null, 0)).toThrow();
+            });
+
+            test("rejects an invalid status value", () => {
+                expect(() => (IronNode.User as any).updateStatus("jwt", 2)).toThrow();
+                expect(() => (IronNode.User as any).updateStatus("jwt", "active")).toThrow();
+            });
+
+            test("calls UserOperations.updateUserStatus with provided JWT and status", (done) => {
+                const spy = jest.spyOn(UserOperations, "updateUserStatus");
+                spy.mockReturnValue(Future.of("updated") as any);
+                IronNode.User.updateStatus("the.jwt.token", IronNode.UserStatus.Enabled)
+                    .then((res) => {
+                        expect(res).toEqual("updated");
+                        expect(UserOperations.updateUserStatus).toHaveBeenCalledWith("the.jwt.token", 1);
+                        done();
+                    })
+                    .catch((e) => done.fail(e));
+            });
+        });
+    });
+
+    describe("UserStatus", () => {
+        test("exposes Disabled (0) and Enabled (1) constants", () => {
+            expect(IronNode.UserStatus.Disabled).toEqual(0);
+            expect(IronNode.UserStatus.Enabled).toEqual(1);
         });
     });
 });

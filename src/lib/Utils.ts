@@ -1,4 +1,5 @@
 import {TransformKey} from "@ironcorelabs/recrypt-node-binding";
+import Future from "futurejs";
 import {PublicKey, Base64String, DocumentHeader} from "../commonTypes";
 import {
     AES_IV_LENGTH,
@@ -7,8 +8,10 @@ import {
     HEADER_META_LENGTH_LENGTH,
     VERSION_HEADER_LENGTH,
     ALLOWED_ID_CHAR_REGEX,
+    ErrorCodes,
 } from "../Constants";
 import {DocumentAccessList} from "../../ironnode";
+import SDKError from "./SDKError";
 
 export const Codec = {
     /**
@@ -75,6 +78,33 @@ export function dedupeArray(list: string[], clearEmptyValues: boolean = false) {
 }
 
 /**
+ * Extract the user/account ID (the `sub` claim) from a signed JWT. Signature
+ * verification is left to the IronCore backend; this only parses the payload.
+ * Resolves with the parsed user ID on success, or rejects with an `SDKError`
+ * (code `JWT_FORMAT_FAILURE`) on failure.
+ */
+export function getUserIdFromJwt(jwtToken: string): Future<SDKError, string> {
+    const fail = (message: string): Future<SDKError, string> => Future.reject(new SDKError(new Error(message), ErrorCodes.JWT_FORMAT_FAILURE));
+    if (typeof jwtToken !== "string" || !jwtToken.length) {
+        return fail("Invalid JWT provided.");
+    }
+    const parts = jwtToken.split(".");
+    if (parts.length !== 3) {
+        return fail("Invalid JWT provided.");
+    }
+    let payload: {sub?: unknown};
+    try {
+        payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
+    } catch {
+        return fail("Invalid JWT provided.");
+    }
+    if (typeof payload.sub !== "string" || !payload.sub.length) {
+        return fail("Invalid JWT provided. Missing 'sub' claim.");
+    }
+    return Future.of(payload.sub);
+}
+
+/**
  * Validate that the provided document ID is a string and has a length
  */
 export function validateID(id: string) {
@@ -137,10 +167,16 @@ export function dedupeAccessLists(accessList: DocumentAccessList) {
     let userAccess: string[] = [];
     let groupAccess: string[] = [];
     if (accessList.users && accessList.users.length) {
-        userAccess = dedupeArray(accessList.users.map(({id}) => id), true);
+        userAccess = dedupeArray(
+            accessList.users.map(({id}) => id),
+            true
+        );
     }
     if (accessList.groups && accessList.groups.length) {
-        groupAccess = dedupeArray(accessList.groups.map(({id}) => id), true);
+        groupAccess = dedupeArray(
+            accessList.groups.map(({id}) => id),
+            true
+        );
     }
     return [userAccess, groupAccess];
 }

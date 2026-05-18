@@ -1,8 +1,31 @@
 import Future from "futurejs";
+import * as SDKState from "../../lib/SDKState";
 import * as GroupOperations from "../../operations/GroupOperations";
 import * as GroupSDK from "../GroupSDK";
 
 describe("GroupSDK", () => {
+    beforeEach(() => {
+        SDKState.setSDKInitialized();
+    });
+
+    afterEach(() => {
+        SDKState.clearSDKInitialized();
+    });
+
+    describe("SDK initialization gate", () => {
+        // Iterates over every exported function so new SDK methods are automatically
+        // covered. If a method is added without a `checkSDKInitialized()` guard, this
+        // test fails for that method by name.
+        Object.entries(GroupSDK)
+            .filter(([, fn]) => typeof fn === "function")
+            .forEach(([name, fn]) => {
+                test(`${name} throws when SDK is not initialized`, () => {
+                    SDKState.clearSDKInitialized();
+                    expect(() => (fn as (...args: any[]) => unknown)()).toThrow(/initialize/);
+                });
+            });
+    });
+
     describe("list", () => {
         test("calls list operation", (done) => {
             const spy = jest.spyOn(GroupOperations, "list");

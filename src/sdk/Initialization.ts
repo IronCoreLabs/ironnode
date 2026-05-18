@@ -7,6 +7,7 @@ import {decryptUserMasterKey, encryptUserMasterKey} from "../crypto/AES";
 import * as Recrypt from "../crypto/Recrypt";
 import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
+import {setSDKInitialized} from "../lib/SDKState";
 import {Codec} from "../lib/Utils";
 import * as DocumentSDK from "./DocumentSDK";
 import * as GroupSDK from "./GroupSDK";
@@ -60,7 +61,7 @@ function generateDeviceAndTransformKeys(jwt: string, userMasterKeyPair: KeyPair)
 }
 
 /**
- * Initizlize the Node SDK. Retrieves the public key for the provided account ID and sets all other provided data into the API state
+ * Initialize the Node SDK. Retrieves the public key for the provided account ID and sets all other provided data into the API state
  * library for future requests.
  */
 export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Future<SDKError, SDK> {
@@ -74,6 +75,7 @@ export function initialize(accountID: string, segmentID: number, privateDeviceKe
             Codec.Buffer.fromBase64(privateSigningKey),
             user.currentKeyId
         );
+        setSDKInitialized();
         return Future.of({
             ...SDK,
             userContext: {

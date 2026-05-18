@@ -106,6 +106,23 @@ export interface GroupUserEditResponse {
     }>;
 }
 
+/**
+ * User status as returned by the IronCore Identity server. Typed as `number`
+ * instead of `0 | 1` because the wire format is a `u8` and future server releases
+ * may introduce new status values; older clients still need to deserialize
+ * those responses without a type-system lie. Use the `UserStatus` constants
+ * (`UserStatus.Disabled`, `UserStatus.Enabled`) for the values you write,
+ * and treat unknown values as opaque on read.
+ */
+export type UserStatus = number;
+export interface UserUpdateResult {
+    accountID: string;
+    segmentID: number;
+    status: UserStatus;
+    userMasterPublicKey: PublicKey<Base64String>;
+    needsRotation: boolean;
+}
+
 export interface UserPublicKeyGetResponse {
     [userID: string]: PublicKey<string> | null;
 }
@@ -153,6 +170,7 @@ export interface User {
     deleteDevice(id?: number): Promise<{id: number}>;
     rotateMasterKey(password: string): Promise<{needsRotation: boolean}>;
     changePassword(currentPassword: string, newPassword: string): Promise<void>;
+    disableSelf(): Promise<UserUpdateResult>;
 }
 
 export interface SDK {
@@ -192,4 +210,10 @@ export namespace User {
     export function verify(jwt: string): Promise<ApiUserResponse | undefined>;
     export function create(jwt: string, password: string, options?: UserCreateOptions): Promise<ApiUserResponse>;
     export function generateDeviceKeys(jwt: string, password: string, options?: DeviceCreateOptions): Promise<DeviceDetails>;
+    export function updateStatus(jwt: string, status: (typeof UserStatus)[keyof typeof UserStatus]): Promise<UserUpdateResult>;
 }
+
+export const UserStatus: {
+    Disabled: 0;
+    Enabled: 1;
+};

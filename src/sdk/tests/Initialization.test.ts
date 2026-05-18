@@ -4,6 +4,7 @@ import {ErrorCodes} from "../../Constants";
 import * as AES from "../../crypto/AES";
 import * as Recrypt from "../../crypto/Recrypt";
 import ApiState from "../../lib/ApiState";
+import * as SDKState from "../../lib/SDKState";
 import {Codec} from "../../lib/Utils";
 import * as TestUtils from "../../tests/TestUtils";
 import * as Initialization from "../Initialization";
@@ -16,6 +17,46 @@ describe("Initialization", () => {
             stateSpy = jest.spyOn(ApiState, "setAccountContext");
             apiSpy = jest.spyOn(UserApi, "getAccountContextPublicKey");
             stateSpy.mockImplementation(() => Future.of(undefined));
+            SDKState.clearSDKInitialized();
+        });
+
+        afterEach(() => {
+            SDKState.clearSDKInitialized();
+        });
+
+        test("flips the SDK init flag to true on success", (done) => {
+            expect(SDKState.isSDKInitialized()).toBe(false);
+            apiSpy.mockReturnValue(
+                Future.of({
+                    id: "user-10",
+                    userMasterPublicKey: Codec.PublicKey.toBase64({x: Buffer.from([1]), y: Buffer.from([2])}),
+                    currentKeyId: 1,
+                    userPrivateKey: Buffer.from([1]).toString("base64"),
+                    needsRotation: false,
+                    groupsNeedingRotation: [],
+                })
+            );
+
+            Initialization.initialize("user-10", 3, Codec.Buffer.toBase64(Buffer.from([1])), Codec.Buffer.toBase64(Buffer.from([2]))).engage(
+                (e) => done.fail(e),
+                () => {
+                    expect(SDKState.isSDKInitialized()).toBe(true);
+                    done();
+                }
+            );
+        });
+
+        test("does not flip the init flag when the API call fails", (done) => {
+            expect(SDKState.isSDKInitialized()).toBe(false);
+            apiSpy.mockReturnValue(Future.reject(new Error("server unreachable")));
+
+            Initialization.initialize("user-10", 3, Codec.Buffer.toBase64(Buffer.from([1])), Codec.Buffer.toBase64(Buffer.from([2]))).engage(
+                () => {
+                    expect(SDKState.isSDKInitialized()).toBe(false);
+                    done();
+                },
+                () => done.fail("Expected initialize to fail when the API rejects")
+            );
         });
 
         test("should resolve successfully and set api state context", () => {

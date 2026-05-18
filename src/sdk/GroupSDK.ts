@@ -1,4 +1,5 @@
 import {GroupCreateOptions, GroupUpdateOptions} from "../../ironnode";
+import {checkSDKInitialized} from "../lib/SDKState";
 import * as Utils from "../lib/Utils";
 import * as GroupOperations from "../operations/GroupOperations";
 
@@ -6,6 +7,7 @@ import * as GroupOperations from "../operations/GroupOperations";
  * List all groups that the current user is either an admin or member of.
  */
 export function list() {
+    checkSDKInitialized();
     return GroupOperations.list().toPromise();
 }
 
@@ -14,6 +16,7 @@ export function list() {
  * @param {string} groupID ID of group to retrieve
  */
 export function get(groupID: string) {
+    checkSDKInitialized();
     Utils.validateID(groupID);
     return GroupOperations.get(groupID).toPromise();
 }
@@ -23,6 +26,7 @@ export function get(groupID: string) {
  * @param {GroupCreateOptions} options Group creation options
  */
 export function create(options: GroupCreateOptions = {groupName: "", addAsMember: true, needsRotation: false}) {
+    checkSDKInitialized();
     if (options.groupID) {
         Utils.validateID(options.groupID);
     }
@@ -35,6 +39,7 @@ export function create(options: GroupCreateOptions = {groupName: "", addAsMember
  * @param {GroupUpdateOptions} options Group update options.
  */
 export function update(groupID: string, options: GroupUpdateOptions) {
+    checkSDKInitialized();
     Utils.validateID(groupID);
     if (options.groupName === null || (typeof options.groupName === "string" && options.groupName.length)) {
         return GroupOperations.update(groupID, options.groupName).toPromise();
@@ -49,6 +54,7 @@ export function update(groupID: string, options: GroupUpdateOptions) {
  * @param {string} groupId ID of the group to rotate
  */
 export function rotatePrivateKey(groupId: string) {
+    checkSDKInitialized();
     Utils.validateID(groupId);
     return GroupOperations.rotateGroupPrivateKey(groupId).toPromise();
 }
@@ -59,6 +65,7 @@ export function rotatePrivateKey(groupId: string) {
  * @param {string[]} userList List of user IDs to add as admins to the group
  */
 export function addAdmins(groupID: string, userList: string[]) {
+    checkSDKInitialized();
     Utils.validateID(groupID);
     Utils.validateIDList(userList);
     return GroupOperations.addAdmins(groupID, Utils.dedupeArray(userList, true)).toPromise();
@@ -71,6 +78,7 @@ export function addAdmins(groupID: string, userList: string[]) {
  * @param {string[]} userList List of users to remove as admins from the group
  */
 export function removeAdmins(groupID: string, userList: string[]) {
+    checkSDKInitialized();
     Utils.validateID(groupID);
     Utils.validateIDList(userList);
     return GroupOperations.removeAdmins(groupID, Utils.dedupeArray(userList, true)).toPromise();
@@ -82,6 +90,7 @@ export function removeAdmins(groupID: string, userList: string[]) {
  * @param {string[]} userList List of user IDs to add as members to the group
  */
 export function addMembers(groupID: string, userList: string[]) {
+    checkSDKInitialized();
     Utils.validateID(groupID);
     Utils.validateIDList(userList);
     return GroupOperations.addMembers(groupID, Utils.dedupeArray(userList, true)).toPromise();
@@ -93,6 +102,7 @@ export function addMembers(groupID: string, userList: string[]) {
  * @param {string[]} userList List of user IDs to remove as members from the group.
  */
 export function removeMembers(groupID: string, userList: string[]) {
+    checkSDKInitialized();
     Utils.validateID(groupID);
     Utils.validateIDList(userList);
     return GroupOperations.removeMembers(groupID, Utils.dedupeArray(userList, true)).toPromise();
@@ -103,6 +113,7 @@ export function removeMembers(groupID: string, userList: string[]) {
  * encrypted to the group to no longer be able to be decrypted.
  */
 export function deleteGroup(groupID: string) {
+    checkSDKInitialized();
     Utils.validateID(groupID);
     return GroupOperations.deleteGroup(groupID).toPromise();
 }

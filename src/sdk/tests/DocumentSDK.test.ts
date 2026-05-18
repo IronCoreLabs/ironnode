@@ -1,8 +1,31 @@
 import Future from "futurejs";
+import * as SDKState from "../../lib/SDKState";
 import * as DocumentOperations from "../../operations/DocumentOperations";
 import * as DocumentSDK from "../DocumentSDK";
 
 describe("DocumentSDK", () => {
+    beforeEach(() => {
+        SDKState.setSDKInitialized();
+    });
+
+    afterEach(() => {
+        SDKState.clearSDKInitialized();
+    });
+
+    describe("SDK initialization gate", () => {
+        // Iterates over every exported function so new SDK methods are automatically
+        // covered. If a method is added without a `checkSDKInitialized()` guard, this
+        // test fails for that method by name.
+        Object.entries(DocumentSDK)
+            .filter(([, fn]) => typeof fn === "function")
+            .forEach(([name, fn]) => {
+                test(`${name} throws when SDK is not initialized`, () => {
+                    SDKState.clearSDKInitialized();
+                    expect(() => (fn as (...args: any[]) => unknown)()).toThrow(/initialize/);
+                });
+            });
+    });
+
     describe("list", () => {
         test("returns Promise invoking document list", (done) => {
             const spy = jest.spyOn(DocumentOperations, "list");

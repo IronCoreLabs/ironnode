@@ -1,5 +1,6 @@
 import * as crypto from "crypto";
 import {DocumentAccessList, DocumentCreateOptions, EncryptedDocumentResponse} from "../../ironnode";
+import {checkSDKInitialized} from "../lib/SDKState";
 import * as Utils from "../lib/Utils";
 import * as DocumentOperations from "../operations/DocumentOperations";
 
@@ -30,6 +31,7 @@ function calculateDocumentCreateOptionsDefault(options?: DocumentCreateOptions) 
  * This list will include documents the user authored as well as documents that were granted access to the current user, either by another user or a group.
  */
 export function list() {
+    checkSDKInitialized();
     return DocumentOperations.list().toPromise();
 }
 
@@ -38,6 +40,7 @@ export function list() {
  * @param {string} documentID ID of the document metadata to retrieve
  */
 export function getMetadata(documentID: string) {
+    checkSDKInitialized();
     Utils.validateID(documentID);
     return DocumentOperations.getMetadata(documentID).toPromise();
 }
@@ -48,6 +51,7 @@ export function getMetadata(documentID: string) {
  * @param encryptedDocument Encrypted document content to parse.
  */
 export function getDocumentIDFromBytes(encryptedDocument: Buffer) {
+    checkSDKInitialized();
     Utils.validateEncryptedDocument(encryptedDocument);
     return DocumentOperations.getDocumentIDFromBytes(encryptedDocument).toPromise();
 }
@@ -58,6 +62,7 @@ export function getDocumentIDFromBytes(encryptedDocument: Buffer) {
  * @param inputStream Encrypted document input stream.
  */
 export function getDocumentIDFromStream(inputStream: NodeJS.ReadableStream) {
+    checkSDKInitialized();
     return DocumentOperations.getDocumentIDFromStream(inputStream).toPromise();
 }
 
@@ -67,6 +72,7 @@ export function getDocumentIDFromStream(inputStream: NodeJS.ReadableStream) {
  * @param {Buffer} documentData Document data to decrypt
  */
 export function decryptBytes(documentID: string, encryptedDocument: Buffer) {
+    checkSDKInitialized();
     Utils.validateID(documentID);
     Utils.validateEncryptedDocument(encryptedDocument);
     return DocumentOperations.decryptBytes(documentID, encryptedDocument).toPromise();
@@ -105,6 +111,7 @@ export function decryptBytes(documentID: string, encryptedDocument: Buffer) {
  *                                                   groups: Array - List of group IDs to share document with. Each value in the array should be in the form {id: string}.
  */
 export function encryptBytes(documentData: Buffer, options?: DocumentCreateOptions): Promise<EncryptedDocumentResponse> {
+    checkSDKInitialized();
     Utils.validateDocumentData(documentData);
     const encryptOptions = calculateDocumentCreateOptionsDefault(options);
     if (encryptOptions.documentID) {
@@ -134,6 +141,7 @@ export function encryptBytes(documentData: Buffer, options?: DocumentCreateOptio
  *                                                   groups: Array - List of group IDs to share document with. Each value in the array should be in the form {id: string}.
  */
 export function encryptStream(inputStream: NodeJS.ReadableStream, outputStream: NodeJS.WritableStream, options?: DocumentCreateOptions) {
+    checkSDKInitialized();
     const encryptOptions = calculateDocumentCreateOptionsDefault(options);
     if (encryptOptions.documentID) {
         Utils.validateID(encryptOptions.documentID);
@@ -156,6 +164,7 @@ export function encryptStream(inputStream: NodeJS.ReadableStream, outputStream: 
  * @param {Buffer} newDocumentData New content to encrypt for document
  */
 export function updateEncryptedBytes(documentID: string, newDocumentData: Buffer): Promise<EncryptedDocumentResponse> {
+    checkSDKInitialized();
     Utils.validateID(documentID);
     Utils.validateDocumentData(newDocumentData);
     return DocumentOperations.updateDocumentBytes(documentID, newDocumentData).toPromise();
@@ -169,6 +178,7 @@ export function updateEncryptedBytes(documentID: string, newDocumentData: Buffer
  * @param {WritableStream} outputStream Writable stream to write encrypted file contents to
  */
 export function updateEncryptedStream(documentID: string, inputStream: NodeJS.ReadableStream, outputStream: NodeJS.WritableStream) {
+    checkSDKInitialized();
     Utils.validateID(documentID);
     return DocumentOperations.updateDocumentStream(documentID, inputStream, outputStream).toPromise();
 }
@@ -179,6 +189,7 @@ export function updateEncryptedStream(documentID: string, inputStream: NodeJS.Re
  * @param {string|null} name       Name to update. Send in null/empty string to clear a documents name field.
  */
 export function updateName(documentID: string, name: string | null) {
+    checkSDKInitialized();
     Utils.validateID(documentID);
     return DocumentOperations.updateDocumentName(documentID, name).toPromise();
 }
@@ -190,6 +201,7 @@ export function updateName(documentID: string, name: string | null) {
  * @param {DocumentAccessList} accessList List of IDs (user IDs, group IDs) with which to grant document access
  */
 export function grantAccess(documentID: string, grantList: DocumentAccessList) {
+    checkSDKInitialized();
     Utils.validateID(documentID);
     Utils.validateAccessList(grantList);
 
@@ -204,6 +216,7 @@ export function grantAccess(documentID: string, grantList: DocumentAccessList) {
  * @param {DocumentAccessList} revokeList List of IDs (user IDs and/or groupIDs) from which to revoke access
  */
 export function revokeAccess(documentID: string, revokeList: DocumentAccessList) {
+    checkSDKInitialized();
     Utils.validateID(documentID);
     Utils.validateAccessList(revokeList);
 
