@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 jobs:
   typescript-ci:
-    uses: IronCoreLabs/workflows/.github/workflows/typescript-ci.yaml@typescript-ci-v0
+    uses: IronCoreLabs/workflows/.github/workflows/typescript-ci.yaml@typescript-ci-v0.0.0
     with:
       test_matrix_node_version: '["20", "22", "24"]'
       # this repo runs coverage in its default test command, which will fail if
