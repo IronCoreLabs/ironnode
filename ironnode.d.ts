@@ -128,7 +128,7 @@ export interface UserPublicKeyGetResponse {
 }
 export interface UserDevice {
     id: number;
-    name: string;
+    name: string | null;
     created: RFC3339Date;
     updated: RFC3339Date;
     publicSigningKey: Base64String;

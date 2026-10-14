@@ -6,6 +6,7 @@
 - `IronNode.initialize()` accepts a `DeviceContext` object, such as the result of `generateDeviceKeys()` or a device JSON produced by another IronCore SDK.
 - `SDK.user.listDevices()` is typed to include each device's `publicSigningKey`, which the API already returns.
 - Added `SDK.user.deleteDeviceByPublicSigningKey()` and `IronNode.User.deleteDeviceByPublicSigningKey()` (JWT authorized) to delete a device given its public signing key. Deleting the SDK's own device through `SDK.user` ends the session, as `deleteDevice()` does.
+- Fixed the type of `name` on devices returned by `SDK.user.listDevices()` to `string | null`. Devices created without a `deviceName` have a `null` name.
 
 ## 1.2.0
 
