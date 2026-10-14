@@ -1,12 +1,12 @@
 import Future from "futurejs";
 import {UserPublicKeyGetResponse, UserUpdateResult} from "../../ironnode";
 import UserApi, {UserUpdateStatusApiResponse} from "../api/UserApi";
-import {PublicKey} from "../commonTypes";
+import {Base64String, PublicKey} from "../commonTypes";
 import {UserStatus} from "../Constants";
 import ApiState from "../lib/ApiState";
 import SDKError from "../lib/SDKError";
 import {clearSDKInitialized} from "../lib/SDKState";
-import {getUserIdFromJwt} from "../lib/Utils";
+import {Codec, getUserIdFromJwt} from "../lib/Utils";
 import * as UserCrypto from "./UserCrypto";
 
 const toUserUpdateResult = (resp: UserUpdateStatusApiResponse): UserUpdateResult => ({
@@ -16,6 +16,11 @@ const toUserUpdateResult = (resp: UserUpdateStatusApiResponse): UserUpdateResult
     userMasterPublicKey: resp.userMasterPublicKey,
     needsRotation: resp.needsRotation,
 });
+
+const clearCurrentDevice = () => {
+    ApiState.clearCurrentUser();
+    clearSDKInitialized();
+};
 
 /**
  * Get a list of all groups that the current user is either a member or admin of.
@@ -53,11 +58,30 @@ export function getUserDevices() {
 export function deleteUserDevice(deviceID?: number) {
     return UserApi.callUserDeviceDeleteApi(deviceID).map((resp) => {
         if (deviceID === undefined) {
-            ApiState.clearCurrentUser();
-            clearSDKInitialized();
+            clearCurrentDevice();
         }
         return resp;
     });
+}
+
+/**
+ * Delete device keys from the current user's account. Deleting the device used to make the request ends the session.
+ */
+export function deleteUserDeviceByPublicSigningKey(publicSigningKey: Base64String) {
+    const isCurrentDevice = Codec.Buffer.fromBase64(publicSigningKey).equals(ApiState.signingKeys().publicKey);
+    return UserApi.callUserDeviceDeleteBySigningKeyApi(publicSigningKey).map((resp) => {
+        if (isCurrentDevice) {
+            clearCurrentDevice();
+        }
+        return resp;
+    });
+}
+
+/**
+ * Delete a device of the user in the provided JWT given the device's public signing key.
+ */
+export function deleteUserDeviceByPublicSigningKeyWithJwt(jwt: string, publicSigningKey: Base64String) {
+    return UserApi.callUserDeviceDeleteBySigningKeyWithJwtApi(jwt, publicSigningKey);
 }
 
 /**
@@ -85,8 +109,7 @@ export function rotateMasterKey(password: string): Future<SDKError, {needsRotati
  */
 export function disableSelf(): Future<SDKError, UserUpdateResult> {
     return UserApi.callUserDisableSelfApi().map((resp) => {
-        ApiState.clearCurrentUser();
-        clearSDKInitialized();
+        clearCurrentDevice();
         return toUserUpdateResult(resp);
     });
 }

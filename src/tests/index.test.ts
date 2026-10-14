@@ -111,6 +111,11 @@ describe("IronNode", () => {
                     .catch((e) => done.fail(e));
             });
         });
+
+        test("deleteDeviceByPublicSigningKey rejects an empty JWT or signing key", () => {
+            expect(() => IronNode.User.deleteDeviceByPublicSigningKey("", "AAAA")).toThrow(/JWT/);
+            expect(() => IronNode.User.deleteDeviceByPublicSigningKey("the.jwt", "")).toThrow(/signing key/);
+        });
     });
 
     describe("UserStatus", () => {

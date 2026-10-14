@@ -1,4 +1,5 @@
 import Future from "futurejs";
+import {ErrorCodes} from "../../Constants";
 import ApiState from "../../lib/ApiState";
 import * as TestUtils from "../../tests/TestUtils";
 import * as ApiRequest from "../ApiRequest";
@@ -386,6 +387,50 @@ describe("UserApi", () => {
                         jasmine.any(Number),
                         jasmine.any(Object)
                     );
+                    done();
+                }
+            );
+        });
+    });
+
+    describe("callUserDeviceDeleteBySigningKeyApi", () => {
+        test("sends a signed DELETE for the URL-encoded signing key", (done) => {
+            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(Future.of({id: 35352}));
+
+            UserApi.callUserDeviceDeleteBySigningKeyApi("ab/c+d==").engage(
+                (error) => done.fail(error),
+                (deletedDevice) => {
+                    expect(deletedDevice).toEqual({id: 35352});
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(
+                        `users/${TestUtils.testAccountID}/devices/ab%2Fc%2Bd%3D%3D`,
+                        ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE,
+                        jasmine.any(Object)
+                    );
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
+                    expect(request.method).toEqual("DELETE");
+                    done();
+                }
+            );
+        });
+    });
+
+    describe("callUserDeviceDeleteBySigningKeyWithJwtApi", () => {
+        test("sends a JWT authorized DELETE for the URL-encoded signing key", (done) => {
+            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(Future.of({id: 35352}));
+
+            UserApi.callUserDeviceDeleteBySigningKeyWithJwtApi("the.jwt", "ab/c+d==").engage(
+                (error) => done.fail(error),
+                (deletedDevice) => {
+                    expect(deletedDevice).toEqual({id: 35352});
+                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(
+                        "users/devices/ab%2Fc%2Bd%3D%3D",
+                        ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE,
+                        jasmine.any(Object)
+                    );
+                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
+                    expect(request.headers.Authorization).toEqual("jwt the.jwt");
+                    expect(request.method).toEqual("DELETE");
                     done();
                 }
             );

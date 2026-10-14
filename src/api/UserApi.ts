@@ -210,6 +210,28 @@ const userDeviceDelete = (sign: MessageSignature, accountID: string, deviceID?: 
     errorCode: ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE,
 });
 
+const userDeviceDeleteBySigningKey = (sign: MessageSignature, accountID: string, publicSigningKey: Base64String) => ({
+    url: `users/${encodeURIComponent(accountID)}/devices/${encodeURIComponent(publicSigningKey)}`,
+    options: {
+        method: "DELETE",
+        headers: {
+            Authorization: ApiRequest.getAuthHeader(sign),
+        },
+    },
+    errorCode: ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE,
+});
+
+const userDeviceDeleteBySigningKeyWithJwt = (jwt: string, publicSigningKey: Base64String) => ({
+    url: `users/devices/${encodeURIComponent(publicSigningKey)}`,
+    options: {
+        method: "DELETE",
+        headers: {
+            Authorization: `jwt ${jwt}`,
+        },
+    },
+    errorCode: ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE,
+});
+
 /**
  * Update the encrypted private key for the currently logged in user
  */
@@ -358,6 +380,23 @@ export default {
     callUserDeviceDeleteApi(deviceID?: number) {
         const {accountID} = ApiState.accountAndSegmentIDs();
         const {url, options, errorCode} = userDeviceDelete(getSignatureHeader(), accountID, deviceID);
+        return ApiRequest.fetchJSON<{id: number}>(url, errorCode, options);
+    },
+
+    /**
+     * Make request to delete one of the current user's devices given its public signing key.
+     */
+    callUserDeviceDeleteBySigningKeyApi(publicSigningKey: Base64String) {
+        const {accountID} = ApiState.accountAndSegmentIDs();
+        const {url, options, errorCode} = userDeviceDeleteBySigningKey(getSignatureHeader(), accountID, publicSigningKey);
+        return ApiRequest.fetchJSON<{id: number}>(url, errorCode, options);
+    },
+
+    /**
+     * Make request to delete a device of the user in the JWT given its public signing key.
+     */
+    callUserDeviceDeleteBySigningKeyWithJwtApi(jwt: string, publicSigningKey: Base64String) {
+        const {url, options, errorCode} = userDeviceDeleteBySigningKeyWithJwt(jwt, publicSigningKey);
         return ApiRequest.fetchJSON<{id: number}>(url, errorCode, options);
     },
 

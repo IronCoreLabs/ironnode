@@ -85,6 +85,18 @@ export const User = {
         }
         return UserOperations.updateUserStatus(jwt, status).toPromise();
     },
+    /**
+     * Does not require an initialized SDK.
+     */
+    deleteDeviceByPublicSigningKey(jwt: string, publicSigningKey: Base64String) {
+        if (typeof jwt !== "string" || !jwt.length) {
+            throw new Error("Expected a non-empty JWT string.");
+        }
+        if (typeof publicSigningKey !== "string" || !publicSigningKey.length) {
+            throw new Error(`Invalid public signing key provided. Expected a non-empty base64 string but got ${publicSigningKey}`);
+        }
+        return UserOperations.deleteUserDeviceByPublicSigningKeyWithJwt(jwt, publicSigningKey).toPromise();
+    },
 };
 
 /**

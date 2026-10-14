@@ -103,6 +103,14 @@ describe("UserSDK", () => {
         });
     });
 
+    describe("deleteDeviceByPublicSigningKey", () => {
+        test("rejects a missing or non-string signing key", () => {
+            SDKState.setSDKInitialized();
+            expect(() => UserSDK.deleteDeviceByPublicSigningKey("")).toThrow(/signing key/);
+            expect(() => UserSDK.deleteDeviceByPublicSigningKey(35 as unknown as string)).toThrow(/signing key/);
+        });
+    });
+
     describe("rotateMasterKey", () => {
         test("should call into UserOperations", () => {
             const spy = jest.spyOn(UserOperations, "rotateMasterKey");

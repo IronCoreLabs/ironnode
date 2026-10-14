@@ -5,6 +5,7 @@
 - `IronNode.User.generateDeviceKeys()` now also returns the standard IronCore device fields (`accountId`, `segmentId`, `devicePrivateKey`, `signingPrivateKey`) plus the new device's `deviceId`, `name`, `created`, and `lastUpdated`. The existing `accountID`, `segmentID`, `deviceKeys`, and `signingKeys` fields are deprecated.
 - `IronNode.initialize()` accepts a `DeviceContext` object, such as the result of `generateDeviceKeys()` or a device JSON produced by another IronCore SDK.
 - `SDK.user.listDevices()` is typed to include each device's `publicSigningKey`, which the API already returns.
+- Added `SDK.user.deleteDeviceByPublicSigningKey()` and `IronNode.User.deleteDeviceByPublicSigningKey()` (JWT authorized) to delete a device given its public signing key. Deleting the SDK's own device through `SDK.user` ends the session, as `deleteDevice()` does.
 
 ## 1.2.0
 

@@ -3,6 +3,7 @@ import UserApi from "../../api/UserApi";
 import {ErrorCodes} from "../../Constants";
 import ApiState from "../../lib/ApiState";
 import * as SDKState from "../../lib/SDKState";
+import SDKError from "../../lib/SDKError";
 import * as TestUtils from "../../tests/TestUtils";
 import * as UserCrypto from "../UserCrypto";
 import * as UserOperations from "../UserOperations";
@@ -157,6 +158,52 @@ describe("UserOperations", () => {
                     done();
                 },
                 () => done.fail("Expected deleteUserDevice to fail when the API rejects")
+            );
+        });
+    });
+
+    describe("deleteUserDeviceByPublicSigningKey", () => {
+        const currentSigningKey = TestUtils.signingPrivateBytes.slice(32).toString("base64");
+
+        test("keeps the session when deleting another device", (done) => {
+            jest.spyOn(UserApi, "callUserDeviceDeleteBySigningKeyApi").mockReturnValue(Future.of({id: 352}));
+
+            UserOperations.deleteUserDeviceByPublicSigningKey(Buffer.alloc(32, 7).toString("base64")).engage(
+                (e) => done.fail(e),
+                (result) => {
+                    expect(result).toEqual({id: 352});
+                    expect(ApiState.devicePrivateKey()).toEqual(TestUtils.devicePrivateBytes);
+                    expect(SDKState.isSDKInitialized()).toBe(true);
+                    done();
+                }
+            );
+        });
+
+        test("ends the session when deleting the current device", (done) => {
+            jest.spyOn(UserApi, "callUserDeviceDeleteBySigningKeyApi").mockReturnValue(Future.of({id: 99}));
+
+            UserOperations.deleteUserDeviceByPublicSigningKey(currentSigningKey).engage(
+                (e) => done.fail(e),
+                (result) => {
+                    expect(result).toEqual({id: 99});
+                    expect(ApiState.devicePrivateKey()).toBeUndefined();
+                    expect(ApiState.signingKeys().privateKey).toBeUndefined();
+                    expect(SDKState.isSDKInitialized()).toBe(false);
+                    done();
+                }
+            );
+        });
+
+        test("keeps the session when deleting the current device fails", (done) => {
+            jest.spyOn(UserApi, "callUserDeviceDeleteBySigningKeyApi").mockReturnValue(Future.reject(new SDKError(new Error("server error"), 0)));
+
+            UserOperations.deleteUserDeviceByPublicSigningKey(currentSigningKey).engage(
+                () => {
+                    expect(ApiState.devicePrivateKey()).toEqual(TestUtils.devicePrivateBytes);
+                    expect(SDKState.isSDKInitialized()).toBe(true);
+                    done();
+                },
+                () => done.fail("Expected deleteUserDeviceByPublicSigningKey to fail when the API rejects")
             );
         });
     });

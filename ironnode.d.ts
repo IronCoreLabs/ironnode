@@ -170,6 +170,7 @@ export interface User {
     getPublicKey(users: string | string[]): Promise<UserPublicKeyGetResponse>;
     listDevices(): Promise<UserDeviceListResponse>;
     deleteDevice(id?: number): Promise<{id: number}>;
+    deleteDeviceByPublicSigningKey(publicSigningKey: Base64String): Promise<{id: number}>;
     rotateMasterKey(password: string): Promise<{needsRotation: boolean}>;
     changePassword(currentPassword: string, newPassword: string): Promise<void>;
     disableSelf(): Promise<UserUpdateResult>;
@@ -231,6 +232,7 @@ export namespace User {
     export function create(jwt: string, password: string, options?: UserCreateOptions): Promise<ApiUserResponse>;
     export function generateDeviceKeys(jwt: string, password: string, options?: DeviceCreateOptions): Promise<DeviceDetails>;
     export function updateStatus(jwt: string, status: (typeof UserStatus)[keyof typeof UserStatus]): Promise<UserUpdateResult>;
+    export function deleteDeviceByPublicSigningKey(jwt: string, publicSigningKey: Base64String): Promise<{id: number}>;
 }
 
 export const UserStatus: {
