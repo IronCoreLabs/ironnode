@@ -126,14 +126,16 @@ export interface UserUpdateResult {
 export interface UserPublicKeyGetResponse {
     [userID: string]: PublicKey<string> | null;
 }
+export interface UserDevice {
+    id: number;
+    name: string;
+    created: RFC3339Date;
+    updated: RFC3339Date;
+    publicSigningKey: Base64String;
+    isCurrentDevice: boolean;
+}
 export interface UserDeviceListResponse {
-    result: Array<{
-        id: number;
-        name: string;
-        created: string;
-        updated: string;
-        isCurrentDevice: boolean;
-    }>;
+    result: UserDevice[];
 }
 
 export interface Document {
