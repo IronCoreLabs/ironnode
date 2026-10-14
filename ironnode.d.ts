@@ -191,15 +191,33 @@ export class SDKError extends Error {
 
 export const ErrorCodes: {[key: string]: number};
 
+/** Device keys in the JSON format shared by all IronCore SDKs. */
+export interface DeviceContext {
+    accountId: string;
+    segmentId: number;
+    devicePrivateKey: Base64String;
+    /** Ed25519 expanded private key: the 32 byte seed followed by the 32 byte public key. */
+    signingPrivateKey: Base64String;
+}
+
+export function initialize(deviceContext: DeviceContext): Promise<SDK>;
 export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Promise<SDK>;
 
-export interface DeviceDetails {
+export interface DeviceDetails extends DeviceContext {
+    deviceId: number;
+    name: string | null;
+    created: RFC3339Date;
+    lastUpdated: RFC3339Date;
+    /** @deprecated Use `accountId`. */
     accountID: string;
+    /** @deprecated Use `segmentId`. */
     segmentID: number;
+    /** @deprecated Use `devicePrivateKey`. */
     deviceKeys: {
         publicKey: PublicKey<Base64String>;
         privateKey: Base64String;
     };
+    /** @deprecated Use `signingPrivateKey`. */
     signingKeys: {
         publicKey: Base64String;
         privateKey: Base64String;

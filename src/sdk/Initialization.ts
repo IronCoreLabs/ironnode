@@ -134,18 +134,30 @@ export function generateDevice(jwt: string, password: string, options: DeviceCre
                     deviceAdd.signature.signature,
                     deviceAdd.signature.ts,
                     options
-                ).map(() => ({
-                    accountID: user.id,
-                    segmentID: user.segmentId,
-                    deviceKeys: {
-                        publicKey: Codec.PublicKey.toBase64(deviceAdd.deviceKeys.publicKey),
-                        privateKey: Codec.Buffer.toBase64(deviceAdd.deviceKeys.privateKey),
-                    },
-                    signingKeys: {
-                        publicKey: Codec.Buffer.toBase64(deviceAdd.signingKeys.publicKey),
-                        privateKey: Codec.Buffer.toBase64(deviceAdd.signingKeys.privateKey),
-                    },
-                }))
+                ).map((device) => {
+                    const devicePrivateKey = Codec.Buffer.toBase64(deviceAdd.deviceKeys.privateKey);
+                    const signingPrivateKey = Codec.Buffer.toBase64(deviceAdd.signingKeys.privateKey);
+                    return {
+                        accountId: user.id,
+                        segmentId: user.segmentId,
+                        devicePrivateKey,
+                        signingPrivateKey,
+                        deviceId: device.id,
+                        name: device.name,
+                        created: device.created,
+                        lastUpdated: device.updated,
+                        accountID: user.id,
+                        segmentID: user.segmentId,
+                        deviceKeys: {
+                            publicKey: Codec.PublicKey.toBase64(deviceAdd.deviceKeys.publicKey),
+                            privateKey: devicePrivateKey,
+                        },
+                        signingKeys: {
+                            publicKey: Codec.Buffer.toBase64(deviceAdd.signingKeys.publicKey),
+                            privateKey: signingPrivateKey,
+                        },
+                    };
+                })
             );
         });
     });

@@ -1,4 +1,5 @@
 import Future from "futurejs";
+import {SDK} from "../../ironnode";
 import * as IronNode from "../index";
 import * as UserOperations from "../operations/UserOperations";
 import * as Initialization from "../sdk/Initialization";
@@ -23,6 +24,25 @@ describe("IronNode", () => {
                     expect(res).toEqual("init");
                 })
                 .catch((e) => fail(e));
+        });
+
+        test("should validate DeviceContext fields", () => {
+            const valid = {accountId: "abc", segmentId: 3, devicePrivateKey: "aaaa", signingPrivateKey: "bbbb"};
+            expect(() => IronNode.initialize({...valid, accountId: ""})).toThrow();
+            expect(() => IronNode.initialize({...valid, segmentId: "3" as unknown as number})).toThrow();
+            expect(() => IronNode.initialize({...valid, devicePrivateKey: ""})).toThrow();
+            expect(() => IronNode.initialize({...valid, signingPrivateKey: ""})).toThrow();
+            expect(() => IronNode.initialize({accountID: "abc", segmentID: 3} as unknown as typeof valid)).toThrow();
+        });
+
+        test("should initialize from the fields of a DeviceContext", () => {
+            const sdk = {} as SDK;
+            const initSpy = jest.spyOn(Initialization, "initialize");
+            initSpy.mockReturnValue(Future.of(sdk));
+            return IronNode.initialize({accountId: "abc", segmentId: 3, devicePrivateKey: "aaaa", signingPrivateKey: "bbbb"}).then((res) => {
+                expect(res).toBe(sdk);
+                expect(initSpy).toHaveBeenCalledWith("abc", 3, "aaaa", "bbbb");
+            });
         });
     });
 
