@@ -221,6 +221,8 @@ export interface DeviceDetails extends DeviceContext {
     name: string | null;
     created: RFC3339Date;
     lastUpdated: RFC3339Date;
+    /** Identifies this device to `deleteDeviceByPublicSigningKey`, matching `UserDevice.publicSigningKey`. */
+    publicSigningKey: Base64String;
     /** @deprecated Use `accountId`. */
     accountID: string;
     /** @deprecated Use `segmentId`. */
@@ -230,7 +232,7 @@ export interface DeviceDetails extends DeviceContext {
         publicKey: PublicKey<Base64String>;
         privateKey: Base64String;
     };
-    /** @deprecated Use `signingPrivateKey`. */
+    /** @deprecated Use `signingPrivateKey` and `publicSigningKey`. */
     signingKeys: {
         publicKey: Base64String;
         privateKey: Base64String;

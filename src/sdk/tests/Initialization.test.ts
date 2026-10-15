@@ -284,10 +284,13 @@ describe("Initialization", () => {
                         created: "2026-10-14T12:00:00Z",
                         lastUpdated: "2026-10-14T12:00:01Z",
                     });
-                    expect(Buffer.from(result.devicePrivateKey, "base64")).toHaveLength(32);
+                    Recrypt.derivePublicKey(Buffer.from(result.devicePrivateKey, "base64")).engage(fail, (devicePublicKey) => {
+                        expect(Codec.PublicKey.toBase64(devicePublicKey)).toEqual(result.deviceKeys.publicKey);
+                    });
                     const signingPrivateKey = Buffer.from(result.signingPrivateKey, "base64");
                     expect(signingPrivateKey).toHaveLength(64);
-                    expect(signingPrivateKey.slice(32).toString("base64")).toEqual(result.signingKeys.publicKey);
+                    expect(signingPrivateKey.slice(32).toString("base64")).toEqual(result.publicSigningKey);
+                    expect(result.publicSigningKey).toEqual(result.signingKeys.publicKey);
 
                     expect(result.accountID).toEqual("353");
                     expect(result.segmentID).toEqual(3);

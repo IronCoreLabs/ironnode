@@ -6,17 +6,19 @@ import * as Initialization from "./sdk/Initialization";
 import * as UserOperations from "./operations/UserOperations";
 
 /**
- * Initialize the Node SDK by providing account information necessary to run operations from a server side context. Accepts either a
- * `DeviceContext` or its fields as separate arguments.
- * @param {string}       accountID         ID of the account to perform actions as
- * @param {number}       segmentID         Internal segment ID the account is part of
- * @param {Base64String} privateDeviceKey  Base64 encoded device key bytes associated to the account in use
- * @param {Base64String} privateSigningKey Base64 encoded signing key bytes associated to the account in use
+ * Initialize the Node SDK by providing account information necessary to run operations from a server side context.
+ * @param {DeviceContext} deviceContext Device keys, such as the result of `User.generateDeviceKeys()`
  */
 export function initialize(deviceContext: DeviceContext): Promise<SDK>;
 /** @deprecated Pass a `DeviceContext`. */
 //tslint:disable-next-line:unified-signatures
 export function initialize(legacyDeviceContext: LegacyDeviceContext): Promise<SDK>;
+/**
+ * @param {string}       accountID         ID of the account to perform actions as
+ * @param {number}       segmentID         Internal segment ID the account is part of
+ * @param {Base64String} privateDeviceKey  Base64 encoded device key bytes associated to the account in use
+ * @param {Base64String} privateSigningKey Base64 encoded signing key bytes associated to the account in use
+ */
 export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Promise<SDK>;
 export function initialize(
     accountIDOrContext: string | DeviceContext | LegacyDeviceContext,
@@ -68,10 +70,11 @@ export const User = {
     /**
      * Generate a new pair of device keys for the user specified in the provided signed JWT. Takes the users password in order to decrypt their master
      * keys and generates a new device key pair as well as a transform key between their master key pair and their device key pair. Resolves with a
-     * `DeviceDetails`, a `DeviceContext` plus the new device's ID, name, and timestamps. Store it somewhere secure and pass it to `initialize`. Also
-     * allows the call to provide a readable "name" for this device.
-     * @param {string}              jwt      Signed JWT for the user to sync
-     * @param {string}              password Password to use to escrow the users private key
+     * `DeviceDetails`, a `DeviceContext` plus the new device's ID, name, timestamps, and public signing key. Store it somewhere secure and pass it to
+     * `initialize`. Also allows the call to provide a readable "name" for this device.
+     * @param {string}              jwt           Signed JWT for the user to sync
+     * @param {string}              password      Password to use to escrow the users private key
+     * @param {DeviceCreateOptions} deviceOptions Device create options.
      */
     generateDeviceKeys(jwt: string, password: string, deviceOptions: DeviceCreateOptions = {deviceName: ""}) {
         return Initialization.generateDevice(jwt, password, deviceOptions).toPromise();

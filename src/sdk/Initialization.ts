@@ -137,6 +137,7 @@ export function generateDevice(jwt: string, password: string, options: DeviceCre
                 ).map((device) => {
                     const devicePrivateKey = Codec.Buffer.toBase64(deviceAdd.deviceKeys.privateKey);
                     const signingPrivateKey = Codec.Buffer.toBase64(deviceAdd.signingKeys.privateKey);
+                    const publicSigningKey = Codec.Buffer.toBase64(deviceAdd.signingKeys.publicKey);
                     return {
                         accountId: user.id,
                         segmentId: user.segmentId,
@@ -146,6 +147,7 @@ export function generateDevice(jwt: string, password: string, options: DeviceCre
                         name: device.name,
                         created: device.created,
                         lastUpdated: device.updated,
+                        publicSigningKey,
                         accountID: user.id,
                         segmentID: user.segmentId,
                         deviceKeys: {
@@ -153,7 +155,7 @@ export function generateDevice(jwt: string, password: string, options: DeviceCre
                             privateKey: devicePrivateKey,
                         },
                         signingKeys: {
-                            publicKey: Codec.Buffer.toBase64(deviceAdd.signingKeys.publicKey),
+                            publicKey: publicSigningKey,
                             privateKey: signingPrivateKey,
                         },
                     };
