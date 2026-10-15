@@ -1,4 +1,4 @@
-import {DeviceContext, DeviceCreateOptions, SDK, UserCreateOptions} from "../ironnode";
+import {DeviceContext, DeviceCreateOptions, LegacyDeviceContext, SDK, UserCreateOptions} from "../ironnode";
 import {Base64String} from "./commonTypes";
 import {UserStatus} from "./Constants";
 import * as Utils from "./lib/Utils";
@@ -14,16 +14,23 @@ import * as UserOperations from "./operations/UserOperations";
  * @param {Base64String} privateSigningKey Base64 encoded signing key bytes associated to the account in use
  */
 export function initialize(deviceContext: DeviceContext): Promise<SDK>;
+/** @deprecated Pass a `DeviceContext`. */
+//tslint:disable-next-line:unified-signatures
+export function initialize(legacyDeviceContext: LegacyDeviceContext): Promise<SDK>;
 export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Promise<SDK>;
 export function initialize(
-    accountIDOrContext: string | DeviceContext,
+    accountIDOrContext: string | DeviceContext | LegacyDeviceContext,
     segmentID?: number,
     privateDeviceKey?: Base64String,
     privateSigningKey?: Base64String
 ): Promise<SDK> {
     if (typeof accountIDOrContext === "object" && accountIDOrContext !== null) {
-        const {accountId, segmentId, devicePrivateKey, signingPrivateKey} = accountIDOrContext;
-        return initializeFromKeys(accountId, segmentId, devicePrivateKey, signingPrivateKey);
+        if ("accountId" in accountIDOrContext) {
+            const {accountId, segmentId, devicePrivateKey, signingPrivateKey} = accountIDOrContext;
+            return initializeFromKeys(accountId, segmentId, devicePrivateKey, signingPrivateKey);
+        }
+        const {accountID, segmentID: legacySegmentID, deviceKeys, signingKeys} = accountIDOrContext;
+        return initializeFromKeys(accountID, legacySegmentID, deviceKeys?.privateKey, signingKeys?.privateKey);
     }
     return initializeFromKeys(accountIDOrContext, segmentID, privateDeviceKey, privateSigningKey);
 }

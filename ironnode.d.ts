@@ -203,7 +203,17 @@ export interface DeviceContext {
     signingPrivateKey: Base64String;
 }
 
+/** @deprecated The device format `generateDeviceKeys()` returned before 1.3.0. Use `DeviceContext`. */
+export interface LegacyDeviceContext {
+    accountID: string;
+    segmentID: number;
+    deviceKeys: {privateKey: Base64String};
+    signingKeys: {privateKey: Base64String};
+}
+
 export function initialize(deviceContext: DeviceContext): Promise<SDK>;
+/** @deprecated Pass a `DeviceContext`. */
+export function initialize(legacyDeviceContext: LegacyDeviceContext): Promise<SDK>;
 export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Promise<SDK>;
 
 export interface DeviceDetails extends DeviceContext {
