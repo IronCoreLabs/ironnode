@@ -85,21 +85,10 @@ describe("UserSDK", () => {
     });
 
     describe("deleteDevice", () => {
-        test("fails when device ID isnt provided or isnt a number", () => {
-            expect(() => (UserSDK as any).deleteDevice()).toThrow();
-            expect(() => (UserSDK as any).deleteDevice("35")).toThrow();
-            expect(() => (UserSDK as any).deleteDevice([])).toThrow();
-        });
-
-        test("calls user operations method with device ID", () => {
-            const spy = jest.spyOn(UserOperations, "deleteUserDevice");
-            spy.mockReturnValue(Future.of("resp") as any);
-            UserSDK.deleteDevice(34)
-                .then((resp) => {
-                    expect(resp).toEqual("resp");
-                    expect(UserOperations.deleteUserDevice).toHaveBeenCalledWith(34);
-                })
-                .catch((e) => fail(e));
+        test("rejects a device ID that is not a positive number", () => {
+            [0, -1, null, "35", []].forEach((invalid) => {
+                expect(() => UserSDK.deleteDevice(invalid as unknown as number)).toThrow(/Invalid device ID/);
+            });
         });
     });
 

@@ -200,7 +200,7 @@ const userDeviceList = (sign: MessageSignature, accountID: string) => ({
  * Delete a users device keys
  */
 const userDeviceDelete = (sign: MessageSignature, accountID: string, deviceID?: number) => ({
-    url: `users/${encodeURIComponent(accountID)}/devices/${deviceID || "current"}`,
+    url: `users/${encodeURIComponent(accountID)}/devices/${deviceID ?? "current"}`,
     options: {
         method: "DELETE",
         headers: {

@@ -22,13 +22,13 @@ export function listDevices() {
 }
 
 /**
- * Delete a device given its ID. If no ID is used it will delete the device being used to make this request. Removes device keys
- * and makes them unusable for future API requests.
+ * If no ID is used it will delete the device being used to make this request. Removes device keys
+ * and makes them unusable for future API requests. Deleting the device used to make this request ends the session.
  * @param {number} deviceID ID of device to delete. Omit to delete the current device.
  */
 export function deleteDevice(deviceID?: number) {
     checkSDKInitialized();
-    if (deviceID && typeof deviceID !== "number") {
+    if (deviceID !== undefined && (typeof deviceID !== "number" || deviceID <= 0)) {
         throw new Error(`Invalid device ID provided. Expected a number greater than zero but got ${deviceID}`);
     }
     return UserOperations.deleteUserDevice(deviceID).toPromise();

@@ -93,7 +93,10 @@ export const User = {
         return UserOperations.updateUserStatus(jwt, status).toPromise();
     },
     /**
-     * Does not require an initialized SDK.
+     * Delete a device of the user in the provided signed JWT. Does not require an initialized SDK. Deleting the initialized SDK's own device ends
+     * its session.
+     * @param {string}       jwt              Signed JWT for the user who owns the device
+     * @param {Base64String} publicSigningKey Public signing key of the device to delete, as returned by `SDK.user.listDevices()`
      */
     deleteDeviceByPublicSigningKey(jwt: string, publicSigningKey: Base64String) {
         if (typeof jwt !== "string" || !jwt.length) {

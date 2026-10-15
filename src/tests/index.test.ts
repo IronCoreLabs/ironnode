@@ -1,5 +1,6 @@
 import Future from "futurejs";
 import {SDK} from "../../ironnode";
+import {ErrorCodes} from "../Constants";
 import * as IronNode from "../index";
 import * as SDKState from "../lib/SDKState";
 import * as UserOperations from "../operations/UserOperations";
@@ -38,6 +39,7 @@ const stubApi = (routes: Record<string, StubResponse>) => {
 };
 
 const ownPublicSigningKey = TestUtils.signingPrivateBytes.slice(32).toString("base64");
+const otherPublicSigningKey = Buffer.alloc(32, 7).toString("base64");
 const deviceContext = {
     accountId: TestUtils.testAccountID,
     segmentId: TestUtils.testSegmentID,
@@ -113,6 +115,89 @@ describe("IronNode", () => {
             expect(() => IronNode.initialize({...valid, devicePrivateKey: ""})).toThrow();
             expect(() => IronNode.initialize({...valid, signingPrivateKey: ""})).toThrow();
             expect(() => IronNode.initialize({accountID: "abc", segmentID: 3} as unknown as typeof valid)).toThrow();
+        });
+    });
+
+    describe("deleting a device", () => {
+        const deviceListRoute: Record<string, StubResponse> = {
+            [`GET users/${TestUtils.testAccountID}/devices`]: {
+                status: 200,
+                body: {
+                    result: [
+                        {id: 352, name: null, created: "", updated: "", publicSigningKey: otherPublicSigningKey, isCurrentDevice: false},
+                        {id: 99, name: null, created: "", updated: "", publicSigningKey: ownPublicSigningKey, isCurrentDevice: true},
+                    ],
+                },
+            },
+        };
+        const deleteRoute = (path: string, response: StubResponse = {status: 200, body: {id: 1}}) => ({[`DELETE ${path}`]: response});
+        const devicePath = (device: string) => `users/${TestUtils.testAccountID}/devices/${encodeURIComponent(device)}`;
+
+        const signIn = async (routes: Record<string, StubResponse>) => {
+            const sent = stubApi({...currentUserRoute, ...deviceListRoute, ...routes});
+            return {sdk: await IronNode.initialize(deviceContext), sent};
+        };
+        const expectSessionEnded = (sdk: SDK) => expect(() => sdk.user.listDevices()).toThrow(/initialize/);
+        const expectSessionOpen = (sdk: SDK) => expect(sdk.user.listDevices()).resolves.toMatchObject({result: expect.any(Array)});
+
+        test("deleteDevice() deletes the current device and ends the session", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(devicePath("current")));
+            await sdk.user.deleteDevice();
+            expect(sent).toContainEqual({method: "DELETE", path: devicePath("current"), authorization: expect.stringMatching(/^IronCore /)});
+            expectSessionEnded(sdk);
+        });
+
+        test("deleteDevice(id) of the current device ends the session", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(devicePath("99")));
+            await sdk.user.deleteDevice(99);
+            expect(sent).toContainEqual({method: "DELETE", path: devicePath("99"), authorization: expect.stringMatching(/^IronCore /)});
+            expectSessionEnded(sdk);
+        });
+
+        test("deleteDevice(id) of another device keeps the session", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(devicePath("352")));
+            await sdk.user.deleteDevice(352);
+            expect(sent).toContainEqual({method: "DELETE", path: devicePath("352"), authorization: expect.stringMatching(/^IronCore /)});
+            await expectSessionOpen(sdk);
+        });
+
+        test("deleteDeviceByPublicSigningKey of the current device ends the session", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(devicePath(ownPublicSigningKey)));
+            await sdk.user.deleteDeviceByPublicSigningKey(ownPublicSigningKey);
+            expect(sent).toContainEqual({method: "DELETE", path: devicePath(ownPublicSigningKey), authorization: expect.stringMatching(/^IronCore /)});
+            expectSessionEnded(sdk);
+        });
+
+        test("deleteDeviceByPublicSigningKey of another device keeps the session", async () => {
+            const {sdk} = await signIn(deleteRoute(devicePath(otherPublicSigningKey)));
+            await sdk.user.deleteDeviceByPublicSigningKey(otherPublicSigningKey);
+            await expectSessionOpen(sdk);
+        });
+
+        test("a failed delete of the current device rejects and keeps the session", async () => {
+            const {sdk} = await signIn(deleteRoute(devicePath("current"), {status: 500, body: [{message: "nope", code: 0}]}));
+            await expect(sdk.user.deleteDevice()).rejects.toMatchObject({code: ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE});
+            await expectSessionOpen(sdk);
+        });
+
+        test("User.deleteDeviceByPublicSigningKey sends a JWT authorized delete and ends the session of the deleted device", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(`users/devices/${encodeURIComponent(ownPublicSigningKey)}`));
+            await IronNode.User.deleteDeviceByPublicSigningKey("the.jwt", ownPublicSigningKey);
+            expect(sent).toContainEqual({method: "DELETE", path: `users/devices/${encodeURIComponent(ownPublicSigningKey)}`, authorization: "jwt the.jwt"});
+            expectSessionEnded(sdk);
+        });
+
+        test("User.deleteDeviceByPublicSigningKey of another device keeps the session", async () => {
+            const {sdk} = await signIn(deleteRoute(`users/devices/${encodeURIComponent(otherPublicSigningKey)}`));
+            await IronNode.User.deleteDeviceByPublicSigningKey("the.jwt", otherPublicSigningKey);
+            await expectSessionOpen(sdk);
+        });
+
+        test("User.deleteDeviceByPublicSigningKey works after the SDK session has ended", async () => {
+            const jwtDeletePath = `users/devices/${encodeURIComponent(ownPublicSigningKey)}`;
+            const {sdk} = await signIn({...deleteRoute(devicePath("current")), ...deleteRoute(jwtDeletePath, {status: 200, body: {id: 99}})});
+            await sdk.user.deleteDevice();
+            await expect(IronNode.User.deleteDeviceByPublicSigningKey("the.jwt", ownPublicSigningKey)).resolves.toEqual({id: 99});
         });
     });
 
