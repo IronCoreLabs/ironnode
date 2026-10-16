@@ -1,4 +1,4 @@
-import {DeviceCreateOptions, UserCreateOptions} from "../ironnode";
+import {DeviceContext, DeviceCreateOptions, LegacyDeviceContext, SDK, UserCreateOptions} from "../ironnode";
 import {Base64String} from "./commonTypes";
 import {UserStatus} from "./Constants";
 import * as Utils from "./lib/Utils";
@@ -6,14 +6,38 @@ import * as Initialization from "./sdk/Initialization";
 import * as UserOperations from "./operations/UserOperations";
 
 /**
- * Initialize the Node SDK by providing account information necessary to run operations from a server side context. Returns a Promise which
- * will resolve with the IronWeb Node SDK object.
+ * Initialize the Node SDK by providing account information necessary to run operations from a server side context.
+ * @param {DeviceContext} deviceContext Device keys, such as the result of `User.generateDeviceKeys()`
+ */
+export function initialize(deviceContext: DeviceContext): Promise<SDK>;
+/** @deprecated Pass a `DeviceContext`. */
+//tslint:disable-next-line:unified-signatures
+export function initialize(legacyDeviceContext: LegacyDeviceContext): Promise<SDK>;
+/**
  * @param {string}       accountID         ID of the account to perform actions as
  * @param {number}       segmentID         Internal segment ID the account is part of
  * @param {Base64String} privateDeviceKey  Base64 encoded device key bytes associated to the account in use
  * @param {Base64String} privateSigningKey Base64 encoded signing key bytes associated to the account in use
  */
-export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String) {
+export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Promise<SDK>;
+export function initialize(
+    accountIDOrContext: string | DeviceContext | LegacyDeviceContext,
+    segmentID?: number,
+    privateDeviceKey?: Base64String,
+    privateSigningKey?: Base64String
+): Promise<SDK> {
+    if (typeof accountIDOrContext === "object" && accountIDOrContext !== null) {
+        if ("accountId" in accountIDOrContext) {
+            const {accountId, segmentId, devicePrivateKey, signingPrivateKey} = accountIDOrContext;
+            return initializeFromKeys(accountId, segmentId, devicePrivateKey, signingPrivateKey);
+        }
+        const {accountID, segmentID: legacySegmentID, deviceKeys, signingKeys} = accountIDOrContext;
+        return initializeFromKeys(accountID, legacySegmentID, deviceKeys?.privateKey, signingKeys?.privateKey);
+    }
+    return initializeFromKeys(accountIDOrContext, segmentID, privateDeviceKey, privateSigningKey);
+}
+
+function initializeFromKeys(accountID: string, segmentID?: number, privateDeviceKey?: Base64String, privateSigningKey?: Base64String) {
     Utils.validateID(accountID);
     if (typeof segmentID !== "number") {
         throw new Error(`Expected a numerical segment ID but instead got '${segmentID}`);
@@ -45,13 +69,12 @@ export const User = {
     },
     /**
      * Generate a new pair of device keys for the user specified in the provided signed JWT. Takes the users password in order to decrypt their master
-     * keys and generates a new device key pair as well as a transform key between their master key pair and their device key pair. Returns both the
-     * device key pair and a signing key pair as base64 encoded strings as well as the users ID and the segment ID for the user. All of these fields can
-     * then be stored somewhere secure and passed in to run the `initialize` function in order for the current user to interact with the SDK. Also allows
-     * the call to provide a readable "name" for this device.
-     * @param {string}              jwt      Signed JWT for the user to sync
-     * @param {string}              password Password to use to escrow the users private key
-     * @param {DeviceCreateOptions} options  Device create options.
+     * keys and generates a new device key pair as well as a transform key between their master key pair and their device key pair. Resolves with a
+     * `DeviceDetails`, a `DeviceContext` plus the new device's ID, name, timestamps, and public signing key. Store it somewhere secure and pass it to
+     * `initialize`. Also allows the call to provide a readable "name" for this device.
+     * @param {string}              jwt           Signed JWT for the user to sync
+     * @param {string}              password      Password to use to escrow the users private key
+     * @param {DeviceCreateOptions} deviceOptions Device create options.
      */
     generateDeviceKeys(jwt: string, password: string, deviceOptions: DeviceCreateOptions = {deviceName: ""}) {
         return Initialization.generateDevice(jwt, password, deviceOptions).toPromise();
@@ -71,6 +94,21 @@ export const User = {
             throw new Error(`Invalid user status '${status}'. Expected UserStatus.Disabled (0) or UserStatus.Enabled (1).`);
         }
         return UserOperations.updateUserStatus(jwt, status).toPromise();
+    },
+    /**
+     * Delete a device of the user in the provided signed JWT. Does not require an initialized SDK. Deleting the initialized SDK's own device ends
+     * its session.
+     * @param {string}       jwt              Signed JWT for the user who owns the device
+     * @param {Base64String} publicSigningKey Public signing key of the device to delete, as returned by `SDK.user.listDevices()`
+     */
+    deleteDeviceByPublicSigningKey(jwt: string, publicSigningKey: Base64String) {
+        if (typeof jwt !== "string" || !jwt.length) {
+            throw new Error("Expected a non-empty JWT string.");
+        }
+        if (typeof publicSigningKey !== "string" || !publicSigningKey.length) {
+            throw new Error(`Invalid public signing key provided. Expected a non-empty base64 string but got ${publicSigningKey}`);
+        }
+        return UserOperations.deleteUserDeviceByPublicSigningKeyWithJwt(jwt, publicSigningKey).toPromise();
     },
 };
 

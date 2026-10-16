@@ -350,45 +350,4 @@ describe("UserApi", () => {
             );
         });
     });
-
-    describe("callUserDeviceDeleteApi", () => {
-        test("calls delete API and returns response", (done) => {
-            const deviceDeleteResult = {id: 35352};
-            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(Future.of(deviceDeleteResult));
-
-            UserApi.callUserDeviceDeleteApi(35352).engage(
-                (error) => done.fail(error),
-                (deletedDevice: any) => {
-                    expect(deletedDevice).toEqual(deviceDeleteResult);
-                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(
-                        `users/${TestUtils.testAccountID}/devices/35352`,
-                        jasmine.any(Number),
-                        jasmine.any(Object)
-                    );
-                    const request = (ApiRequest.fetchJSON as jest.Mock).mock.calls[0][2];
-                    expect(request.headers.Authorization).toMatch(/IronCore\s{1}\d{1}[.][a-zA-Z0-9=\/+]+[.][a-zA-Z0-9=\/+]+/);
-                    expect(request.method).toEqual("DELETE");
-                    done();
-                }
-            );
-        });
-
-        test("deletes the current device if no ID provided", (done) => {
-            const deviceDeleteResult = {id: 35352};
-            (ApiRequest.fetchJSON as jest.Mock).mockReturnValue(Future.of(deviceDeleteResult));
-
-            UserApi.callUserDeviceDeleteApi().engage(
-                (error) => done.fail(error),
-                (deletedDevice: any) => {
-                    expect(deletedDevice).toEqual(deviceDeleteResult);
-                    expect(ApiRequest.fetchJSON).toHaveBeenCalledWith(
-                        `users/${TestUtils.testAccountID}/devices/current`,
-                        jasmine.any(Number),
-                        jasmine.any(Object)
-                    );
-                    done();
-                }
-            );
-        });
-    });
 });

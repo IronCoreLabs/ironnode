@@ -130,7 +130,7 @@ function askForOperation(IronNode: SDK): Promise<void> {
 
 export function initializeSDKWithLocalDevice() {
     const Config = require(path.join(__dirname, "./.device.json"));
-    return initialize(Config.accountID, Config.segmentID, Config.deviceKeys.privateKey, Config.signingKeys.privateKey)
+    return initialize(Config)
         .then((IronNode) => {
             log(IronNode.userContext);
             return askForOperation(IronNode);

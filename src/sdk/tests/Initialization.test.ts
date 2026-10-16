@@ -263,24 +263,47 @@ describe("Initialization", () => {
             const deviceAddSpy = jest.spyOn(UserApi, "callUserDeviceAdd");
             deviceAddSpy.mockReturnValue(
                 Future.of({
-                    devicePublicKey: TestUtils.getEmptyPublicKey(),
-                }) as any
+                    id: 42,
+                    devicePublicKey: Codec.PublicKey.toBase64(TestUtils.getEmptyPublicKey()),
+                    name: "laptop",
+                    created: "2026-10-14T12:00:00Z",
+                    updated: "2026-10-14T12:00:01Z",
+                })
             );
 
             Initialization.generateDevice("jwt", "password", {deviceName: ""}).engage(
                 (e) => fail(e),
-                (result: any) => {
+                (result) => {
+                    expect(result).toMatchObject({
+                        accountId: "353",
+                        segmentId: 3,
+                        devicePrivateKey: expect.any(String),
+                        signingPrivateKey: expect.any(String),
+                        deviceId: 42,
+                        name: "laptop",
+                        created: "2026-10-14T12:00:00Z",
+                        lastUpdated: "2026-10-14T12:00:01Z",
+                    });
+                    Recrypt.derivePublicKey(Buffer.from(result.devicePrivateKey, "base64")).engage(fail, (devicePublicKey) => {
+                        expect(Codec.PublicKey.toBase64(devicePublicKey)).toEqual(result.deviceKeys.publicKey);
+                    });
+                    const signingPrivateKey = Buffer.from(result.signingPrivateKey, "base64");
+                    expect(signingPrivateKey).toHaveLength(64);
+                    expect(signingPrivateKey.slice(32).toString("base64")).toEqual(result.publicSigningKey);
+                    expect(result.publicSigningKey).toEqual(result.signingKeys.publicKey);
+
                     expect(result.accountID).toEqual("353");
+                    expect(result.segmentID).toEqual(3);
                     expect(result.deviceKeys).toEqual({
                         publicKey: {
                             x: expect.any(String),
                             y: expect.any(String),
                         },
-                        privateKey: expect.any(String),
+                        privateKey: result.devicePrivateKey,
                     });
                     expect(result.signingKeys).toEqual({
                         publicKey: expect.any(String),
-                        privateKey: expect.any(String),
+                        privateKey: result.signingPrivateKey,
                     });
                     expect(deviceAddSpy).toHaveBeenCalledWith(
                         "jwt",

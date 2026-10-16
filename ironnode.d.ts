@@ -126,14 +126,16 @@ export interface UserUpdateResult {
 export interface UserPublicKeyGetResponse {
     [userID: string]: PublicKey<string> | null;
 }
+export interface UserDevice {
+    id: number;
+    name: string | null;
+    created: RFC3339Date;
+    updated: RFC3339Date;
+    publicSigningKey: Base64String;
+    isCurrentDevice: boolean;
+}
 export interface UserDeviceListResponse {
-    result: Array<{
-        id: number;
-        name: string;
-        created: string;
-        updated: string;
-        isCurrentDevice: boolean;
-    }>;
+    result: UserDevice[];
 }
 
 export interface Document {
@@ -168,6 +170,7 @@ export interface User {
     getPublicKey(users: string | string[]): Promise<UserPublicKeyGetResponse>;
     listDevices(): Promise<UserDeviceListResponse>;
     deleteDevice(id?: number): Promise<{id: number}>;
+    deleteDeviceByPublicSigningKey(publicSigningKey: Base64String): Promise<{id: number}>;
     rotateMasterKey(password: string): Promise<{needsRotation: boolean}>;
     changePassword(currentPassword: string, newPassword: string): Promise<void>;
     disableSelf(): Promise<UserUpdateResult>;
@@ -191,15 +194,45 @@ export class SDKError extends Error {
 
 export const ErrorCodes: {[key: string]: number};
 
-export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Promise<SDK>;
+/** Device keys in the JSON format shared by all IronCore SDKs. */
+export interface DeviceContext {
+    accountId: string;
+    segmentId: number;
+    devicePrivateKey: Base64String;
+    /** Ed25519 expanded private key: the 32 byte seed followed by the 32 byte public key. */
+    signingPrivateKey: Base64String;
+}
 
-export interface DeviceDetails {
+/** @deprecated The device format `generateDeviceKeys()` returned before 1.3.0. Use `DeviceContext`. */
+export interface LegacyDeviceContext {
     accountID: string;
     segmentID: number;
+    deviceKeys: {privateKey: Base64String};
+    signingKeys: {privateKey: Base64String};
+}
+
+export function initialize(deviceContext: DeviceContext): Promise<SDK>;
+/** @deprecated Pass a `DeviceContext`. */
+export function initialize(legacyDeviceContext: LegacyDeviceContext): Promise<SDK>;
+export function initialize(accountID: string, segmentID: number, privateDeviceKey: Base64String, privateSigningKey: Base64String): Promise<SDK>;
+
+export interface DeviceDetails extends DeviceContext {
+    deviceId: number;
+    name: string | null;
+    created: RFC3339Date;
+    lastUpdated: RFC3339Date;
+    /** Identifies this device to `deleteDeviceByPublicSigningKey`, matching `UserDevice.publicSigningKey`. */
+    publicSigningKey: Base64String;
+    /** @deprecated Use `accountId`. */
+    accountID: string;
+    /** @deprecated Use `segmentId`. */
+    segmentID: number;
+    /** @deprecated Use `devicePrivateKey`. */
     deviceKeys: {
         publicKey: PublicKey<Base64String>;
         privateKey: Base64String;
     };
+    /** @deprecated Use `signingPrivateKey` and `publicSigningKey`. */
     signingKeys: {
         publicKey: Base64String;
         privateKey: Base64String;
@@ -211,6 +244,7 @@ export namespace User {
     export function create(jwt: string, password: string, options?: UserCreateOptions): Promise<ApiUserResponse>;
     export function generateDeviceKeys(jwt: string, password: string, options?: DeviceCreateOptions): Promise<DeviceDetails>;
     export function updateStatus(jwt: string, status: (typeof UserStatus)[keyof typeof UserStatus]): Promise<UserUpdateResult>;
+    export function deleteDeviceByPublicSigningKey(jwt: string, publicSigningKey: Base64String): Promise<{id: number}>;
 }
 
 export const UserStatus: {

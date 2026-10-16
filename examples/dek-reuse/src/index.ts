@@ -1,4 +1,4 @@
-import {SDK, DeviceDetails, initialize} from "@ironcorelabs/ironnode"
+import {SDK, DeviceContext, initialize} from "@ironcorelabs/ironnode"
 import * as crypto from "crypto"
 import * as fs from "fs"
 
@@ -70,11 +70,9 @@ async function checkDek(dek: Buffer, fileNum: number) {
 (async () => {
     const configPath = "../.device_keys"
     fs.accessSync(configPath, fs.constants.R_OK)
-    const deviceKeys: DeviceDetails = JSON.parse(fs.readFileSync(configPath, "utf8"))
+    const deviceContext: DeviceContext = JSON.parse(fs.readFileSync(configPath, "utf8"))
     
-    const ironnode = await initialize(deviceKeys.accountID, deviceKeys.segmentID,
-               deviceKeys.deviceKeys.privateKey,
-               deviceKeys.signingKeys.privateKey)
+    const ironnode = await initialize(deviceContext)
 
     await writeInitialData(ironnode)
 

@@ -1,9 +1,73 @@
 import Future from "futurejs";
+import {SDK} from "../../ironnode";
+import {ErrorCodes} from "../Constants";
 import * as IronNode from "../index";
+import * as SDKState from "../lib/SDKState";
 import * as UserOperations from "../operations/UserOperations";
 import * as Initialization from "../sdk/Initialization";
+import * as TestUtils from "./TestUtils";
+
+interface StubResponse {
+    status: number;
+    body?: unknown;
+}
+interface SentRequest {
+    method: string;
+    path: string;
+    authorization: string;
+}
+
+/**
+ * Replaces `fetch` with a server that answers `"METHOD path"` routes, `path` relative to `/api/1/`, and records every request it receives.
+ */
+const stubApi = (routes: Record<string, StubResponse>) => {
+    const sent: SentRequest[] = [];
+    const fakeFetch = (url: string, init: RequestInit = {}) => {
+        const method = init.method ?? "GET";
+        const path = url.replace(/^.*\/api\/1\//, "");
+        const headers: HeadersInit = init.headers ?? {};
+        sent.push({method, path, authorization: "Authorization" in headers ? String(headers.Authorization) : ""});
+        const route = routes[`${method} ${path}`];
+        if (!route) {
+            return Promise.reject(new Error(`Unexpected request ${method} ${path}`));
+        }
+        return Promise.resolve({ok: route.status < 300, status: route.status, statusText: "", json: () => Promise.resolve(route.body)});
+    };
+    // Jest 26's node environment has no `fetch` global to spy on.
+    global.fetch = fakeFetch as unknown as typeof fetch;
+    return sent;
+};
+
+const ownPublicSigningKey = TestUtils.signingPrivateBytes.slice(32).toString("base64");
+const otherPublicSigningKey = Buffer.alloc(32, 7).toString("base64");
+const deviceContext = {
+    accountId: TestUtils.testAccountID,
+    segmentId: TestUtils.testSegmentID,
+    devicePrivateKey: TestUtils.devicePrivateBytes.toString("base64"),
+    signingPrivateKey: TestUtils.signingPrivateBytes.toString("base64"),
+};
+const currentUserRoute: Record<string, StubResponse> = {
+    "GET users/current": {
+        status: 200,
+        body: {
+            id: TestUtils.testAccountID,
+            segmentId: TestUtils.testSegmentID,
+            status: 1,
+            userMasterPublicKey: TestUtils.accountPublicBytesBase64,
+            userPrivateKey: TestUtils.accountEncryptedPrivateKeyBytes.toString("base64"),
+            currentKeyId: TestUtils.testCurrentKeyId,
+            needsRotation: false,
+            groupsNeedingRotation: [],
+        },
+    },
+};
 
 describe("IronNode", () => {
+    afterEach(() => {
+        Reflect.deleteProperty(global, "fetch");
+        SDKState.clearSDKInitialized();
+    });
+
     describe("initialize", () => {
         test("should fail when provided invalid values", () => {
             expect(() => IronNode.initialize("abc def", 3, "aaaa", "aaaa")).toThrow();
@@ -15,14 +79,125 @@ describe("IronNode", () => {
             expect(() => IronNode.initialize("abcdef", 3, "aaaa", 94 as any)).toThrow();
         });
 
-        test("should call into init when all parameters appear valid", () => {
-            const initSpy = jest.spyOn(Initialization, "initialize");
-            initSpy.mockReturnValue(Future.of("init") as any);
-            IronNode.initialize("abc", 3, "aaaa", "aaaa")
-                .then((res) => {
-                    expect(res).toEqual("init");
-                })
-                .catch((e) => fail(e));
+        test.each<[string, () => Promise<SDK>]>([
+            ["a DeviceContext", () => IronNode.initialize(deviceContext)],
+            [
+                "a pre-1.3.0 device",
+                () =>
+                    IronNode.initialize({
+                        accountID: deviceContext.accountId,
+                        segmentID: deviceContext.segmentId,
+                        deviceKeys: {privateKey: deviceContext.devicePrivateKey},
+                        signingKeys: {privateKey: deviceContext.signingPrivateKey},
+                    }),
+            ],
+            [
+                "separate arguments",
+                () => IronNode.initialize(deviceContext.accountId, deviceContext.segmentId, deviceContext.devicePrivateKey, deviceContext.signingPrivateKey),
+            ],
+        ])("initializes from %s, signing requests as that device", async (_, initialize) => {
+            const sent = stubApi(currentUserRoute);
+            const sdk = await initialize();
+            expect(sdk.userContext).toEqual({userNeedsRotation: false, groupsNeedingRotation: []});
+            expect(sent).toHaveLength(1);
+            const [, signedMessage] = sent[0].authorization.split(".");
+            expect(JSON.parse(Buffer.from(signedMessage, "base64").toString("utf8"))).toMatchObject({
+                uid: TestUtils.testAccountID,
+                sid: TestUtils.testSegmentID,
+                x: ownPublicSigningKey,
+            });
+        });
+
+        test("should validate DeviceContext fields", () => {
+            const valid = {accountId: "abc", segmentId: 3, devicePrivateKey: "aaaa", signingPrivateKey: "bbbb"};
+            expect(() => IronNode.initialize({...valid, accountId: ""})).toThrow();
+            expect(() => IronNode.initialize({...valid, segmentId: "3" as unknown as number})).toThrow();
+            expect(() => IronNode.initialize({...valid, devicePrivateKey: ""})).toThrow();
+            expect(() => IronNode.initialize({...valid, signingPrivateKey: ""})).toThrow();
+            expect(() => IronNode.initialize({accountID: "abc", segmentID: 3} as unknown as typeof valid)).toThrow();
+        });
+    });
+
+    describe("deleting a device", () => {
+        const deviceListRoute: Record<string, StubResponse> = {
+            [`GET users/${TestUtils.testAccountID}/devices`]: {
+                status: 200,
+                body: {
+                    result: [
+                        {id: 352, name: null, created: "", updated: "", publicSigningKey: otherPublicSigningKey, isCurrentDevice: false},
+                        {id: 99, name: null, created: "", updated: "", publicSigningKey: ownPublicSigningKey, isCurrentDevice: true},
+                    ],
+                },
+            },
+        };
+        const deleteRoute = (path: string, response: StubResponse = {status: 200, body: {id: 1}}) => ({[`DELETE ${path}`]: response});
+        const devicePath = (device: string) => `users/${TestUtils.testAccountID}/devices/${encodeURIComponent(device)}`;
+
+        const signIn = async (routes: Record<string, StubResponse>) => {
+            const sent = stubApi({...currentUserRoute, ...deviceListRoute, ...routes});
+            return {sdk: await IronNode.initialize(deviceContext), sent};
+        };
+        const expectSessionEnded = (sdk: SDK) => expect(() => sdk.user.listDevices()).toThrow(/initialize/);
+        const expectSessionOpen = (sdk: SDK) => expect(sdk.user.listDevices()).resolves.toMatchObject({result: expect.any(Array)});
+
+        test("deleteDevice() deletes the current device and ends the session", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(devicePath("current")));
+            await sdk.user.deleteDevice();
+            expect(sent).toContainEqual({method: "DELETE", path: devicePath("current"), authorization: expect.stringMatching(/^IronCore /)});
+            expectSessionEnded(sdk);
+        });
+
+        test("deleteDevice(id) of the current device ends the session", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(devicePath("99")));
+            await sdk.user.deleteDevice(99);
+            expect(sent).toContainEqual({method: "DELETE", path: devicePath("99"), authorization: expect.stringMatching(/^IronCore /)});
+            expectSessionEnded(sdk);
+        });
+
+        test("deleteDevice(id) of another device keeps the session", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(devicePath("352")));
+            await sdk.user.deleteDevice(352);
+            expect(sent).toContainEqual({method: "DELETE", path: devicePath("352"), authorization: expect.stringMatching(/^IronCore /)});
+            await expectSessionOpen(sdk);
+        });
+
+        test("deleteDeviceByPublicSigningKey of the current device ends the session", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(devicePath(ownPublicSigningKey)));
+            await sdk.user.deleteDeviceByPublicSigningKey(ownPublicSigningKey);
+            expect(sent).toContainEqual({method: "DELETE", path: devicePath(ownPublicSigningKey), authorization: expect.stringMatching(/^IronCore /)});
+            expectSessionEnded(sdk);
+        });
+
+        test("deleteDeviceByPublicSigningKey of another device keeps the session", async () => {
+            const {sdk} = await signIn(deleteRoute(devicePath(otherPublicSigningKey)));
+            await sdk.user.deleteDeviceByPublicSigningKey(otherPublicSigningKey);
+            await expectSessionOpen(sdk);
+        });
+
+        test("a failed delete of the current device rejects and keeps the session", async () => {
+            const {sdk} = await signIn(deleteRoute(devicePath("current"), {status: 500, body: [{message: "nope", code: 0}]}));
+            await expect(sdk.user.deleteDevice()).rejects.toMatchObject({code: ErrorCodes.USER_DEVICE_DELETE_REQUEST_FAILURE});
+            await expectSessionOpen(sdk);
+        });
+
+        test("User.deleteDeviceByPublicSigningKey sends a JWT authorized delete and ends the session of the deleted device", async () => {
+            const {sdk, sent} = await signIn(deleteRoute(`users/devices/${encodeURIComponent(ownPublicSigningKey)}`));
+            await IronNode.User.deleteDeviceByPublicSigningKey("the.jwt", ownPublicSigningKey);
+            expect(sent).toContainEqual({method: "DELETE", path: `users/devices/${encodeURIComponent(ownPublicSigningKey)}`, authorization: "jwt the.jwt"});
+            expectSessionEnded(sdk);
+        });
+
+        test("User.deleteDeviceByPublicSigningKey of another device keeps the session", async () => {
+            const {sdk} = await signIn(deleteRoute(`users/devices/${encodeURIComponent(otherPublicSigningKey)}`));
+            await IronNode.User.deleteDeviceByPublicSigningKey("the.jwt", otherPublicSigningKey);
+            await expectSessionOpen(sdk);
+        });
+
+        test("User.deleteDeviceByPublicSigningKey works after the SDK session has ended", async () => {
+            const jwtDeletePath = `users/devices/${encodeURIComponent(ownPublicSigningKey)}`;
+            const {sdk} = await signIn({...deleteRoute(devicePath("current")), ...deleteRoute(jwtDeletePath, {status: 200, body: {id: 99}})});
+            await sdk.user.deleteDevice();
+            await expect(IronNode.User.deleteDeviceByPublicSigningKey("the.jwt", ownPublicSigningKey)).resolves.toEqual({id: 99});
         });
     });
 
@@ -90,6 +265,11 @@ describe("IronNode", () => {
                     })
                     .catch((e) => done.fail(e));
             });
+        });
+
+        test("deleteDeviceByPublicSigningKey rejects an empty JWT or signing key", () => {
+            expect(() => IronNode.User.deleteDeviceByPublicSigningKey("", "AAAA")).toThrow(/JWT/);
+            expect(() => IronNode.User.deleteDeviceByPublicSigningKey("the.jwt", "")).toThrow(/signing key/);
         });
     });
 

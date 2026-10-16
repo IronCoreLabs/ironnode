@@ -1,3 +1,4 @@
+import {Base64String} from "../commonTypes";
 import {checkSDKInitialized} from "../lib/SDKState";
 import * as UserOperations from "../operations/UserOperations";
 
@@ -21,16 +22,27 @@ export function listDevices() {
 }
 
 /**
- * Delete a device given its ID. If no ID is used it will delete the device being used to make this request. Removes device keys
- * and makes them unusable for future API requests.
+ * If no ID is used it will delete the device being used to make this request. Removes device keys
+ * and makes them unusable for future API requests. Deleting the device used to make this request ends the session.
  * @param {number} deviceID ID of device to delete. Omit to delete the current device.
  */
 export function deleteDevice(deviceID?: number) {
     checkSDKInitialized();
-    if (deviceID && typeof deviceID !== "number") {
+    if (deviceID !== undefined && (!Number.isInteger(deviceID) || deviceID <= 0)) {
         throw new Error(`Invalid device ID provided. Expected a number greater than zero but got ${deviceID}`);
     }
     return UserOperations.deleteUserDevice(deviceID).toPromise();
+}
+
+/**
+ * Delete a device given its public signing key, as returned by `listDevices`. Deleting the device used to make this request ends the session.
+ */
+export function deleteDeviceByPublicSigningKey(publicSigningKey: Base64String) {
+    checkSDKInitialized();
+    if (typeof publicSigningKey !== "string" || !publicSigningKey.length) {
+        throw new Error(`Invalid public signing key provided. Expected a non-empty base64 string but got ${publicSigningKey}`);
+    }
+    return UserOperations.deleteUserDeviceByPublicSigningKey(publicSigningKey).toPromise();
 }
 
 /**
