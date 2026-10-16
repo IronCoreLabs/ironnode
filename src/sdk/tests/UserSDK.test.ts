@@ -85,8 +85,8 @@ describe("UserSDK", () => {
     });
 
     describe("deleteDevice", () => {
-        test("rejects a device ID that is not a positive number", () => {
-            [0, -1, null, "35", []].forEach((invalid) => {
+        test("rejects a device ID that is not a positive integer", () => {
+            [0, -1, 1.5, NaN, Infinity, null, "35", []].forEach((invalid) => {
                 expect(() => UserSDK.deleteDevice(invalid as unknown as number)).toThrow(/Invalid device ID/);
             });
         });

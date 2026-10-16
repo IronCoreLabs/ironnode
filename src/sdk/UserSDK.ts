@@ -28,7 +28,7 @@ export function listDevices() {
  */
 export function deleteDevice(deviceID?: number) {
     checkSDKInitialized();
-    if (deviceID !== undefined && (typeof deviceID !== "number" || deviceID <= 0)) {
+    if (deviceID !== undefined && (!Number.isInteger(deviceID) || deviceID <= 0)) {
         throw new Error(`Invalid device ID provided. Expected a number greater than zero but got ${deviceID}`);
     }
     return UserOperations.deleteUserDevice(deviceID).toPromise();
